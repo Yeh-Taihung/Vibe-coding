@@ -3,7 +3,11 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Mr.Yes 數據中控台 | Vibe Coding</title>
+    <title>寶新產品工程部-數據中控台</title>
+    
+    <meta property="og:title" content="寶新產品工程部-數據中控台">
+    <meta property="og:description" content="Select a dashboard to proceed">
+    
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&family=Noto+Sans+TC:wght@400;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     
@@ -42,15 +46,21 @@
         }
 
         .logo {
-            font-size: 1.5rem;
+            font-size: 1.3rem;
             font-weight: 800;
             color: var(--primary);
             display: flex;
             align-items: center;
             gap: 10px;
         }
+        
+        /* Logo 圖片樣式 */
+        .logo img {
+            height: 36px;
+            width: auto;
+        }
 
-        .logo span { color: var(--text-main); }
+        .logo span { color: var(--text-main); font-weight: 600; }
 
         /* --- Main Content --- */
         main {
@@ -158,13 +168,11 @@
 <body>
 
     <header>
-    <div class="logo" style="display: flex; align-items: center; gap: 12px;">
-        <img src="./logo.png" alt="Mr.Yes Logo" style="height: 40px; width: auto;">
-        <div style="font-size: 1.5rem; font-weight: 800; color: var(--text-main);">
-            產品工程部-數據中控台
+        <div class="logo">
+            <img src="./logo.png" alt="Logo">
+            <div>寶新產品工程部 <span>數據中控台</span></div>
         </div>
-    </div>
-</header>
+    </header>
 
     <main>
         <div class="welcome-section">
@@ -174,7 +182,7 @@
 
         <div class="dashboard-grid">
             
-            <a href="./Business-Trip-data-Dashboard/index.html" class="card">
+            <a href="./Busniss-Trip-data-Dashboard/index.html" class="card">
                 <div>
                     <div class="card-icon"><i class="fa-solid fa-plane"></i></div>
                     <h3>人員出差統計看板</h3>
@@ -208,7 +216,7 @@
     </main>
 
     <footer>
-        <p>Designed by Vibe Coding for Mr.Yes</p>
+        <p>Designed by Vibe Coding for 寶新產品工程部</p>
     </footer>
 
 </body>
