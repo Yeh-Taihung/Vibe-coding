@@ -1,0 +1,1207 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="UTF-8" />
+  <title>產品工程部出差統計看板</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <!-- Chart.js -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Noto Sans TC",
+        "PingFang TC", "Microsoft JhengHei", system-ui, sans-serif;
+    }
+
+    body {
+      background: #f4faf8;
+      color: #123b33;
+      line-height: 1.6;
+    }
+
+    a {
+      color: inherit;
+      text-decoration: none;
+    }
+
+    /* ---------- Layout ---------- */
+
+    .page {
+      max-width: 1280px;
+      margin: 0 auto;
+      padding: 16px 16px 64px;
+    }
+
+    header.page-header {
+      position: sticky;
+      top: 0;
+      z-index: 20;
+      background: #f4faf8ee;
+      backdrop-filter: blur(10px);
+      padding-bottom: 10px;
+    }
+
+    .page-title-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+      margin-bottom: 10px;
+    }
+
+    .page-title {
+      font-size: 24px;
+      font-weight: 700;
+      letter-spacing: 0.1em;
+      color: #10493f;
+    }
+
+    .page-sub {
+      font-size: 12px;
+      color: #5f847d;
+    }
+
+    /* ---------- Top quick nav buttons ---------- */
+
+    .quick-nav {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-bottom: 8px;
+    }
+
+    .quick-nav-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 6px 10px;
+      border-radius: 999px;
+      border: 1px solid #d2ebe3;
+      background: #e5f6f0;
+      font-size: 12px;
+      color: #165c4f;
+      cursor: pointer;
+      box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
+      transition: background 0.15s, transform 0.1s;
+    }
+
+    .quick-nav-btn img {
+      width: 16px;
+      height: 16px;
+      object-fit: contain;
+    }
+
+    .quick-nav-btn:hover {
+      background: #d4eee5;
+      transform: translateY(-1px);
+    }
+
+    main {
+      margin-top: 8px;
+    }
+
+    section.card {
+      background: #ffffff;
+      border-radius: 18px;
+      padding: 18px 20px 20px;
+      margin-top: 16px;
+      box-shadow: 0 4px 18px rgba(0, 0, 0, 0.03);
+    }
+
+    section.card h2 {
+      font-size: 18px;
+      font-weight: 700;
+      color: #155049;
+      margin-bottom: 8px;
+    }
+
+    section.card p.section-desc {
+      font-size: 12px;
+      color: #6e8b86;
+      margin-bottom: 10px;
+    }
+
+    .card-header-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin-bottom: 10px;
+    }
+
+    /* ---------- Controls ---------- */
+
+    .control-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      align-items: center;
+      font-size: 12px;
+      color: #3c5f57;
+    }
+
+    .control-row label {
+      margin-right: 4px;
+    }
+
+    select,
+    input[type="text"] {
+      font-size: 12px;
+      padding: 4px 8px;
+      border-radius: 999px;
+      border: 1px solid #cde3dd;
+      background: #ffffff;
+      color: #16413a;
+      outline: none;
+    }
+
+    select:focus,
+    input[type="text"]:focus {
+      border-color: #76b4a1;
+      box-shadow: 0 0 0 1px #76b4a133;
+    }
+
+    /* ---------- Charts ---------- */
+
+    .chart-block {
+      margin-top: 10px;
+    }
+
+    .chart-wrapper {
+      background: #f8fcfa;
+      border-radius: 14px;
+      padding: 12px 10px 16px;
+      border: 1px solid #e0efe9;
+      min-height: 180px;
+    }
+
+    canvas {
+      width: 100% !important;
+      height: 260px !important;
+    }
+
+    .chart-note {
+      font-size: 11px;
+      color: #708d87;
+      margin-top: 4px;
+    }
+
+    /* ---------- Utilization cards ---------- */
+
+    .util-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      gap: 12px;
+      margin-top: 6px;
+    }
+
+    .util-card {
+      border-radius: 16px;
+      border: 1px solid #e1f0eb;
+      background: #fbfefd;
+      padding: 10px 12px;
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+
+    .util-name {
+      font-size: 13px;
+      font-weight: 600;
+      color: #17443c;
+    }
+
+    .util-percent {
+      font-size: 20px;
+      font-weight: 700;
+    }
+
+    .util-meta {
+      font-size: 11px;
+      color: #6e8b86;
+    }
+
+    .util-bar-bg {
+      margin-top: 4px;
+      width: 100%;
+      height: 5px;
+      border-radius: 999px;
+      background: #e4efec;
+      overflow: hidden;
+    }
+
+    .util-bar-fill {
+      height: 100%;
+      border-radius: 999px;
+      width: 0;
+    }
+
+    /* ---------- Timeline ---------- */
+
+    .timeline-wrapper {
+      margin-top: 6px;
+      background: #f8fcfa;
+      border-radius: 14px;
+      border: 1px solid #e0efe9;
+      padding: 12px 10px 12px;
+      overflow-x: auto;
+    }
+
+    .timeline-header {
+      display: grid;
+      grid-template-columns: 80px repeat(12, 1fr);
+      font-size: 11px;
+      color: #678982;
+      margin-bottom: 4px;
+      padding: 0 4px;
+    }
+
+    .timeline-header div {
+      text-align: center;
+    }
+
+    .timeline-row {
+      display: grid;
+      grid-template-columns: 80px 1fr;
+      align-items: center;
+      padding: 4px 4px;
+      font-size: 11px;
+      color: #28524a;
+    }
+
+    .timeline-name {
+      padding-right: 6px;
+    }
+
+    .timeline-bar-track {
+      position: relative;
+      height: 22px;
+      border-radius: 999px;
+      background: #edf6f3;
+      overflow: hidden;
+    }
+
+    .timeline-bar {
+      position: absolute;
+      top: 3px;
+      bottom: 3px;
+      border-radius: 999px;
+      font-size: 10px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 0 8px;
+      white-space: nowrap;
+      color: #16413a;
+    }
+
+    .timeline-bar.done {
+      background: #a0c5e3; /* 已完成 */
+    }
+
+    .timeline-bar.ongoing {
+      background: #ffb88a; /* 進行中 */
+    }
+
+    .timeline-bar.upcoming {
+      background: #b4cfa4; /* 即將開始 */
+    }
+
+    .timeline-legend {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      font-size: 11px;
+      color: #6e8b86;
+      margin-top: 6px;
+    }
+
+    .legend-item {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+    }
+
+    .legend-dot {
+      width: 10px;
+      height: 10px;
+      border-radius: 999px;
+    }
+
+    /* ---------- Table ---------- */
+
+    .table-controls {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-bottom: 8px;
+      font-size: 12px;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 12px;
+    }
+
+    thead {
+      background: #f3f9f7;
+    }
+
+    th,
+    td {
+      padding: 6px 8px;
+      border-bottom: 1px solid #e6f0ed;
+      text-align: left;
+      white-space: nowrap;
+    }
+
+    tbody tr:nth-child(even) {
+      background: #fcfefe;
+    }
+
+    .row-chip {
+      display: inline-block;
+      padding: 2px 6px;
+      border-radius: 999px;
+      font-size: 11px;
+      background: #eaf3f1;
+    }
+
+    .muted {
+      color: #8ba39e;
+    }
+
+    .badge-count {
+      font-size: 11px;
+      background: #e5f4ee;
+      color: #2e6a5a;
+      border-radius: 999px;
+      padding: 1px 6px;
+      margin-left: 4px;
+    }
+
+    /* ---------- 小尺寸 ---------- */
+
+    @media (max-width: 768px) {
+      header.page-header {
+        position: sticky;
+      }
+      .page-title-row {
+        flex-direction: column;
+        align-items: flex-start;
+      }
+      canvas {
+        height: 220px !important;
+      }
+    }
+  </style>
+</head>
+<body>
+<div class="page">
+  <header class="page-header">
+    <div class="page-title-row">
+      <div>
+        <div class="page-title">產品工程部出差統計看板</div>
+        <div class="page-sub">
+          資料來源：Google 表單 ➜ Google 試算表（CSV 匯出）｜切換年份後，下方所有區塊會同步顯示該年度統計。
+        </div>
+      </div>
+    </div>
+
+    <!-- Top quick nav -->
+    <nav class="quick-nav">
+      <button class="quick-nav-btn" data-target="section-stats">
+        <img src="https://img.icons8.com/color/48/combo-chart.png" alt="">
+        <span>出差統計圖表</span>
+      </button>
+      <button class="quick-nav-btn" data-target="section-util">
+        <img src="https://img.icons8.com/color/48/percentage.png" alt="">
+        <span>出差利用率概況</span>
+      </button>
+      <button class="quick-nav-btn" data-target="section-timeline">
+        <img src="https://img.icons8.com/color/48/calendar.png" alt="">
+        <span>年度出差時間軸</span>
+      </button>
+      <button class="quick-nav-btn" data-target="section-list">
+        <img src="https://img.icons8.com/color/48/checklist.png" alt="">
+        <span>出差列表（該年度全部紀錄）</span>
+      </button>
+    </nav>
+  </header>
+
+  <main>
+    <!-- --------- Section 1: Stats charts --------- -->
+    <section class="card" id="section-stats">
+      <div class="card-header-row">
+        <h2 id="title-stats">出差統計圖表</h2>
+        <div class="control-row">
+          <span>選擇年份：</span>
+          <select id="year-select"></select>
+          <span>排序方式：</span>
+          <select id="sort-select">
+            <option value="desc">天數多 ➜ 少</option>
+            <option value="asc">天數少 ➜ 多</option>
+          </select>
+          <span id="current-year-label" class="muted"></span>
+        </div>
+      </div>
+      <p class="section-desc">每位同仁在該年度累積的出差天數，及各專案投入天數（橫向條狀圖）。</p>
+
+      <div class="chart-block">
+        <h3 style="font-size:14px;margin-bottom:4px;">各人員出差天數（天）</h3>
+        <div class="chart-wrapper">
+          <canvas id="employee-chart"></canvas>
+        </div>
+        <div class="chart-note">每位同仁在該年度累積的出差天數。</div>
+      </div>
+
+      <div class="chart-block" style="margin-top:14px;">
+        <h3 style="font-size:14px;margin-bottom:4px;">各專案出差天數（天）</h3>
+        <div class="chart-wrapper">
+          <canvas id="project-chart"></canvas>
+        </div>
+        <div class="chart-note">依專案／項目名稱統計出差投入的總天數。</div>
+      </div>
+    </section>
+
+    <!-- --------- Section 2: Utilization --------- -->
+    <section class="card" id="section-util">
+      <div class="card-header-row">
+        <h2 id="title-util">出差利用率概況</h2>
+        <div class="control-row">
+          <span>排序方式：</span>
+          <select id="util-sort-select">
+            <option value="desc">出差天數多 ➜ 少</option>
+            <option value="asc">出差天數少 ➜ 多</option>
+          </select>
+        </div>
+      </div>
+      <p class="section-desc">
+        利用率定義：出差天數 ÷ 年工作天數。預設年工作天數 = 240 天（約 5 天 × 48 週），之後可依公司制度自行調整。
+      </p>
+      <div class="util-grid" id="util-grid"></div>
+    </section>
+
+    <!-- --------- Section 3: Timeline --------- -->
+    <section class="card" id="section-timeline">
+      <div class="card-header-row">
+        <h2 id="title-timeline">年度出差時間軸</h2>
+      </div>
+      <p class="section-desc">
+        X 軸：1～12 月；Y 軸：出差人員。可快速查看該年度誰在什麼時間點出差；顏色代表目前出差狀態（依今日日期判定）。
+      </p>
+      <div class="timeline-wrapper">
+        <div class="timeline-header" id="timeline-header"></div>
+        <div id="timeline-rows"></div>
+        <div class="timeline-legend">
+          <div class="legend-item">
+            <span class="legend-dot" style="background:#a0c5e3;"></span><span>已完成出差任務（結束日期早於今日）</span>
+          </div>
+          <div class="legend-item">
+            <span class="legend-dot" style="background:#ffb88a;"></span><span>進行中的出差任務（今日介於開始與結束之間）</span>
+          </div>
+          <div class="legend-item">
+            <span class="legend-dot" style="background:#b4cfa4;"></span><span>未來即將出差的任務（開始日期晚於今日）</span>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- --------- Section 4: List --------- -->
+    <section class="card" id="section-list">
+      <div class="card-header-row">
+        <h2 id="title-list">出差列表（該年度全部紀錄）</h2>
+        <span class="badge-count" id="list-count-badge">0 筆</span>
+      </div>
+      <div class="table-controls">
+        <div>
+          <label>姓名：</label>
+          <select id="filter-name">
+            <option value="all">全部</option>
+          </select>
+        </div>
+        <div>
+          <label>目的地／地點：</label>
+          <select id="filter-location">
+            <option value="all">全部</option>
+          </select>
+        </div>
+        <div>
+          <label>專案／項目：</label>
+          <select id="filter-project">
+            <option value="all">全部</option>
+          </select>
+        </div>
+        <div style="flex:1;min-width:180px;">
+          <input
+            id="search-input"
+            type="text"
+            placeholder="搜尋姓名、地點或專案關鍵字..."
+            style="width:100%;"
+          />
+        </div>
+        <div>
+          <label>依開始日期排序：</label>
+          <select id="list-sort">
+            <option value="asc">舊 ➜ 新</option>
+            <option value="desc">新 ➜ 舊</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="table-wrapper">
+        <table>
+          <thead>
+          <tr>
+            <th>姓名</th>
+            <th>目的地／地點</th>
+            <th>開始日期</th>
+            <th>結束日期</th>
+            <th>天數</th>
+            <th>專案／項目</th>
+            <th>工作內容</th>
+          </tr>
+          </thead>
+          <tbody id="trip-tbody"></tbody>
+        </table>
+      </div>
+    </section>
+  </main>
+</div>
+
+<script>
+  /*********************
+   *   基本設定與工具   *
+   *********************/
+  const CSV_URL =
+    "https://docs.google.com/spreadsheets/d/e/2PACX-1vQI-ac_9JPcK5zQSCPT6xS1YYWUAv7n8-isJ_TrHuFSHGAK4I7d0EG8ZofBK36dvd9e4HM5FZCbVCr1/pub?output=csv";
+
+  // 若你已經在上一版貼過 URL，請把上面這行換成原本的 URL，例如：
+  // const CSV_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vQI-ac_9JPcK5zQSCPT6xS1YYWUAv7n8-isJ_TrHuFSHGAK4I7d0EG8ZofBK36dvd9e4HM5FZCbVCr1/pub?output=csv";
+
+  const WORKING_DAYS_PER_YEAR = 240; // 出差利用率分母
+
+  // 莫蘭迪色調（人員 / 專案輪替使用）
+  const MORANDI_COLORS = [
+    "#FFF689",
+    "#F4D35E",
+    "#FFB88A",
+    "#FF9C5B",
+    "#F67B45",
+    "#FBC2C2",
+    "#E39B99",
+    "#CB7876",
+    "#B4CFA4",
+    "#8BA47C",
+    "#62866C",
+    "#A0C5E3",
+    "#81B2D9",
+    "#32769B",
+    "#BBA6DD",
+    "#8C7DA8",
+    "#64557B",
+  ];
+
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+
+  let allRecords = [];
+  let availableYears = [];
+
+  // Chart.js 實例
+  let employeeChart = null;
+  let projectChart = null;
+
+  // DOM
+  const yearSelect = document.getElementById("year-select");
+  const sortSelect = document.getElementById("sort-select");
+  const currentYearLabel = document.getElementById("current-year-label");
+
+  const titleStats = document.getElementById("title-stats");
+  const titleUtil = document.getElementById("title-util");
+  const titleTimeline = document.getElementById("title-timeline");
+  const titleList = document.getElementById("title-list");
+
+  const utilSortSelect = document.getElementById("util-sort-select");
+  const utilGrid = document.getElementById("util-grid");
+
+  const timelineHeader = document.getElementById("timeline-header");
+  const timelineRows = document.getElementById("timeline-rows");
+
+  const filterName = document.getElementById("filter-name");
+  const filterLocation = document.getElementById("filter-location");
+  const filterProject = document.getElementById("filter-project");
+  const searchInput = document.getElementById("search-input");
+  const listSortSelect = document.getElementById("list-sort");
+  const tripTbody = document.getElementById("trip-tbody");
+  const listCountBadge = document.getElementById("list-count-badge");
+
+  /*********************
+   *       工具函式     *
+   *********************/
+  function parseDate(str) {
+    if (!str) return null;
+    const parts = str.split(/[\/\-]/);
+    if (parts.length < 3) return null;
+    let [y, m, d] = parts;
+    if (y.length === 4) {
+      return new Date(Number(y), Number(m) - 1, Number(d));
+    } else {
+      // 若格式像 2025/3/11 或 2025-03-11
+      return new Date(Number(y), Number(m) - 1, Number(d));
+    }
+  }
+
+  function formatDate(date) {
+    if (!date) return "";
+    const y = date.getFullYear();
+    const m = date.getMonth() + 1;
+    const d = date.getDate();
+    return `${y}-${String(m).padStart(2, "0")}-${String(d).padStart(2, "0")}`;
+  }
+
+  function formatMonthDay(date) {
+    const m = date.getMonth() + 1;
+    const d = date.getDate();
+    return `${m}/${d}`;
+  }
+
+  function diffDaysInclusive(start, end) {
+    const ms = end - start;
+    return Math.floor(ms / 86400000) + 1;
+  }
+
+  // 該筆出差在指定年份內，實際涵蓋幾天（剪掉跨年的部分）
+  function getDaysInYearForRecord(record, year) {
+    if (!record.startDate || !record.endDate) return 0;
+    const yearStart = new Date(year, 0, 1);
+    const yearEnd = new Date(year, 11, 31);
+    const start = record.startDate < yearStart ? yearStart : record.startDate;
+    const end = record.endDate > yearEnd ? yearEnd : record.endDate;
+    if (end < yearStart || start > yearEnd) return 0;
+    return diffDaysInclusive(start, end);
+  }
+
+  // 判斷此筆出差是否與指定年份有交集
+  function recordIntersectsYear(record, year) {
+    if (!record.startDate || !record.endDate) return false;
+    const yearStart = new Date(year, 0, 1);
+    const yearEnd = new Date(year, 11, 31);
+    return record.startDate <= yearEnd && record.endDate >= yearStart;
+  }
+
+  function getRecordsForYear(year) {
+    return allRecords.filter((r) => recordIntersectsYear(r, year));
+  }
+
+  // 依姓名產生固定顏色（hash）
+  function colorForKey(key) {
+    let hash = 0;
+    for (let i = 0; i < key.length; i++) {
+      hash = (hash * 31 + key.charCodeAt(i)) >>> 0;
+    }
+    return MORANDI_COLORS[hash % MORANDI_COLORS.length];
+  }
+
+  // 出差利用率顏色
+  function colorForUtilization(util) {
+    if (util >= 0.8) return "#F67B45"; // A：>80%
+    if (util >= 0.6) return "#FFB88A"; // B：60–80
+    if (util >= 0.4) return "#A0C5E3"; // C：40–60
+    return "#FBC2C2"; // D：<40
+  }
+
+  /*********************
+   *     讀取 & 解析     *
+   *********************/
+  async function loadCsv() {
+    const res = await fetch(CSV_URL);
+    const text = await res.text();
+
+    // 簡單 CSV 解析（假設沒有逗號被引號包住的複雜情況）
+    const lines = text.trim().split(/\r?\n/);
+    const header = lines[0].split(",");
+    const records = [];
+
+    // 找出欄位索引
+    const idxName = header.indexOf("出差人員姓名");
+    const idxLocation = header.indexOf("目的地 / 地點");
+    const idxStart = header.indexOf("出差開始日");
+    const idxEnd = header.indexOf("出差結束日");
+    const idxDays = header.indexOf("天數");
+    const idxProject = header.indexOf("專案 / 項目名稱");
+    const idxDesc = header.indexOf("主要工作內容");
+
+    for (let i = 1; i < lines.length; i++) {
+      const row = lines[i].split(",");
+      const employeeName = row[idxName] || "";
+      const location = row[idxLocation] || "";
+      const startDate = parseDate(row[idxStart]);
+      const endDate = parseDate(row[idxEnd]);
+      const days =
+        row[idxDays] && !Number.isNaN(Number(row[idxDays]))
+          ? Number(row[idxDays])
+          : startDate && endDate
+          ? diffDaysInclusive(startDate, endDate)
+          : 0;
+      const projectName = row[idxProject] || "未填寫專案";
+      const description = row[idxDesc] || "";
+
+      if (!employeeName || !startDate || !endDate) continue;
+
+      records.push({
+        employeeName,
+        location,
+        startDate,
+        endDate,
+        days,
+        projectName,
+        description,
+      });
+    }
+
+    allRecords = records;
+
+    // 取得所有有覆蓋到的年份（考慮跨年：startYear ~ endYear）
+    const yearsSet = new Set();
+    allRecords.forEach((r) => {
+      const startY = r.startDate.getFullYear();
+      const endY = r.endDate.getFullYear();
+      for (let y = startY; y <= endY; y++) {
+        yearsSet.add(y);
+      }
+    });
+    availableYears = Array.from(yearsSet).sort((a, b) => a - b);
+
+    initControls();
+    renderAll();
+  }
+
+  /*********************
+   *   初始化 UI 控制   *
+   *********************/
+  function initControls() {
+    // 年份選單
+    yearSelect.innerHTML = "";
+    availableYears.forEach((y) => {
+      const opt = document.createElement("option");
+      opt.value = y;
+      opt.textContent = `${y} 年`;
+      yearSelect.appendChild(opt);
+    });
+    // 預設選最新一年
+    if (availableYears.length) {
+      yearSelect.value = String(availableYears[availableYears.length - 1]);
+    }
+
+    yearSelect.addEventListener("change", renderAll);
+    sortSelect.addEventListener("change", renderAll);
+    utilSortSelect.addEventListener("change", renderUtilization);
+    listSortSelect.addEventListener("change", renderList);
+    filterName.addEventListener("change", renderList);
+    filterLocation.addEventListener("change", renderList);
+    filterProject.addEventListener("change", renderList);
+    searchInput.addEventListener("input", renderList);
+
+    // 快捷按鈕 scroll
+    document.querySelectorAll(".quick-nav-btn").forEach((btn) => {
+      btn.addEventListener("click", () => {
+        const targetId = btn.dataset.target;
+        const el = document.getElementById(targetId);
+        if (el) {
+          const top =
+            el.getBoundingClientRect().top +
+            window.scrollY -
+            80; /* 預留 header 高度 */
+          window.scrollTo({ top, behavior: "smooth" });
+        }
+      });
+    });
+  }
+
+  /*********************
+   *      主渲染流程     *
+   *********************/
+  function renderAll() {
+    const year = Number(yearSelect.value);
+    currentYearLabel.textContent = `目前顯示：${year} 年統計`;
+
+    // 更新各區塊標題
+    titleStats.textContent = `${year} 年出差統計圖表`;
+    titleUtil.textContent = `${year} 年出差利用率概況`;
+    titleTimeline.textContent = `${year} 年年度出差時間軸`;
+    titleList.textContent = `${year} 年出差列表（該年度全部紀錄）`;
+
+    renderStats(year);
+    renderUtilization();
+    renderTimeline(year);
+    renderListFilters(year);
+    renderList();
+  }
+
+  /*********************
+   *   1. 統計圖表區塊   *
+   *********************/
+  function renderStats(year) {
+    const sortOrder = sortSelect.value; // asc / desc
+    const yearRecords = getRecordsForYear(year);
+
+    // ---- 各人員出差天數（剪成該年天數）----
+    const perEmployee = new Map();
+    yearRecords.forEach((r) => {
+      const daysInYear = getDaysInYearForRecord(r, year);
+      if (daysInYear <= 0) return;
+      const prev = perEmployee.get(r.employeeName) || 0;
+      perEmployee.set(r.employeeName, prev + daysInYear);
+    });
+
+    let employeeData = Array.from(perEmployee.entries()).map(
+      ([name, days]) => ({ name, days })
+    );
+    employeeData.sort((a, b) =>
+      sortOrder === "asc" ? a.days - b.days : b.days - a.days
+    );
+
+    const empLabels = employeeData.map((d) => d.name);
+    const empValues = employeeData.map((d) => d.days);
+    const empColors = employeeData.map((d) => colorForKey(d.name));
+
+    // Chart.js (員工)
+    const empCtx = document.getElementById("employee-chart").getContext("2d");
+    if (employeeChart) employeeChart.destroy();
+    employeeChart = new Chart(empCtx, {
+      type: "bar",
+      data: {
+        labels: empLabels,
+        datasets: [
+          {
+            data: empValues,
+            backgroundColor: empColors,
+            borderRadius: 12,
+            borderSkipped: false,
+          },
+        ],
+      },
+      options: {
+        indexAxis: "y",
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+          legend: { display: false },
+          tooltip: {
+            callbacks: {
+              label: (ctx) => `${ctx.parsed.x} 天`,
+            },
+          },
+          datalabels: false,
+        },
+        scales: {
+          x: {
+            beginAtZero: true,
+            ticks: { stepSize: 10 },
+            grid: { color: "#eef5f2" },
+          },
+          y: {
+            grid: { display: false },
+            ticks: { font: { size: 11 } },
+          },
+        },
+      },
+    });
+
+    // ---- 各專案出差天數（剪成該年天數）----
+    const perProject = new Map();
+    yearRecords.forEach((r) => {
+      const daysInYear = getDaysInYearForRecord(r, year);
+      if (daysInYear <= 0) return;
+      const name = r.projectName || "未填寫專案";
+      const prev = perProject.get(name) || 0;
+      perProject.set(name, prev + daysInYear);
+    });
+
+    let projectData = Array.from(perProject.entries()).map(
+      ([name, days]) => ({ name, days })
+    );
+    projectData.sort((a, b) =>
+      sortOrder === "asc" ? a.days - b.days : b.days - a.days
+    );
+
+    const projLabels = projectData.map((d) => d.name);
+    const projValues = projectData.map((d) => d.days);
+    const projColors = projectData.map((d) => colorForKey(d.name));
+
+    const projCtx = document.getElementById("project-chart").getContext("2d");
+    if (projectChart) projectChart.destroy();
+    projectChart = new Chart(projCtx, {
+      type: "bar",
+      data: {
+        labels: projLabels,
+        datasets: [
+          {
+            data: projValues,
+            backgroundColor: projColors,
+            borderRadius: 12,
+            borderSkipped: false,
+          },
+        ],
+      },
+      options: {
+        indexAxis: "y",
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+          legend: { display: false },
+          tooltip: {
+            callbacks: { label: (ctx) => `${ctx.parsed.x} 天` },
+          },
+        },
+        scales: {
+          x: {
+            beginAtZero: true,
+            grid: { color: "#eef5f2" },
+          },
+          y: {
+            grid: { display: false },
+            ticks: { font: { size: 11 } },
+          },
+        },
+      },
+    });
+  }
+
+  /*********************
+   *   2. 利用率概況區塊 *
+   *********************/
+  function renderUtilization() {
+    const year = Number(yearSelect.value);
+    const sortOrder = utilSortSelect.value;
+    const yearRecords = getRecordsForYear(year);
+
+    const perEmployee = new Map();
+    yearRecords.forEach((r) => {
+      const daysInYear = getDaysInYearForRecord(r, year);
+      if (daysInYear <= 0) return;
+      const prev = perEmployee.get(r.employeeName) || 0;
+      perEmployee.set(r.employeeName, prev + daysInYear);
+    });
+
+    let list = Array.from(perEmployee.entries()).map(([name, days]) => {
+      const util = days / WORKING_DAYS_PER_YEAR;
+      return { name, days, util };
+    });
+
+    list.sort((a, b) =>
+      sortOrder === "asc" ? a.days - b.days : b.days - a.days
+    );
+
+    utilGrid.innerHTML = "";
+    list.forEach((item) => {
+      const card = document.createElement("div");
+      card.className = "util-card";
+
+      const color = colorForUtilization(item.util);
+
+      card.innerHTML = `
+        <div class="util-name">${item.name}</div>
+        <div class="util-percent" style="color:${color};">
+          ${(item.util * 100).toFixed(1)}%
+        </div>
+        <div class="util-meta">
+          出差天數：${item.days} 天 / 年工作天數：${WORKING_DAYS_PER_YEAR} 天
+        </div>
+        <div class="util-bar-bg">
+          <div class="util-bar-fill" style="width:${
+            Math.min(item.util, 1) * 100
+          }%; background:${color};"></div>
+        </div>
+      `;
+
+      utilGrid.appendChild(card);
+    });
+  }
+
+  /*********************
+   *   3. 年度時間軸區塊 *
+   *********************/
+  function renderTimeline(year) {
+    const records = getRecordsForYear(year);
+
+    // header 1~12 月
+    const months = [];
+    months.push(`<div>人員 / 月份</div>`);
+    for (let m = 1; m <= 12; m++) {
+      months.push(`<div>${m} 月</div>`);
+    }
+    timelineHeader.innerHTML = months.join("");
+
+    // 依人員分組
+    const byEmployee = new Map();
+    records.forEach((r) => {
+      if (!byEmployee.has(r.employeeName)) {
+        byEmployee.set(r.employeeName, []);
+      }
+      byEmployee.get(r.employeeName).push(r);
+    });
+
+    const yearStart = new Date(year, 0, 1);
+    const yearEnd = new Date(year, 11, 31);
+    const totalDays = diffDaysInclusive(yearStart, yearEnd);
+
+    timelineRows.innerHTML = "";
+
+    Array.from(byEmployee.keys())
+      .sort()
+      .forEach((name) => {
+        const rowEl = document.createElement("div");
+        rowEl.className = "timeline-row";
+
+        const nameDiv = document.createElement("div");
+        nameDiv.className = "timeline-name";
+        nameDiv.textContent = name;
+        rowEl.appendChild(nameDiv);
+
+        const trackDiv = document.createElement("div");
+        trackDiv.className = "timeline-bar-track";
+
+        const recs = byEmployee.get(name);
+        recs.forEach((r) => {
+          // 剪出該年內的區間
+          const segStart =
+            r.startDate < yearStart ? new Date(yearStart) : new Date(r.startDate);
+          const segEnd =
+            r.endDate > yearEnd ? new Date(yearEnd) : new Date(r.endDate);
+
+          if (segEnd < yearStart || segStart > yearEnd) return;
+
+          const daysFromYearStart = diffDaysInclusive(yearStart, segStart) - 1;
+          const segDays = diffDaysInclusive(segStart, segEnd);
+
+          const startPct = (daysFromYearStart / totalDays) * 100;
+          const widthPct = (segDays / totalDays) * 100;
+
+          // 狀態顏色
+          let statusClass = "done";
+          if (segEnd < today) statusClass = "done";
+          else if (segStart > today) statusClass = "upcoming";
+          else statusClass = "ongoing";
+
+          const bar = document.createElement("div");
+          bar.className = `timeline-bar ${statusClass}`;
+          bar.style.left = `${startPct}%`;
+          bar.style.width = `${widthPct}%`;
+          bar.textContent = `${formatMonthDay(segStart)}~${formatMonthDay(
+            segEnd
+          )}・${segDays}天`;
+
+          trackDiv.appendChild(bar);
+        });
+
+        rowEl.appendChild(trackDiv);
+        timelineRows.appendChild(rowEl);
+      });
+  }
+
+  /*********************
+   *   4. 出差列表區塊   *
+   *********************/
+  function renderListFilters(year) {
+    const records = getRecordsForYear(year);
+
+    const names = new Set();
+    const locations = new Set();
+    const projects = new Set();
+
+    records.forEach((r) => {
+      names.add(r.employeeName);
+      if (r.location) locations.add(r.location);
+      if (r.projectName) projects.add(r.projectName);
+    });
+
+    function fillSelect(selectEl, values) {
+      const current = selectEl.value;
+      selectEl.innerHTML = "";
+      const optAll = document.createElement("option");
+      optAll.value = "all";
+      optAll.textContent = "全部";
+      selectEl.appendChild(optAll);
+      Array.from(values)
+        .sort()
+        .forEach((v) => {
+          const opt = document.createElement("option");
+          opt.value = v;
+          opt.textContent = v;
+          selectEl.appendChild(opt);
+        });
+      // 若舊值還存在就保留
+      if ([...values, "all"].includes(current)) {
+        selectEl.value = current;
+      }
+    }
+
+    fillSelect(filterName, names);
+    fillSelect(filterLocation, locations);
+    fillSelect(filterProject, projects);
+  }
+
+  function renderList() {
+    const year = Number(yearSelect.value);
+    const records = getRecordsForYear(year);
+
+    const nameFilter = filterName.value;
+    const locFilter = filterLocation.value;
+    const projFilter = filterProject.value;
+    const keyword = searchInput.value.trim().toLowerCase();
+    const sortOrder = listSortSelect.value;
+
+    let filtered = records.filter((r) => {
+      if (nameFilter !== "all" && r.employeeName !== nameFilter) return false;
+      if (locFilter !== "all" && r.location !== locFilter) return false;
+      if (projFilter !== "all" && r.projectName !== projFilter) return false;
+
+      if (keyword) {
+        const text =
+          `${r.employeeName} ${r.location} ${r.projectName} ${r.description}`.toLowerCase();
+        if (!text.includes(keyword)) return false;
+      }
+      return true;
+    });
+
+    filtered.sort((a, b) => {
+      if (sortOrder === "asc") return a.startDate - b.startDate;
+      return b.startDate - a.startDate;
+    });
+
+    listCountBadge.textContent = `${filtered.length} 筆`;
+    tripTbody.innerHTML = "";
+
+    filtered.forEach((r) => {
+      const tr = document.createElement("tr");
+      const bgColor = colorForKey(r.employeeName) + "22"; // 同名用同色，把透明度壓低
+
+      tr.style.backgroundColor = bgColor;
+
+      tr.innerHTML = `
+        <td>${r.employeeName}</td>
+        <td>${r.location || "-"}</td>
+        <td>${formatDate(r.startDate)}</td>
+        <td>${formatDate(r.endDate)}</td>
+        <td>${r.days}</td>
+        <td>${r.projectName || "-"}</td>
+        <td>${r.description || "-"}</td>
+      `;
+      tripTbody.appendChild(tr);
+    });
+  }
+
+  // 啟動
+  loadCsv().catch((err) => {
+    console.error(err);
+    alert("載入 CSV 發生錯誤，請打開 F12 Console 查看詳細訊息。");
+  });
+</script>
+</body>
+</html>
