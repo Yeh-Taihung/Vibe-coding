@@ -1,0 +1,918 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="UTF-8" />
+  <title>產品工程部出差統計看板 | Vibe Coding</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+  <style>
+    /* --------- 全域變數與重置 --------- */
+    :root {
+      --bg-body: #f3f5f4;
+      --bg-card: #ffffff;
+      --text-main: #22302c;
+      --text-muted: #7d8c86;
+      --border-color: #dde5df;
+      --accent-primary: #8ba47c;
+      --shadow-card: 0 4px 16px rgba(128, 143, 140, 0.08);
+      --brand-gradient: linear-gradient(135deg, #b4cfa4, #81b2d9);
+    }
+
+    [data-theme="dark"] {
+      --bg-body: #1a1d1c;
+      --bg-card: #242826;
+      --text-main: #e0e6e3;
+      --text-muted: #8fa099;
+      --border-color: #353d39;
+      --shadow-card: 0 4px 16px rgba(0, 0, 0, 0.3);
+    }
+
+    * { box-sizing: border-box; }
+    
+    body {
+      margin: 0;
+      font-family: 'Inter', system-ui, sans-serif;
+      background: var(--bg-body);
+      color: var(--text-main);
+      transition: background 0.3s ease, color 0.3s ease;
+    }
+
+    /* --------- Header & Nav --------- */
+    .page-header {
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      background: var(--bg-body);
+      backdrop-filter: blur(10px);
+      border-bottom: 1px solid var(--border-color);
+      padding-bottom: 12px;
+    }
+
+    .page-header-inner {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 16px 20px 0;
+    }
+
+    .brand-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 12px;
+    }
+
+    .logo-area {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .logo-img {
+      height: 40px;
+      width: auto;
+    }
+
+    .page-desc {
+      font-size: 13px;
+      color: var(--text-muted);
+      margin: 0;
+    }
+
+    .theme-toggle {
+      background: transparent;
+      border: 1px solid var(--border-color);
+      color: var(--text-main);
+      padding: 6px 12px;
+      border-radius: 20px;
+      cursor: pointer;
+      font-size: 12px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      transition: all 0.2s;
+    }
+    .theme-toggle:hover {
+      background: var(--border-color);
+    }
+
+    .nav-pills {
+      display: flex;
+      gap: 8px;
+      overflow-x: auto;
+      padding-bottom: 4px;
+    }
+
+    .nav-btn {
+      padding: 6px 14px;
+      border-radius: 20px;
+      border: 1px solid transparent;
+      background: var(--bg-card);
+      color: var(--text-main);
+      font-size: 13px;
+      cursor: pointer;
+      white-space: nowrap;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+      transition: 0.2s;
+    }
+    .nav-btn:hover {
+      border-color: #81b2d9;
+      color: #81b2d9;
+      transform: translateY(-1px);
+    }
+
+    /* --------- Main Layout --------- */
+    .container {
+      max-width: 1200px;
+      margin: 20px auto 60px;
+      padding: 0 20px;
+    }
+
+    .card {
+      background: var(--bg-card);
+      border-radius: 16px;
+      padding: 20px;
+      margin-bottom: 20px;
+      box-shadow: var(--shadow-card);
+      border: 1px solid var(--border-color);
+    }
+
+    .card-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 6px;
+      flex-wrap: wrap;
+      gap: 10px;
+    }
+
+    .card-title {
+      font-size: 18px;
+      font-weight: 700;
+      color: var(--text-main);
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .card-subtitle {
+      font-size: 13px;
+      color: var(--text-muted);
+      margin-bottom: 16px;
+      line-height: 1.5;
+    }
+
+    /* --------- Controls --------- */
+    .controls {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 16px;
+      font-size: 14px;
+    }
+    select, input {
+      padding: 6px 10px;
+      border-radius: 8px;
+      border: 1px solid var(--border-color);
+      background: var(--bg-card);
+      color: var(--text-main);
+      font-family: inherit;
+    }
+
+    /* --------- Charts --------- */
+    
+    /* 1. 直條圖容器 (固定高度) */
+    .chart-container-vertical {
+      position: relative;
+      width: 100%;
+      height: 400px; 
+      margin-top: 10px;
+    }
+    
+    /* 2. 橫條圖容器 (動態高度，預設 min-height) */
+    .chart-container-horizontal {
+      position: relative;
+      width: 100%;
+      min-height: 200px; /* JS 會覆寫這個高度 */
+      margin-top: 10px;
+    }
+    
+    .chart-wrapper-scrollable {
+      max-height: 600px;
+      overflow-y: auto;
+      border: 1px solid var(--border-color);
+      border-radius: 12px;
+      padding: 10px;
+      background: linear-gradient(to bottom, var(--bg-card), var(--bg-body));
+    }
+    
+    .chart-wrapper-base {
+      border: 1px solid var(--border-color);
+      border-radius: 12px;
+      padding: 10px;
+      background: linear-gradient(to bottom, var(--bg-card), var(--bg-body));
+    }
+
+    /* --------- Utilization Cards --------- */
+    .util-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+      gap: 12px;
+    }
+    .util-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border-color);
+      border-radius: 12px;
+      padding: 16px;
+      position: relative;
+      overflow: hidden;
+    }
+    .util-level-tag {
+      position: absolute;
+      top: 12px;
+      right: 12px;
+      font-size: 10px;
+      padding: 2px 8px;
+      border-radius: 10px;
+      font-weight: 600;
+    }
+    .util-val { font-size: 24px; font-weight: 700; margin: 4px 0; }
+    .util-desc { font-size: 11px; color: var(--text-muted); margin-bottom: 8px; }
+    .util-bar {
+      height: 6px; background: var(--border-color); border-radius: 3px; overflow: hidden;
+    }
+    .util-bar-fill { height: 100%; border-radius: 3px; }
+
+    /* --------- Timeline (Reverted to Tooltip Mode) --------- */
+    .timeline-wrapper {
+      width: 100%;
+      overflow-x: auto;
+      border: 1px solid var(--border-color);
+      border-radius: 12px;
+      background: var(--bg-card);
+    }
+
+    .timeline-grid-layout {
+      display: grid;
+      grid-template-columns: 100px repeat(12, 1fr); 
+      min-width: 800px;
+    }
+
+    .timeline-header {
+      border-bottom: 1px solid var(--border-color);
+      background: rgba(180, 207, 164, 0.1);
+      font-size: 12px;
+      color: var(--text-muted);
+      font-weight: 600;
+    }
+
+    .timeline-header-cell {
+      padding: 10px 4px;
+      text-align: center;
+      border-right: 1px dashed var(--border-color);
+    }
+    .timeline-header-cell:first-child { text-align: right; padding-right: 10px; }
+    .timeline-header-cell:last-child { border-right: none; }
+
+    .timeline-row {
+      border-bottom: 1px solid var(--border-color);
+      position: relative;
+      height: 44px; /* 高度調回緊湊型 */
+      align-items: center;
+    }
+    .timeline-row:last-child { border-bottom: none; }
+
+    .timeline-name-col {
+      padding: 0 10px;
+      display: flex;
+      align-items: center;
+      justify-content: flex-end;
+      font-size: 13px;
+      font-weight: 500;
+      color: var(--text-main);
+      border-right: 1px solid var(--border-color);
+      background: var(--bg-card);
+      z-index: 2;
+    }
+
+    .timeline-bars-container {
+      grid-column: 2 / span 12; 
+      position: relative;
+      height: 100%;
+    }
+
+    .grid-lines {
+      position: absolute;
+      inset: 0;
+      display: grid;
+      grid-template-columns: repeat(12, 1fr);
+      pointer-events: none;
+      z-index: 0;
+    }
+    .grid-line {
+      border-right: 1px dashed var(--border-color);
+      height: 100%;
+    }
+
+    .timeline-item {
+      position: absolute;
+      top: 10px;
+      bottom: 10px;
+      border-radius: 4px;
+      display: block; 
+      /* 恢復原始設定：隱藏超出內容，滑鼠移上去才顯示 */
+      overflow: hidden; 
+      box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+      z-index: 1;
+      opacity: 0.9;
+      transition: all 0.2s;
+      cursor: help; /* 提示可 Hover */
+    }
+    .timeline-item:hover {
+      transform: scaleY(1.15);
+      z-index: 10;
+      opacity: 1;
+      box-shadow: 0 4px 8px rgba(0,0,0,0.15);
+    }
+    
+    /* 移除之前的 .timeline-label 相關樣式，改用 Tooltip */
+
+    .status-done { background: #8ba47c; }
+    .status-active { background: #f4d35e; }
+    .status-future { background: #fbc2c2; }
+
+    /* --------- Table & Filters --------- */
+    .table-header-actions {
+      flex-grow: 1;
+      display: flex;
+      gap: 10px;
+      align-items: center;
+      justify-content: flex-end;
+      flex-wrap: wrap;
+    }
+
+    .filter-group {
+      display: flex;
+      gap: 8px;
+    }
+    
+    .filter-select {
+      padding: 6px 24px 6px 10px; /* 右側留空間給箭頭 */
+      border-radius: 8px;
+      border: 1px solid var(--border-color);
+      background-color: var(--bg-body);
+      color: var(--text-main);
+      font-size: 13px;
+      cursor: pointer;
+      appearance: none;
+      background-image: url("data:image/svg+xml;charset=US-ASCII,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%22292.4%22%20height%3D%22292.4%22%3E%3Cpath%20fill%3D%22%237d8c86%22%20d%3D%22M287%2069.4a17.6%2017.6%200%200%200-13-5.4H18.4c-5%200-9.3%201.8-12.9%205.4A17.6%2017.6%200%200%200%200%2082.2c0%205%201.8%209.3%205.4%2012.9l128%20127.9c3.6%203.6%207.8%205.4%2012.8%205.4s9.2-1.8%2012.8-5.4L287%2095c3.5-3.5%205.4-7.8%205.4-12.8%200-5-1.9-9.2-5.5-12.8z%22%2F%3E%3C%2Fsvg%3E");
+      background-repeat: no-repeat;
+      background-position: right 8px center;
+      background-size: 8px auto;
+    }
+
+    .table-container {
+      overflow-x: auto;
+      border: 1px solid var(--border-color);
+      border-radius: 12px;
+    }
+    table { width: 100%; border-collapse: collapse; font-size: 13px; }
+    th { background: rgba(0,0,0,0.02); text-align: left; padding: 12px; color: var(--text-muted); }
+    td { padding: 10px 12px; border-top: 1px solid var(--border-color); }
+    tr:hover td { background: rgba(0,0,0,0.02); }
+
+    .highlight-num { font-weight: 700; color: var(--accent-primary); }
+    
+    /* RWD */
+    @media (max-width: 768px) {
+      .timeline-grid-layout { min-width: 600px; }
+      .nav-pills { padding-bottom: 8px; }
+      .brand-row { flex-direction: column; align-items: flex-start; gap: 10px; }
+      .theme-toggle { position: absolute; top: 16px; right: 20px; }
+      .card-header { flex-direction: column; align-items: flex-start; }
+      .table-header-actions { justify-content: flex-start; width: 100%; }
+      .filter-group { width: 100%; display: flex; gap: 8px; }
+      .filter-select { flex: 1; }
+      #searchInput { width: 100% !important; margin-top: 4px; }
+    }
+  </style>
+</head>
+<body>
+
+  <header class="page-header">
+    <div class="page-header-inner">
+      <div class="brand-row">
+        <div class="logo-area">
+          <img src="./icons/logo.png" alt="寶新 Logo" class="logo-img">
+          <div style="font-size: 18px; font-weight:700;">產品工程部出差統計看板</div>
+        </div>
+        <button class="theme-toggle" id="themeBtn">
+          <span>◐</span> 切換模式
+        </button>
+      </div>
+      <p class="page-desc">整合 Google 表單資料，即時視覺化年度出差分佈與人力負載。</p>
+      
+      <div class="nav-pills" style="margin-top: 12px;">
+        <button class="nav-btn" onclick="scrollToId('section-stats')">📊 統計圖表</button>
+        <button class="nav-btn" onclick="scrollToId('section-util')">🍰 利用率</button>
+        <button class="nav-btn" onclick="scrollToId('section-timeline')">📅 時間軸</button>
+        <button class="nav-btn" onclick="scrollToId('section-list')">📝 詳細列表</button>
+      </div>
+    </div>
+  </header>
+
+  <main class="container">
+    
+    <div class="controls">
+      <label>
+        選擇年份：
+        <select id="yearSelect"></select>
+      </label>
+      <span style="color: var(--text-muted); font-size: 12px;">(資料來源：Google 試算表 CSV)</span>
+    </div>
+
+    <section id="section-stats" class="card">
+      <div class="card-header">
+        <div class="card-title">出差天數統計</div>
+      </div>
+      <div class="card-subtitle">依人員與專案統計該年度累積出差總天數。</div>
+
+      <div style="font-weight:600; font-size:14px; margin-bottom:8px;">1. 依人員統計 (直條圖)</div>
+      <div class="chart-wrapper-base">
+        <div class="chart-container-vertical">
+          <canvas id="peopleChart"></canvas>
+        </div>
+      </div>
+      
+      <div style="margin-top:20px; font-weight:600; font-size:14px; margin-bottom:8px;">2. 依專案/項目統計 (橫條圖)</div>
+      <div class="chart-wrapper-scrollable">
+        <div class="chart-container-horizontal" id="projectChartContainer">
+          <canvas id="projectChart"></canvas>
+        </div>
+      </div>
+    </section>
+
+    <section id="section-util" class="card">
+      <div class="card-header">
+        <div class="card-title">出差利用率 (人力負載)</div>
+        <div style="font-size:12px; color:var(--text-muted);">基準：<span class="highlight-num">240天</span>/年</div>
+      </div>
+      <div class="card-subtitle" style="line-height: 1.6;">
+        <span style="color:#8ba47c; font-weight:600;">A級 ≥80%</span>：高利用 (需留意疲勞與輪替)<br>
+        <span style="color:#f4d35e; font-weight:600;">B級 60-80%</span>：出差主力 (穩定支援)<br>
+        <span style="color:#ffb88a; font-weight:600;">C級 40-60%</span>：均衡型 (可視情況調整)<br>
+        <span style="color:#e39b99; font-weight:600;">D級 <40%</span>：機動支援 (可增加安排)
+      </div>
+      <div id="utilGrid" class="util-grid">
+        </div>
+    </section>
+
+    <section id="section-timeline" class="card">
+      <div class="card-header">
+        <div class="card-title">年度出差時間軸</div>
+      </div>
+      <div class="card-subtitle">
+        <span style="color:#8ba47c">● 已完成</span> &nbsp; 
+        <span style="color:#f4d35e">● 進行中</span> &nbsp; 
+        <span style="color:#fbc2c2">● 未來計畫</span>
+        <span style="margin-left:12px; color:var(--text-muted); font-size:12px;">(滑鼠懸停於區塊可查看詳細日期)</span>
+      </div>
+
+      <div class="timeline-wrapper">
+        <div class="timeline-grid-layout timeline-header">
+          <div class="timeline-header-cell">人員</div>
+          <div class="timeline-header-cell">1月</div><div class="timeline-header-cell">2月</div>
+          <div class="timeline-header-cell">3月</div><div class="timeline-header-cell">4月</div>
+          <div class="timeline-header-cell">5月</div><div class="timeline-header-cell">6月</div>
+          <div class="timeline-header-cell">7月</div><div class="timeline-header-cell">8月</div>
+          <div class="timeline-header-cell">9月</div><div class="timeline-header-cell">10月</div>
+          <div class="timeline-header-cell">11月</div><div class="timeline-header-cell">12月</div>
+        </div>
+        <div id="timelineBody" class="timeline-body"></div>
+      </div>
+    </section>
+
+    <section id="section-list" class="card">
+      <div class="card-header">
+        <div class="card-title">詳細資料列表</div>
+        <div class="table-header-actions">
+          <div class="filter-group">
+            <select id="filterName" class="filter-select">
+              <option value="">全部人員</option>
+            </select>
+            <select id="filterLocation" class="filter-select">
+              <option value="">全部地點</option>
+            </select>
+          </div>
+          <input type="text" id="searchInput" placeholder="搜尋專案關鍵字..." style="width:200px;">
+        </div>
+      </div>
+      <div class="table-container">
+        <table>
+          <thead>
+            <tr>
+              <th>姓名</th>
+              <th>地點</th>
+              <th>日期區間</th>
+              <th>天數</th>
+              <th>專案內容</th>
+            </tr>
+          </thead>
+          <tbody id="tableBody"></tbody>
+        </table>
+      </div>
+    </section>
+
+  </main>
+
+  <script>
+    /* =========================================
+       1. Configuration & Data Parsing
+       ========================================= */
+    const CSV_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vQI-ac_9JPcK5zQSCPT6xS1YYWUAv7n8-isJ_TrHuFSHGAK4I7d0EG8ZofBK36dvd9e4HM5FZCbVCr1/pub?output=csv";
+    const MORANDI_COLORS = ["#b4cfa4", "#81b2d9", "#f4d35e", "#ffb88a", "#e39b99", "#a0c5e3", "#d3b8e1"];
+    
+    let allRecords = [];
+    let currentYear = new Date().getFullYear();
+    let chartInstances = {}; 
+
+    document.addEventListener("DOMContentLoaded", async () => {
+      await fetchData();
+      setupEvents();
+      setupTheme();
+    });
+
+    async function fetchData() {
+      try {
+        const res = await fetch(CSV_URL);
+        const text = await res.text();
+        allRecords = parseCsv(text);
+        
+        const years = [...new Set(allRecords.map(r => r.year))].sort((a,b)=>b-a);
+        const sel = document.getElementById("yearSelect");
+        if(years.length > 0) currentYear = years[0]; 
+        
+        years.forEach(y => {
+          const opt = document.createElement("option");
+          opt.value = y;
+          opt.textContent = y;
+          sel.appendChild(opt);
+        });
+
+        renderAll(currentYear);
+
+      } catch (err) {
+        console.error("Data Load Error:", err);
+        alert("無法讀取 CSV 資料，請檢查網路或連結。");
+      }
+    }
+
+    function parseCsv(csvText) {
+      const lines = csvText.trim().split(/\r?\n/);
+      const data = [];
+      for(let i=1; i<lines.length; i++) {
+        const cols = lines[i].split(','); 
+        if(cols.length < 5) continue;
+        const name = cols[1];
+        const start = new Date(cols[3]);
+        const end = new Date(cols[4]);
+        const project = cols[5] || "未分類";
+        if(isNaN(start) || isNaN(end)) continue;
+        let curr = new Date(start);
+        while(curr <= end) {
+          const y = curr.getFullYear();
+          const yearEnd = new Date(y, 11, 31);
+          const segmentEnd = yearEnd < end ? yearEnd : end;
+          const days = Math.floor((segmentEnd - curr)/(86400000)) + 1;
+          data.push({
+            name: name,
+            location: cols[2],
+            startDate: new Date(curr),
+            endDate: new Date(segmentEnd),
+            year: y,
+            days: days,
+            project: project,
+            fullStartStr: cols[3],
+            fullEndStr: cols[4]
+          });
+          curr = new Date(y + 1, 0, 1);
+        }
+      }
+      return data;
+    }
+
+    function renderAll(year) {
+      const yearData = allRecords.filter(r => r.year == year);
+      renderCharts(yearData);
+      renderUtil(yearData);
+      renderTimeline(yearData, year);
+      renderDropdownFilters(yearData); // 渲染下拉選單選項
+      renderTable(yearData);
+    }
+
+    /* =========================================
+       2. Charts (Mixed: Vertical & Horizontal)
+       ========================================= */
+    function renderCharts(data) {
+      const peopleMap = {};
+      const projectMap = {};
+      data.forEach(d => {
+        peopleMap[d.name] = (peopleMap[d.name] || 0) + d.days;
+        projectMap[d.project] = (projectMap[d.project] || 0) + d.days;
+      });
+
+      // 1. 人員：直條圖 (Vertical)
+      drawVerticalChart('peopleChart', peopleMap, "人員出差天數");
+      
+      // 2. 專案：橫條圖 (Horizontal) + 動態高度
+      drawHorizontalChart('projectChart', 'projectChartContainer', projectMap, "專案投入天數");
+    }
+
+    function drawVerticalChart(canvasId, dataMap, label) {
+      const ctx = document.getElementById(canvasId).getContext('2d');
+      const sorted = Object.entries(dataMap).sort((a,b) => b[1] - a[1]);
+      
+      if (chartInstances[canvasId]) chartInstances[canvasId].destroy();
+
+      chartInstances[canvasId] = new Chart(ctx, {
+        type: 'bar',
+        data: {
+          labels: sorted.map(k => k[0]),
+          datasets: [{
+            label: label,
+            data: sorted.map(v => v[1]),
+            backgroundColor: sorted.map((_, i) => MORANDI_COLORS[i % MORANDI_COLORS.length]),
+            borderRadius: 4,
+            maxBarThickness: 50
+          }]
+        },
+        options: {
+          indexAxis: 'x', // 直條
+          maintainAspectRatio: false,
+          responsive: true,
+          plugins: { legend: { display: false } },
+          scales: {
+            y: { beginAtZero: true },
+            x: { grid: { display: false } }
+          }
+        }
+      });
+    }
+
+    function drawHorizontalChart(canvasId, containerId, dataMap, label) {
+      const ctx = document.getElementById(canvasId).getContext('2d');
+      const sorted = Object.entries(dataMap).sort((a,b) => b[1] - a[1]);
+      const labels = sorted.map(k => k[0]);
+      
+      // 計算動態高度：每個 Bar 給予 40px，加上一些緩衝
+      const container = document.getElementById(containerId);
+      const dynamicHeight = Math.max(200, labels.length * 40 + 50);
+      container.style.height = `${dynamicHeight}px`;
+
+      if (chartInstances[canvasId]) chartInstances[canvasId].destroy();
+
+      chartInstances[canvasId] = new Chart(ctx, {
+        type: 'bar',
+        data: {
+          labels: labels,
+          datasets: [{
+            label: label,
+            data: sorted.map(v => v[1]),
+            backgroundColor: sorted.map((_, i) => MORANDI_COLORS[i % MORANDI_COLORS.length]),
+            borderRadius: 4,
+            maxBarThickness: 30
+          }]
+        },
+        options: {
+          indexAxis: 'y', // 橫條
+          maintainAspectRatio: false,
+          responsive: true,
+          plugins: { legend: { display: false } },
+          scales: {
+            x: { beginAtZero: true },
+            y: { grid: { display: false } }
+          }
+        }
+      });
+    }
+
+    /* =========================================
+       3. Utilization
+       ========================================= */
+    function renderUtil(data) {
+      const container = document.getElementById('utilGrid');
+      container.innerHTML = "";
+      const peopleMap = {};
+      data.forEach(d => peopleMap[d.name] = (peopleMap[d.name] || 0) + d.days);
+
+      Object.entries(peopleMap)
+        .sort((a,b) => b[1] - a[1])
+        .forEach(([name, days]) => {
+          const rate = Math.round((days / 240) * 100);
+          let level = "D";
+          let color = "#e39b99";
+          let desc = "機動支援，可增加安排";
+
+          if (rate >= 80) { 
+            level="A"; color="#8ba47c"; desc = "高利用，需留意疲勞";
+          } else if (rate >= 60) { 
+            level="B"; color="#f4d35e"; desc = "出差主力，穩定支援";
+          } else if (rate >= 40) { 
+            level="C"; color="#ffb88a"; desc = "均衡型，可視情況調整";
+          }
+
+          const html = `
+            <div class="util-card">
+              <span class="util-level-tag" style="background:${color}33; color:${color}">等級 ${level}</span>
+              <div style="font-weight:600; color:var(--text-muted)">${name}</div>
+              <div class="util-val" style="color:${color}">${rate}%</div>
+              <div class="util-desc">${desc}</div>
+              <div style="font-size:12px; color:var(--text-muted); margin-bottom:6px;">累積 ${days} 天</div>
+              <div class="util-bar">
+                <div class="util-bar-fill" style="width:${Math.min(rate,100)}%; background:${color}"></div>
+              </div>
+            </div>
+          `;
+          container.insertAdjacentHTML('beforeend', html);
+        });
+    }
+
+    /* =========================================
+       4. Timeline (Simplified for Clarity)
+       ========================================= */
+    function renderTimeline(data, year) {
+      const body = document.getElementById('timelineBody');
+      body.innerHTML = "";
+      const groups = {};
+      data.forEach(d => {
+        if(!groups[d.name]) groups[d.name] = [];
+        groups[d.name].push(d);
+      });
+      const sortedNames = Object.keys(groups).sort();
+      const today = new Date();
+
+      sortedNames.forEach(name => {
+        const row = document.createElement('div');
+        row.className = "timeline-grid-layout timeline-row";
+        const nameCol = document.createElement('div');
+        nameCol.className = "timeline-name-col";
+        nameCol.textContent = name;
+        row.appendChild(nameCol);
+        
+        const barsContainer = document.createElement('div');
+        barsContainer.className = "timeline-bars-container";
+        const gridLines = document.createElement('div');
+        gridLines.className = "grid-lines";
+        for(let i=0; i<12; i++) {
+          const line = document.createElement('div');
+          line.className = "grid-line";
+          gridLines.appendChild(line);
+        }
+        barsContainer.appendChild(gridLines);
+
+        groups[name].forEach(trip => {
+          const startDay = getDayOfYear(trip.startDate);
+          const endDay = getDayOfYear(trip.endDate);
+          const totalDays = isLeap(year) ? 366 : 365;
+          const leftPct = ((startDay - 1) / totalDays) * 100;
+          const widthPct = ((endDay - startDay + 1) / totalDays) * 100;
+
+          const bar = document.createElement('div');
+          bar.className = "timeline-item";
+          let statusClass = "status-future";
+          if (trip.endDate < today) statusClass = "status-done";
+          else if (trip.startDate <= today && trip.endDate >= today) statusClass = "status-active";
+          bar.classList.add(statusClass);
+          bar.style.left = `${leftPct}%`;
+          bar.style.width = `${Math.max(widthPct, 0.5)}%`; 
+          
+          // Tooltip: 滑鼠移上去顯示詳細資訊 (解決文字重疊問題的最佳解法)
+          bar.title = `${trip.project}\n地點: ${trip.location}\n日期: ${trip.startDate.getMonth()+1}/${trip.startDate.getDate()} - ${trip.endDate.getMonth()+1}/${trip.endDate.getDate()} (${trip.days}天)`;
+
+          barsContainer.appendChild(bar);
+        });
+        row.appendChild(barsContainer);
+        body.appendChild(row);
+      });
+    }
+
+    function getDayOfYear(date) {
+      const start = new Date(date.getFullYear(), 0, 0);
+      const diff = date - start;
+      const oneDay = 1000 * 60 * 60 * 24;
+      return Math.floor(diff / oneDay);
+    }
+    function isLeap(year) {
+      return (year % 4 === 0 && year % 100 !== 0) || (year % 400 === 0);
+    }
+
+    /* =========================================
+       5. Table & Filters (Dropdowns)
+       ========================================= */
+    
+    // 渲染下拉選單的選項
+    function renderDropdownFilters(data) {
+      const nameSelect = document.getElementById('filterName');
+      const locSelect = document.getElementById('filterLocation');
+      
+      // 清空舊選項，保留第一項「全部」
+      nameSelect.innerHTML = '<option value="">全部人員</option>';
+      locSelect.innerHTML = '<option value="">全部地點</option>';
+
+      const uniqueNames = [...new Set(data.map(d => d.name))].filter(Boolean).sort();
+      const uniqueLocations = [...new Set(data.map(d => d.location))].filter(Boolean).sort();
+
+      uniqueNames.forEach(n => {
+        const opt = document.createElement('option');
+        opt.value = n;
+        opt.textContent = n;
+        nameSelect.appendChild(opt);
+      });
+
+      uniqueLocations.forEach(l => {
+        const opt = document.createElement('option');
+        opt.value = l;
+        opt.textContent = l;
+        locSelect.appendChild(opt);
+      });
+    }
+
+    // 整合所有篩選條件的 renderTable
+    function renderTable(data) {
+      const tbody = document.getElementById('tableBody');
+      const nameVal = document.getElementById('filterName').value;
+      const locVal = document.getElementById('filterLocation').value;
+      const searchVal = document.getElementById('searchInput').value.toLowerCase();
+
+      tbody.innerHTML = "";
+      
+      // 多重篩選邏輯
+      const filtered = data.filter(d => {
+        const matchName = nameVal === "" || d.name === nameVal;
+        const matchLoc = locVal === "" || d.location === locVal;
+        const matchSearch = searchVal === "" || 
+          d.project.toLowerCase().includes(searchVal) ||
+          d.location.toLowerCase().includes(searchVal) || 
+          d.name.toLowerCase().includes(searchVal);
+        
+        return matchName && matchLoc && matchSearch;
+      });
+
+      const sorted = filtered.sort((a,b) => a.startDate - b.startDate);
+      
+      if(sorted.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="5" style="text-align:center; padding:20px; color:var(--text-muted);">無符合資料</td></tr>';
+        return;
+      }
+
+      sorted.forEach(d => {
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+          <td style="font-weight:600">${d.name}</td>
+          <td>${d.location}</td>
+          <td style="font-size:12px; color:var(--text-muted)">
+            ${d.startDate.toISOString().slice(0,10)} ~ ${d.endDate.toISOString().slice(0,10)}
+          </td>
+          <td><span style="background:#f0f0f0; padding:2px 6px; border-radius:4px; font-size:11px;">${d.days}天</span></td>
+          <td style="max-width:200px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">${d.project}</td>
+        `;
+        tbody.appendChild(tr);
+      });
+    }
+
+    function setupEvents() {
+      // 年份切換
+      document.getElementById('yearSelect').addEventListener('change', (e) => {
+        currentYear = e.target.value;
+        renderAll(currentYear);
+      });
+
+      // 篩選事件監聽：任何一個變動都會觸發重新渲染表格
+      ['filterName', 'filterLocation', 'searchInput'].forEach(id => {
+        document.getElementById(id).addEventListener('input', () => {
+          const yearData = allRecords.filter(r => r.year == currentYear);
+          renderTable(yearData);
+        });
+      });
+
+      // Dark Mode
+      const btn = document.getElementById('themeBtn');
+      btn.addEventListener('click', () => {
+        const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
+        document.documentElement.setAttribute('data-theme', isDark ? 'light' : 'dark');
+      });
+    }
+
+    function setupTheme() {
+      if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
+        document.documentElement.setAttribute('data-theme', 'dark');
+      }
+    }
+
+    function scrollToId(id) {
+      document.getElementById(id).scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+  </script>
+</body>
+</html>
