@@ -1,0 +1,213 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mr.Yes 數據中控台 | Vibe Coding</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&family=Noto+Sans+TC:wght@400;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <style>
+        /* --- CSS 變數：莫蘭迪配色系統 --- */
+        :root {
+            --bg-color: #F0F2F5;       /* 柔和灰底 */
+            --card-bg: #FFFFFF;        /* 卡片白 */
+            --primary: #7A8B99;        /* 莫蘭迪藍灰 (主色) */
+            --accent: #9FB1BC;         /* 淺灰藍 (強調) */
+            --text-main: #333333;      /* 深灰文字 */
+            --text-sub: #666666;       /* 次要文字 */
+            --hover-shadow: 0 12px 24px rgba(122, 139, 153, 0.15);
+            --transition: all 0.3s ease;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            font-family: 'Inter', 'Noto Sans TC', sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-main);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+
+        /* --- Header --- */
+        header {
+            background: var(--card-bg);
+            padding: 1.5rem 5%;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.03);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .logo {
+            font-size: 1.5rem;
+            font-weight: 800;
+            color: var(--primary);
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .logo span { color: var(--text-main); }
+
+        /* --- Main Content --- */
+        main {
+            flex: 1;
+            padding: 3rem 5%;
+            max-width: 1200px;
+            margin: 0 auto;
+            width: 100%;
+        }
+
+        .welcome-section {
+            text-align: center;
+            margin-bottom: 3rem;
+            animation: fadeIn 0.8s ease-out;
+        }
+
+        .welcome-section h1 {
+            font-size: 2.2rem;
+            margin-bottom: 0.5rem;
+            color: var(--text-main);
+        }
+
+        .welcome-section p { color: var(--text-sub); }
+
+        /* --- Card Grid --- */
+        .dashboard-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+            gap: 2rem;
+        }
+
+        /* --- Card Style --- */
+        .card {
+            background: var(--card-bg);
+            border-radius: 20px;
+            padding: 2rem;
+            text-decoration: none;
+            color: inherit;
+            transition: var(--transition);
+            border: 1px solid transparent;
+            position: relative;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            height: 240px;
+        }
+
+        .card:hover {
+            transform: translateY(-8px);
+            box-shadow: var(--hover-shadow);
+            border-color: var(--accent);
+        }
+
+        .card-icon {
+            width: 50px;
+            height: 50px;
+            background: #F4F6F8;
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.5rem;
+            color: var(--primary);
+            margin-bottom: 1.5rem;
+            transition: var(--transition);
+        }
+
+        .card:hover .card-icon {
+            background: var(--primary);
+            color: white;
+        }
+
+        .card h3 { font-size: 1.25rem; margin-bottom: 0.5rem; }
+        .card p { font-size: 0.9rem; color: var(--text-sub); line-height: 1.6; }
+
+        .card-footer {
+            margin-top: auto;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 0.85rem;
+            font-weight: 600;
+            color: var(--primary);
+        }
+
+        .arrow { opacity: 0; transform: translateX(-10px); transition: var(--transition); }
+        .card:hover .arrow { opacity: 1; transform: translateX(0); }
+
+        /* --- Footer --- */
+        footer {
+            text-align: center;
+            padding: 2rem;
+            color: var(--text-sub);
+            font-size: 0.85rem;
+            opacity: 0.7;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+    </style>
+</head>
+<body>
+
+    <header>
+        <div class="logo">
+            <i class="fa-solid fa-cube"></i>
+            <div>Mr.Yes <span>Dashboard</span></div>
+        </div>
+    </header>
+
+    <main>
+        <div class="welcome-section">
+            <h1>數據中控台</h1>
+            <p>Select a dashboard to proceed</p>
+        </div>
+
+        <div class="dashboard-grid">
+            
+            <a href="./Business-Trip-data-Dashboard/index.html" class="card">
+                <div>
+                    <div class="card-icon"><i class="fa-solid fa-plane"></i></div>
+                    <h3>出差統計看板</h3>
+                    <p>Business Trip Analytics</p>
+                    <p style="margin-top: 10px; font-size: 0.85rem; opacity: 0.8;">
+                        年度出差天數統計、部門預算使用率分析與趨勢圖表。
+                    </p>
+                </div>
+                <div class="card-footer">
+                    <span>View Dashboard</span>
+                    <i class="fa-solid fa-arrow-right arrow"></i>
+                </div>
+            </a>
+
+            <a href="./Production-managment-Dashboard/index.html" class="card">
+                <div>
+                    <div class="card-icon"><i class="fa-solid fa-industry"></i></div>
+                    <h3>生產管理看板</h3>
+                    <p>Production Management</p>
+                    <p style="margin-top: 10px; font-size: 0.85rem; opacity: 0.8;">
+                        即時產線效能監控、良率統計與專案進度追蹤。
+                    </p>
+                </div>
+                <div class="card-footer">
+                    <span>View Dashboard</span>
+                    <i class="fa-solid fa-arrow-right arrow"></i>
+                </div>
+            </a>
+
+        </div>
+    </main>
+
+    <footer>
+        <p>Designed by Vibe Coding for Mr.Yes</p>
+    </footer>
+
+</body>
+</html>
