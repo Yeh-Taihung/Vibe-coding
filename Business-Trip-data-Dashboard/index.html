@@ -108,7 +108,7 @@
         border: 1px solid transparent;
     }
     
-    /* 新增：Google Sheet 按鈕樣式 */
+    /* Google Sheet 按鈕樣式 */
     .btn-sheet { background-color: #e6f4ea; color: #1e8e3e; border: 1px solid #ceead6; }
     .btn-sheet:hover { background-color: #dcece0; }
 
@@ -310,6 +310,32 @@
     .timeline-bars-container { grid-column: 2 / span 12; position: relative; height: 100%; }
     .grid-lines { position: absolute; inset: 0; display: grid; grid-template-columns: repeat(12, 1fr); pointer-events: none; z-index: 0; }
     .grid-line { border-right: 1px dashed var(--border-light); height: 100%; }
+    
+    /* 🔴 新增：Today 紅色虛線與標籤樣式 */
+    .today-line {
+      position: absolute;
+      top: 0; bottom: 0;
+      width: 0;
+      border-left: 2px dashed #e53e3e; /* 紅色虛線 */
+      z-index: 20;
+      pointer-events: none;
+    }
+    /* 🔴 只在第一行顯示 "Today" 標籤 */
+    .timeline-body .timeline-row:first-child .today-line::after {
+      content: 'Today';
+      position: absolute;
+      top: -20px; /* 顯示在格線上方 */
+      left: 50%;
+      transform: translateX(-50%);
+      background-color: #e53e3e;
+      color: white;
+      padding: 2px 6px;
+      border-radius: 4px;
+      font-size: 10px;
+      font-weight: bold;
+      white-space: nowrap;
+      z-index: 21;
+    }
     
     .timeline-item {
       position: absolute; top: 10px; bottom: 10px; border-radius: 4px;
@@ -706,7 +732,7 @@
     }
 
     /* =========================================
-       4. Timeline
+       4. Timeline with Today Line
        ========================================= */
     function renderTimeline(data, year) {
       const body = document.getElementById('timelineBody');
@@ -719,7 +745,7 @@
       const sortedNames = Object.keys(groups).sort();
       const today = new Date();
 
-      sortedNames.forEach(name => {
+      sortedNames.forEach((name, index) => {
         const row = document.createElement('div');
         row.className = "timeline-grid-layout timeline-row";
         const nameCol = document.createElement('div');
@@ -737,6 +763,23 @@
           gridLines.appendChild(line);
         }
         barsContainer.appendChild(gridLines);
+
+        // 🔴 新增：計算並繪製 Today 紅線
+        if (parseInt(year) === today.getFullYear()) {
+             const startOfYear = new Date(today.getFullYear(), 0, 0);
+             const diff = today - startOfYear;
+             const oneDay = 1000 * 60 * 60 * 24;
+             const dayOfYear = Math.floor(diff / oneDay);
+             const totalDays = isLeap(today.getFullYear()) ? 366 : 365;
+             const todayPct = ((dayOfYear - 1) / totalDays) * 100;
+             
+             if (todayPct >= 0 && todayPct <= 100) {
+                 const line = document.createElement('div');
+                 line.className = 'today-line';
+                 line.style.left = `${todayPct}%`;
+                 barsContainer.appendChild(line);
+             }
+        }
 
         groups[name].forEach(trip => {
           const startDay = getDayOfYear(trip.startDate);
