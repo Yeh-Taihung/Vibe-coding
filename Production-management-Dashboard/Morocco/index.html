@@ -2,9 +2,10 @@
 <html lang="zh-Hant">
 <head>
   <meta charset="UTF-8" />
-  <title>斯洛伐克項目管理看板 v15 | RWD Mobile Fixed</title>
+  <title>摩洛哥項目現場人力看板 v17 | Logo & Today Fixed</title>
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" />
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
   <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700&family=Roboto:wght@400;500;700&display=swap" rel="stylesheet">
 
   <style>
@@ -13,7 +14,7 @@
       --color-primary: #00a99d;      
       --color-primary-light: #e0f2f1;
       --color-secondary: #f4d35e;    
-      --color-accent: #ff8c42;       
+      --color-accent: #e53e3e; /* 確保 Today 線是紅色 */     
       
       --bg-body: #f4f8f8;            
       --bg-card: #ffffff;
@@ -52,38 +53,9 @@
       -webkit-font-smoothing: antialiased;
       padding-bottom: 40px;
     }
-    .back-home-btn {
-    display: inline-flex;
-    align-items: center;
-    gap: 8px;
-    padding: 8px 16px;
-    background-color: var(--bg-color); /* 或自訂顏色 */
-    color: var(--text-main);
-    border: 1px solid var(--accent);
-    border-radius: 8px;
-    text-decoration: none;
-    font-weight: 600;
-    transition: all 0.3s ease;
-}
 
-.back-home-btn:hover {
-    background-color: var(--accent);
-    color: white;
-    box-shadow: 0 4px 12px rgba(0,0,0,0.1);
-}
-
-    /* --------- Sticky Header (Mobile Optimized) --------- */
-    .sticky-header-wrapper {
-        position: sticky;
-        top: 0;
-        z-index: 1000;
-        background: rgba(255, 255, 255, 0.98);
-        backdrop-filter: blur(12px);
-        border-bottom: 1px solid var(--border-light);
-        box-shadow: var(--shadow-sm);
-    }
-    [data-theme="dark"] .sticky-header-wrapper { background: rgba(45, 55, 72, 0.98); }
-
+    /* --------- Header Layout --------- */
+    /* 1. Brand Bar */
     .brand-bar {
         padding: 12px 16px;
         display: flex;
@@ -91,61 +63,104 @@
         align-items: center;
         max-width: 1280px;
         margin: 0 auto;
+        background: var(--bg-body);
     }
+
+    .brand-left {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+    }
+
+    /* 1. Logo 區域修正 */
     .logo-area { 
-        font-size: 16px; font-weight: 700; color: var(--color-primary); 
-        display: flex; align-items: center; gap: 8px;
+        font-size: 18px; font-weight: 700; color: var(--color-primary); 
+        display: flex; align-items: center; gap: 10px;
     }
-    .logo-icon {
-        background: var(--color-primary); color: white;
-        width: 28px; height: 28px; border-radius: 8px;
-        display: flex; align-items: center; justify-content: center;
-        font-size: 14px;
+    
+    /* Logo 圖片樣式 */
+    .logo-img {
+        height: 40px; /* 設定高度，寬度自動 */
+        width: auto;
+        object-fit: contain;
     }
+
+    .brand-actions {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+    }
+
+    .action-btn {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        font-size: 13px;
+        font-weight: 500;
+        padding: 6px 12px;
+        border-radius: 20px;
+        text-decoration: none;
+        transition: all 0.2s;
+        cursor: pointer;
+        border: 1px solid transparent;
+    }
+    
+    .btn-sheet { background-color: #e6f4ea; color: #1e8e3e; border: 1px solid #ceead6; }
+    .btn-sheet:hover { background-color: #dcece0; }
+    .btn-back { color: var(--text-muted); background: transparent; }
+    .btn-back:hover { color: var(--color-primary); background: var(--color-primary-light); }
+
     .theme-toggle { 
         background: transparent; border: 1px solid var(--border-light); 
         color: var(--text-muted); padding: 6px 12px; border-radius: 20px; 
         cursor: pointer; font-size: 12px; font-weight: 600;
     }
 
-    /* Controls Bar - RWD Grid */
-    .controls-bar {
-        padding: 0 16px 12px;
+    /* 2. Controls Bar (Sticky) */
+    .sticky-controls-wrapper {
+        position: sticky;
+        top: 0;
+        z-index: 1000;
+        background: rgba(255, 255, 255, 0.95);
+        backdrop-filter: blur(10px);
+        border-bottom: 1px solid var(--border-light);
+        box-shadow: var(--shadow-sm);
+        padding: 10px 16px;
+    }
+    [data-theme="dark"] .sticky-controls-wrapper { background: rgba(45, 55, 72, 0.95); }
+
+    /* RWD: Controls Grid */
+    .controls-grid { 
         max-width: 1280px;
         margin: 0 auto;
-    }
-    .controls-grid { 
         display: grid; 
-        grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); /* 自動適應寬度 */
+        grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); 
         gap: 8px; 
-        align-items: end;
+        align-items: center;
     }
-    /* 手機特別優化：搜尋欄佔滿一行 */
     @media (max-width: 600px) {
         .controls-grid { grid-template-columns: 1fr 1fr; }
         .controls-grid .search-group { grid-column: 1 / -1; }
     }
 
-    .filter-group label { 
-        display: block; font-size: 11px; color: var(--text-muted); 
-        margin-bottom: 4px; font-weight: 600; 
-    }
-    select, input { 
-        padding: 0 10px; /* Reset padding */
+    .filter-group select, .filter-group input { 
+        padding: 0 12px; 
         border-radius: var(--radius-input); 
         border: 1px solid var(--border-light); 
         background: var(--bg-card); 
         color: var(--text-main); 
         width: 100%; 
-        font-size: 14px; /* 手機上文字大一點 */
-        height: 40px; /* 手機易點擊高度 */
+        font-size: 14px; 
+        height: 40px; 
         line-height: 40px;
-        appearance: none; /* 移除原生樣式 */
+        appearance: none;
+        outline: none;
+        box-shadow: 0 1px 2px rgba(0,0,0,0.03);
     }
 
-    /* KPI Bar - Scrollable on Mobile */
+    /* 3. KPI Bar */
     .kpi-bar {
-        padding: 0 16px 12px;
+        padding: 16px 16px 0;
         max-width: 1280px;
         margin: 0 auto;
         display: grid;
@@ -153,10 +168,7 @@
         gap: 12px;
     }
     @media (max-width: 600px) {
-        .kpi-bar { 
-            grid-template-columns: 1fr; /* 手機單欄 */
-            gap: 8px;
-        }
+        .kpi-bar { grid-template-columns: 1fr; gap: 8px; }
     }
 
     .kpi-card {
@@ -190,7 +202,6 @@
         box-shadow: var(--shadow-card); 
         border: none;
     }
-    /* 手機版卡片內距縮小 */
     @media (max-width: 600px) {
         .card { padding: 16px; margin-bottom: 16px; }
     }
@@ -198,7 +209,6 @@
     .card-header-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; flex-wrap: wrap; gap: 10px; }
     .card-title { font-size: 16px; font-weight: 700; color: var(--text-main); display: flex; align-items: center; gap: 8px; }
     
-    /* Project Info Bar - Mobile Grid */
     .project-info-bar { 
         display: flex; flex-wrap: wrap; 
         background: var(--bg-card);
@@ -209,140 +219,90 @@
         box-shadow: var(--shadow-card);
     }
     .p-item { 
-        flex: 1; 
-        min-width: 140px; 
-        padding: 16px; 
+        flex: 1; min-width: 140px; padding: 16px; 
         display: flex; flex-direction: column; justify-content: center;
         border-right: 1px solid var(--border-light);
     }
     .p-item:last-child { border-right: none; }
-    
     @media (max-width: 768px) {
-        .p-item { 
-            flex: 0 0 50%; /* 強制兩欄 */
-            min-width: 0; /* 允許縮小 */
-            border-bottom: 1px solid var(--border-light);
-            border-right: 1px solid var(--border-light);
-        }
-        .p-item:nth-child(even) { border-right: none; } /* 偶數個移除右框線 */
+        .p-item { flex: 0 0 50%; min-width: 0; border-bottom: 1px solid var(--border-light); border-right: 1px solid var(--border-light); }
+        .p-item:nth-child(even) { border-right: none; }
     }
-
-    .p-label { 
-        font-size: 10px; color: var(--text-muted); font-weight: 600; 
-        text-transform: uppercase; margin-bottom: 4px;
-        display: flex; align-items: center; gap: 4px;
-    }
+    .p-label { font-size: 10px; color: var(--text-muted); font-weight: 600; text-transform: uppercase; margin-bottom: 4px; }
     .p-value { font-size: 15px; font-weight: 700; color: var(--text-main); word-break: break-all; }
 
-    /* Chart Container */
     .chart-wrapper { position: relative; height: 300px; width: 100%; }
 
-    /* 🔴 GANTT CHART MOBILE FIX (核心修正) */
+    /* Gantt Chart */
     .gantt-scroll-wrapper {
-        width: 100%;
-        overflow-x: auto; /* 允許橫向捲動 */
-        border: 1px solid var(--border-light);
-        border-radius: 12px;
-        background: var(--bg-card);
-        position: relative;
-        -webkit-overflow-scrolling: touch; /* iOS 順滑捲動 */
+        width: 100%; overflow-x: auto; border: 1px solid var(--border-light);
+        border-radius: 12px; background: var(--bg-card); position: relative;
+        -webkit-overflow-scrolling: touch;
     }
+    .gantt-min-width-container { min-width: 800px; position: relative; }
     
-    /* 設定一個足夠寬的容器，確保月份不被壓縮 */
-    .gantt-min-width-container {
-        min-width: 800px; /* 手機上強迫寬度，觸發捲動 */
-        position: relative;
-    }
-
-    /* 姓名欄位固定在左側 (Sticky Left) */
     .sticky-col-header, .sticky-col-cell {
-        position: sticky;
-        left: 0;
-        z-index: 20; /* 比普通內容高 */
-        background: var(--bg-card);
-        border-right: 2px solid var(--border-light); /* 明顯分隔線 */
-        box-shadow: 2px 0 5px rgba(0,0,0,0.05);
-        width: 120px;
-        flex-shrink: 0;
+        position: sticky; left: 0; z-index: 20; background: var(--bg-card);
+        border-right: 2px solid var(--border-light); box-shadow: 2px 0 5px rgba(0,0,0,0.05);
+        width: 120px; flex-shrink: 0;
     }
-    [data-theme="dark"] .sticky-col-header, 
-    [data-theme="dark"] .sticky-col-cell { background: #2d3748; }
+    [data-theme="dark"] .sticky-col-header, [data-theme="dark"] .sticky-col-cell { background: #2d3748; }
 
-    /* Timeline Header */
-    .timeline-header-row {
-        display: flex;
-        border-bottom: 1px solid var(--border-light);
-        background: #f7fafc;
-        height: 40px;
-    }
+    .timeline-header-row { display: flex; border-bottom: 1px solid var(--border-light); background: #f7fafc; height: 40px; }
     [data-theme="dark"] .timeline-header-row { background: #2d3748; }
 
-    .th-name { 
-        display: flex; align-items: center; justify-content: center;
-        font-size: 12px; font-weight: 700; color: var(--text-muted);
-    }
-    .th-months {
-        flex-grow: 1;
-        display: grid;
-        grid-template-columns: repeat(12, 1fr);
-        height: 100%;
-    }
-    .th-month {
-        display: flex; align-items: center; justify-content: center;
-        font-size: 11px; color: var(--text-muted); font-weight: 600;
-        border-right: 1px solid var(--border-light);
-    }
+    .th-name { display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 700; color: var(--text-muted); }
+    .th-months { flex-grow: 1; display: grid; grid-template-columns: repeat(12, 1fr); height: 100%; }
+    .th-month { display: flex; align-items: center; justify-content: center; font-size: 11px; color: var(--text-muted); font-weight: 600; border-right: 1px solid var(--border-light); }
 
-    /* Person Row */
-    .person-row {
-        display: flex;
-        height: 48px; /* 加大高度方便閱讀 */
-        border-bottom: 1px solid var(--border-light);
-        position: relative;
-    }
-    .person-name {
-        display: flex; flex-direction: column; justify-content: center; align-items: flex-start;
-        padding-left: 10px;
-        font-size: 12px; font-weight: 600;
-        overflow: hidden;
-    }
+    .person-row { display: flex; height: 48px; border-bottom: 1px solid var(--border-light); position: relative; }
+    .person-name { display: flex; flex-direction: column; justify-content: center; padding-left: 10px; font-size: 12px; font-weight: 600; overflow: hidden; }
     .person-role { font-size: 10px; color: var(--text-muted); font-weight: 400; }
-    
-    .person-bars-area {
-        flex-grow: 1;
-        position: relative;
-    }
+    .person-bars-area { flex-grow: 1; position: relative; }
 
-    /* Grid Lines */
-    .grid-bg-layer {
-        position: absolute; top: 0; left: 120px; /* 避開 sticky 區 */
-        right: 0; bottom: 0;
-        display: grid; grid-template-columns: repeat(12, 1fr);
-        pointer-events: none; z-index: 1;
-    }
+    .grid-bg-layer { position: absolute; top: 0; left: 120px; right: 0; bottom: 0; display: grid; grid-template-columns: repeat(12, 1fr); pointer-events: none; z-index: 1; }
     .grid-line { border-right: 1px dashed var(--border-light); height: 100%; }
     
-    /* Today Line */
+    /* 2. Today Line 修復：紅色虛線 + 標籤 */
     .today-line { 
-        position: absolute; top: 0; bottom: 0; width: 2px; 
-        border-left: 2px dashed var(--color-accent); z-index: 15; pointer-events: none; 
+        position: absolute; 
+        top: 0; 
+        bottom: 0; 
+        width: 0px; /* 線本身是 border */
+        border-left: 2px dashed var(--color-accent); 
+        z-index: 15; 
+        pointer-events: none; 
     }
     
-    /* Gantt Bars */
+    /* Today 文字標籤 */
+    .today-line::after {
+        content: 'Today';
+        position: absolute;
+        top: 0; /* 固定在線的最上方 */
+        left: 50%;
+        transform: translateX(-50%);
+        background-color: var(--color-accent);
+        color: white;
+        padding: 2px 6px;
+        border-radius: 0 0 4px 4px; /* 下方圓角 */
+        font-size: 10px;
+        font-weight: bold;
+        white-space: nowrap;
+        box-shadow: 0 1px 3px rgba(0,0,0,0.2);
+    }
+    
     .gantt-bar { 
-        position: absolute; top: 12px; bottom: 12px; 
-        border-radius: 4px; font-size: 10px; color: #fff; 
-        display: flex; align-items: center; padding-left: 6px; 
-        white-space: nowrap; overflow: hidden; 
-        box-shadow: 0 1px 2px rgba(0,0,0,0.1); z-index: 5;
+        position: absolute; top: 12px; bottom: 12px; border-radius: 4px; 
+        font-size: 10px; color: #fff; display: flex; align-items: center; padding-left: 6px; 
+        white-space: nowrap; overflow: hidden; box-shadow: 0 1px 2px rgba(0,0,0,0.1); z-index: 5;
     }
     .status-active { background: var(--status-success); } 
     .status-plan { background: #63b3ed; opacity: 0.7; }
     .status-past { background: var(--status-neutral); opacity: 0.6; }
 
-    /* Table Mobile Fix */
+    /* Table */
     .table-responsive { overflow-x: auto; -webkit-overflow-scrolling: touch; }
-    table { width: 100%; min-width: 600px; /* 強制寬度 */ border-collapse: collapse; font-size: 13px; }
+    table { width: 100%; min-width: 600px; border-collapse: collapse; font-size: 13px; }
     th { text-align: left; padding: 12px; color: var(--text-muted); background: #f7fafc; white-space: nowrap; }
     td { padding: 12px; border-top: 1px solid var(--border-light); white-space: nowrap; }
     [data-theme="dark"] th { background: #2d3748; }
@@ -351,46 +311,55 @@
     .tag-normal { background: #e6fffa; color: #2c7a7b; }
     .tag-warning { background: #fffaf0; color: #dd6b20; } 
     .tag-expired { background: #ffebee; color: #c53030; } 
-    .tag-left { background: #edf2f7; color: #718096; }
-
   </style>
 </head>
 <body>
 
-  <header class="sticky-header-wrapper">
-      <div class="brand-bar">
+  <div class="brand-bar">
+      <div class="brand-left">
           <div class="logo-area">
-              <div class="logo-icon">📊</div>
-              芝加哥項目現場人力看板 <span style="font-weight:400; font-size:12px; margin-left:5px; color:var(--text-muted)">v15 Mobile</span>
-          </div>
-          <button class="theme-toggle" id="themeBtn">◐ 模式</button>
-      </div>
-
-      <div class="controls-bar">
-          <div class="controls-grid">
-              <div class="filter-group">
-                  <select id="yearSelect"></select>
-              </div>
-              <div class="filter-group">
-                  <select id="filterSupplier"><option value="">全部供應商</option></select>
-              </div>
-              <div class="filter-group">
-                  <select id="filterLine"><option value="">全部產線</option></select>
-              </div>
-              <div class="filter-group">
-                  <select id="filterRole"><option value="">全部工種</option></select>
-              </div>
-              <div class="filter-group search-group">
-                  <input type="text" id="searchInput" placeholder="🔍 搜尋姓名、工種...">
+              <img src="../../logo.png" alt="Mr.Yes Logo" class="logo-img">
+              <div>
+                  <div style="line-height:1.2">摩洛哥項目現場人力看板</div>
+                  <div style="font-size:11px; font-weight:400; color:var(--text-muted)">Project Field Manpower Dashboard v17</div>
               </div>
           </div>
       </div>
 
-      <div class="kpi-bar" id="kpiBar"></div>
-      <a href="../index.html" class="back-home-btn">
-    <i class="fa-solid fa-house"></i> 回到首頁
-</a>
-  </header>
+      <div class="brand-actions">
+          <a href="https://docs.google.com/spreadsheets/d/1CbePJ4IT-mBH80dQkwb0nP9XIzbN93WhuiwMa6TW1Hs/edit?gid=0#gid=0" target="_blank" class="action-btn btn-sheet">
+            <i class="fa-solid fa-file-pen"></i> Edit Data
+          </a>
+          
+          <a href="../index.html" class="action-btn btn-back">
+            ← 回到項目管理看板
+          </a>
+
+          <button class="theme-toggle" id="themeBtn">◐</button>
+      </div>
+  </div>
+
+  <div class="sticky-controls-wrapper">
+      <div class="controls-grid">
+          <div class="filter-group">
+              <select id="yearSelect"></select>
+          </div>
+          <div class="filter-group">
+              <select id="filterSupplier"><option value="">全部供應商</option></select>
+          </div>
+          <div class="filter-group">
+              <select id="filterLine"><option value="">全部產線</option></select>
+          </div>
+          <div class="filter-group">
+              <select id="filterRole"><option value="">全部工種</option></select>
+          </div>
+          <div class="filter-group search-group">
+              <input type="text" id="searchInput" placeholder="🔍 搜尋姓名、工種...">
+          </div>
+      </div>
+  </div>
+
+  <div class="kpi-bar" id="kpiBar"></div>
 
   <main class="container">
 
@@ -429,7 +398,7 @@
     <section class="card">
       <div class="card-header-row">
         <div class="card-title">工作甘特圖</div>
-        <select id="ganttFilter" style="width: auto; height: 32px; font-size: 12px;">
+        <select id="ganttFilter" style="width: auto; height: 32px; font-size: 12px; border-radius:6px;">
             <option value="all">顯示全部</option>
             <option value="active">僅顯示在崗</option>
         </select>
@@ -473,8 +442,8 @@
   </main>
 
   <script>
-    // 🔴 請保留您的 Google Sheet CSV 連結
-    const CSV_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vTMpYtnj16wQP-OeZcdw62yofr9JI-sdwElid5nEjbXT4KQoJaVfHU-Aj4jGwCyNn0E8KEiJKL7U5GL/pub?output=csv";
+    // 🔴 請填入你的 Google Sheet CSV 連結
+    const CSV_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vRsvS0O22oXT34Hv9Wt-OBPM4Wixi8CmRsqqaRtZhC7X1diCzK14YFvkwNwUo8H-8MYX3kCNqRjt2md/pub?output=csv";
 
     const ROLE_COLOR_MAP = {
         "PLC": "#00a99d", "機器人": "#3182ce", "電工": "#f6ad55", "鉗工": "#e53e3e", "其他": "#a0aec0"      
@@ -514,7 +483,6 @@
       for (let i = 1; i < lines.length; i++) {
           const cols = lines[i].split(',').map(c => c.replace(/^"|"$/g, '').trim());
           
-          // 解析 Meta (H-K欄)
           if (!foundMeta && cols.length >= 8 && cols[7]) {
               const potentialDate = new Date(cols[7]);
               if (!isNaN(potentialDate.getTime())) {
@@ -633,7 +601,8 @@
             label: '人數',
             data: Object.values(roleCounts),
             backgroundColor: Object.keys(roleCounts).map(r => ROLE_COLOR_MAP[r] || "#a0aec0"),
-            borderRadius: 6
+            borderRadius: 6,
+            maxBarThickness: 40 
           }]
         },
         options: {
@@ -681,7 +650,6 @@
 
         const row = document.createElement('div');
         row.className = 'person-row';
-        // 姓名欄位 Sticky
         row.innerHTML = `<div class="person-name sticky-col-cell">${name}<div class="person-role">${records[0].role}</div></div>`;
 
         const barsArea = document.createElement('div');
