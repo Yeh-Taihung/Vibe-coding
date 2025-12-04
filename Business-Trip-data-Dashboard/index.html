@@ -2,8 +2,9 @@
 <html lang="zh-Hant">
 <head>
   <meta charset="UTF-8" />
-  <title>產品工程部出差統計看板 | Vibe Coding</title>
+  <title>產品工程部-人員出差統計看板 | Vibe Coding</title>
   <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 
@@ -73,6 +74,13 @@
       height: 40px;
       width: auto;
     }
+    
+    /* 新增：Header 右側動作區塊 */
+    .header-actions {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
 
     .page-desc {
       font-size: 13px;
@@ -80,21 +88,24 @@
       margin: 0;
     }
 
-    .theme-toggle {
+    /* 統一按鈕樣式 (切換模式 & 回首頁) */
+    .header-btn {
       background: transparent;
       border: 1px solid var(--border-color);
       color: var(--text-main);
       padding: 6px 12px;
       border-radius: 20px;
       cursor: pointer;
-      font-size: 12px;
+      font-size: 13px;
       display: flex;
       align-items: center;
       gap: 6px;
+      text-decoration: none; /* 給 <a> 標籤用 */
       transition: all 0.2s;
     }
-    .theme-toggle:hover {
+    .header-btn:hover {
       background: var(--border-color);
+      transform: translateY(-1px);
     }
 
     .nav-pills {
@@ -121,25 +132,6 @@
       color: #81b2d9;
       transform: translateY(-1px);
     }
-    .back-home-btn {
-    display: inline-flex;
-    align-items: center;
-    gap: 8px;
-    padding: 8px 16px;
-    background-color: var(--bg-color); /* 或自訂顏色 */
-    color: var(--text-main);
-    border: 1px solid var(--accent);
-    border-radius: 8px;
-    text-decoration: none;
-    font-weight: 600;
-    transition: all 0.3s ease;
-}
-
-.back-home-btn:hover {
-    background-color: var(--accent);
-    color: white;
-    box-shadow: 0 4px 12px rgba(0,0,0,0.1);
-}
 
     /* --------- Main Layout --------- */
     .container {
@@ -263,7 +255,7 @@
     }
     .util-bar-fill { height: 100%; border-radius: 3px; }
 
-    /* --------- Timeline (Reverted to Tooltip Mode) --------- */
+    /* --------- Timeline --------- */
     .timeline-wrapper {
       width: 100%;
       overflow-x: auto;
@@ -297,7 +289,7 @@
     .timeline-row {
       border-bottom: 1px solid var(--border-color);
       position: relative;
-      height: 44px; /* 高度調回緊湊型 */
+      height: 44px;
       align-items: center;
     }
     .timeline-row:last-child { border-bottom: none; }
@@ -340,13 +332,12 @@
       bottom: 10px;
       border-radius: 4px;
       display: block; 
-      /* 恢復原始設定：隱藏超出內容，滑鼠移上去才顯示 */
       overflow: hidden; 
       box-shadow: 0 1px 3px rgba(0,0,0,0.1);
       z-index: 1;
       opacity: 0.9;
       transition: all 0.2s;
-      cursor: help; /* 提示可 Hover */
+      cursor: help; 
     }
     .timeline-item:hover {
       transform: scaleY(1.15);
@@ -355,8 +346,6 @@
       box-shadow: 0 4px 8px rgba(0,0,0,0.15);
     }
     
-    /* 移除之前的 .timeline-label 相關樣式，改用 Tooltip */
-
     .status-done { background: #8ba47c; }
     .status-active { background: #f4d35e; }
     .status-future { background: #fbc2c2; }
@@ -377,7 +366,7 @@
     }
     
     .filter-select {
-      padding: 6px 24px 6px 10px; /* 右側留空間給箭頭 */
+      padding: 6px 24px 6px 10px; 
       border-radius: 8px;
       border: 1px solid var(--border-color);
       background-color: var(--bg-body);
@@ -408,7 +397,7 @@
       .timeline-grid-layout { min-width: 600px; }
       .nav-pills { padding-bottom: 8px; }
       .brand-row { flex-direction: column; align-items: flex-start; gap: 10px; }
-      .theme-toggle { position: absolute; top: 16px; right: 20px; }
+      .header-actions { width: 100%; justify-content: space-between; margin-top: 5px;} 
       .card-header { flex-direction: column; align-items: flex-start; }
       .table-header-actions { justify-content: flex-start; width: 100%; }
       .filter-group { width: 100%; display: flex; gap: 8px; }
@@ -426,10 +415,17 @@
           <img src="./icons/logo.png" alt="寶新 Logo" class="logo-img">
           <div style="font-size: 18px; font-weight:700;">產品工程部出差統計看板</div>
         </div>
-        <button class="theme-toggle" id="themeBtn">
-          <span>◐</span> 切換模式
-        </button>
+        
+        <div class="header-actions">
+           <a href="../index.html" class="header-btn">
+             <i class="fa-solid fa-house"></i> 回首頁
+           </a>
+           <button class="header-btn" id="themeBtn">
+             <span>◐</span> 模式
+           </button>
+        </div>
       </div>
+      
       <p class="page-desc">整合 Google 表單資料，即時視覺化年度出差分佈與人力負載。</p>
       
       <div class="nav-pills" style="margin-top: 12px;">
@@ -439,9 +435,6 @@
         <button class="nav-btn" onclick="scrollToId('section-list')">📝 詳細列表</button>
       </div>
     </div>
-    <a href="../index.html" class="back-home-btn">
-    <i class="fa-solid fa-house"></i> 回到首頁
-</a>
   </header>
 
   <main class="container">
@@ -629,7 +622,7 @@
       renderCharts(yearData);
       renderUtil(yearData);
       renderTimeline(yearData, year);
-      renderDropdownFilters(yearData); // 渲染下拉選單選項
+      renderDropdownFilters(yearData); 
       renderTable(yearData);
     }
 
@@ -687,7 +680,6 @@
       const sorted = Object.entries(dataMap).sort((a,b) => b[1] - a[1]);
       const labels = sorted.map(k => k[0]);
       
-      // 計算動態高度：每個 Bar 給予 40px，加上一些緩衝
       const container = document.getElementById(containerId);
       const dynamicHeight = Math.max(200, labels.length * 40 + 50);
       container.style.height = `${dynamicHeight}px`;
@@ -761,7 +753,7 @@
     }
 
     /* =========================================
-       4. Timeline (Simplified for Clarity)
+       4. Timeline
        ========================================= */
     function renderTimeline(data, year) {
       const body = document.getElementById('timelineBody');
@@ -809,7 +801,6 @@
           bar.style.left = `${leftPct}%`;
           bar.style.width = `${Math.max(widthPct, 0.5)}%`; 
           
-          // Tooltip: 滑鼠移上去顯示詳細資訊 (解決文字重疊問題的最佳解法)
           bar.title = `${trip.project}\n地點: ${trip.location}\n日期: ${trip.startDate.getMonth()+1}/${trip.startDate.getDate()} - ${trip.endDate.getMonth()+1}/${trip.endDate.getDate()} (${trip.days}天)`;
 
           barsContainer.appendChild(bar);
@@ -833,12 +824,10 @@
        5. Table & Filters (Dropdowns)
        ========================================= */
     
-    // 渲染下拉選單的選項
     function renderDropdownFilters(data) {
       const nameSelect = document.getElementById('filterName');
       const locSelect = document.getElementById('filterLocation');
       
-      // 清空舊選項，保留第一項「全部」
       nameSelect.innerHTML = '<option value="">全部人員</option>';
       locSelect.innerHTML = '<option value="">全部地點</option>';
 
@@ -860,7 +849,6 @@
       });
     }
 
-    // 整合所有篩選條件的 renderTable
     function renderTable(data) {
       const tbody = document.getElementById('tableBody');
       const nameVal = document.getElementById('filterName').value;
@@ -869,7 +857,6 @@
 
       tbody.innerHTML = "";
       
-      // 多重篩選邏輯
       const filtered = data.filter(d => {
         const matchName = nameVal === "" || d.name === nameVal;
         const matchLoc = locVal === "" || d.location === locVal;
@@ -890,13 +877,17 @@
 
       sorted.forEach(d => {
         const tr = document.createElement('tr');
+        // 修改：移除天數的背景色，改用粗體與主題色文字
         tr.innerHTML = `
           <td style="font-weight:600">${d.name}</td>
           <td>${d.location}</td>
           <td style="font-size:12px; color:var(--text-muted)">
             ${d.startDate.toISOString().slice(0,10)} ~ ${d.endDate.toISOString().slice(0,10)}
           </td>
-          <td><span style="background:#f0f0f0; padding:2px 6px; border-radius:4px; font-size:11px;">${d.days}天</span></td>
+          <td>
+             <span style="font-weight:700; color:var(--accent-primary); margin-right:2px;">${d.days}</span>
+             <span style="font-size:11px; color:var(--text-muted);">天</span>
+          </td>
           <td style="max-width:200px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">${d.project}</td>
         `;
         tbody.appendChild(tr);
@@ -904,13 +895,11 @@
     }
 
     function setupEvents() {
-      // 年份切換
       document.getElementById('yearSelect').addEventListener('change', (e) => {
         currentYear = e.target.value;
         renderAll(currentYear);
       });
 
-      // 篩選事件監聽：任何一個變動都會觸發重新渲染表格
       ['filterName', 'filterLocation', 'searchInput'].forEach(id => {
         document.getElementById(id).addEventListener('input', () => {
           const yearData = allRecords.filter(r => r.year == currentYear);
@@ -918,7 +907,6 @@
         });
       });
 
-      // Dark Mode
       const btn = document.getElementById('themeBtn');
       btn.addEventListener('click', () => {
         const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
