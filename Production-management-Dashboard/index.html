@@ -2,7 +2,7 @@
 <html lang="zh-Hant">
 <head>
   <meta charset="UTF-8" />
-  <title>項目現場人力看板 v15 | RWD Mobile Fixed</title>
+  <title>項目管理看板 v15 | RWD Mobile Fixed</title>
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" />
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700&family=Roboto:wght@400;500;700&display=swap" rel="stylesheet">
@@ -52,6 +52,25 @@
       -webkit-font-smoothing: antialiased;
       padding-bottom: 40px;
     }
+    .back-home-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 16px;
+    background-color: var(--bg-color); /* 或自訂顏色 */
+    color: var(--text-main);
+    border: 1px solid var(--accent);
+    border-radius: 8px;
+    text-decoration: none;
+    font-weight: 600;
+    transition: all 0.3s ease;
+}
+
+.back-home-btn:hover {
+    background-color: var(--accent);
+    color: white;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+}
 
     /* --------- Sticky Header (Mobile Optimized) --------- */
     .sticky-header-wrapper {
@@ -368,6 +387,9 @@
       </div>
 
       <div class="kpi-bar" id="kpiBar"></div>
+      <a href="../index.html" class="back-home-btn">
+    <i class="fa-solid fa-house"></i> 回到首頁
+</a>
   </header>
 
   <main class="container">

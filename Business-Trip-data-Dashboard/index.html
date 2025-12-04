@@ -121,6 +121,25 @@
       color: #81b2d9;
       transform: translateY(-1px);
     }
+    .back-home-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 16px;
+    background-color: var(--bg-color); /* 或自訂顏色 */
+    color: var(--text-main);
+    border: 1px solid var(--accent);
+    border-radius: 8px;
+    text-decoration: none;
+    font-weight: 600;
+    transition: all 0.3s ease;
+}
+
+.back-home-btn:hover {
+    background-color: var(--accent);
+    color: white;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+}
 
     /* --------- Main Layout --------- */
     .container {
@@ -420,6 +439,9 @@
         <button class="nav-btn" onclick="scrollToId('section-list')">📝 詳細列表</button>
       </div>
     </div>
+    <a href="../index.html" class="back-home-btn">
+    <i class="fa-solid fa-house"></i> 回到首頁
+</a>
   </header>
 
   <main class="container">
