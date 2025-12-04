@@ -3,227 +3,258 @@
 <head>
   <meta charset="UTF-8" />
   <title>產品工程部-人員出差統計看板 | Vibe Coding</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" />
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700&family=Roboto:wght@400;500;700&display=swap" rel="stylesheet">
 
   <style>
-    /* --------- 全域變數與重置 --------- */
+    /* --------- Theme Variables --------- */
     :root {
-      --bg-body: #f3f5f4;
+      --color-primary: #8ba47c;      /* 莫蘭迪綠 (主色) */
+      --color-primary-light: #e8f5e9;
+      --color-secondary: #f4d35e;    
+      --color-accent: #81b2d9;       
+      
+      --bg-body: #f4f8f8;            
       --bg-card: #ffffff;
-      --text-main: #22302c;
-      --text-muted: #7d8c86;
-      --border-color: #dde5df;
-      --accent-primary: #8ba47c;
-      --shadow-card: 0 4px 16px rgba(128, 143, 140, 0.08);
-      --brand-gradient: linear-gradient(135deg, #b4cfa4, #81b2d9);
+      
+      --text-main: #2d3748;          
+      --text-muted: #718096;         
+      --border-light: #e2e8f0;
+
+      --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+      --shadow-card: 0 4px 15px -2px rgba(0, 0, 0, 0.05);
+      --radius-card: 16px;
+      --radius-input: 10px;
     }
 
     [data-theme="dark"] {
-      --bg-body: #1a1d1c;
-      --bg-card: #242826;
-      --text-main: #e0e6e3;
-      --text-muted: #8fa099;
-      --border-color: #353d39;
-      --shadow-card: 0 4px 16px rgba(0, 0, 0, 0.3);
+      --bg-body: #171923;
+      --bg-card: #2d3748;
+      --text-main: #f7fafc;
+      --text-muted: #a0aec0;
+      --border-light: #4a5568;
+      --shadow-card: 0 4px 6px -1px rgba(0, 0, 0, 0.5);
     }
 
-    * { box-sizing: border-box; }
+    * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
     
     body {
       margin: 0;
-      font-family: 'Inter', system-ui, sans-serif;
+      font-family: 'Roboto', 'Noto Sans TC', sans-serif;
       background: var(--bg-body);
       color: var(--text-main);
+      padding-bottom: 40px;
       transition: background 0.3s ease, color 0.3s ease;
     }
 
-    /* --------- Header & Nav --------- */
-    .page-header {
-      position: sticky;
-      top: 0;
-      z-index: 100;
-      background: var(--bg-body);
-      backdrop-filter: blur(10px);
-      border-bottom: 1px solid var(--border-color);
-      padding-bottom: 12px;
+    /* --------- Header Layout (Brand Bar) --------- */
+    .brand-bar {
+        padding: 12px 16px;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        max-width: 1280px;
+        margin: 0 auto;
+        background: var(--bg-body);
     }
 
-    .page-header-inner {
-      max-width: 1200px;
-      margin: 0 auto;
-      padding: 16px 20px 0;
+    .brand-left {
+        display: flex;
+        align-items: center;
+        gap: 12px;
     }
 
-    .brand-row {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      margin-bottom: 12px;
-    }
-
-    .logo-area {
-      display: flex;
-      align-items: center;
-      gap: 12px;
-    }
-
-    .logo-img {
-      height: 40px;
-      width: auto;
+    .logo-area { 
+        display: flex; align-items: center; gap: 10px;
     }
     
-    /* 新增：Header 右側動作區塊 */
-    .header-actions {
-      display: flex;
-      align-items: center;
-      gap: 10px;
+    .logo-img {
+        height: 40px;
+        width: auto;
     }
 
-    .page-desc {
-      font-size: 13px;
-      color: var(--text-muted);
-      margin: 0;
+    .brand-title-group {
+        display: flex;
+        flex-direction: column;
     }
 
-    /* 統一按鈕樣式 (切換模式 & 回首頁) */
-    .header-btn {
-      background: transparent;
-      border: 1px solid var(--border-color);
-      color: var(--text-main);
-      padding: 6px 12px;
-      border-radius: 20px;
-      cursor: pointer;
-      font-size: 13px;
-      display: flex;
-      align-items: center;
-      gap: 6px;
-      text-decoration: none; /* 給 <a> 標籤用 */
-      transition: all 0.2s;
+    .brand-title {
+        font-size: 18px; font-weight: 700; color: var(--text-main);
+        line-height: 1.2;
     }
-    .header-btn:hover {
-      background: var(--border-color);
-      transform: translateY(-1px);
+    .brand-subtitle {
+        font-size: 11px; font-weight: 400; color: var(--text-muted);
+    }
+
+    .brand-actions {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+    }
+
+    .action-btn {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        font-size: 13px;
+        font-weight: 500;
+        padding: 6px 12px;
+        border-radius: 20px;
+        text-decoration: none;
+        transition: all 0.2s;
+        cursor: pointer;
+        border: 1px solid transparent;
+    }
+    
+    /* 新增：Google Sheet 按鈕樣式 */
+    .btn-sheet { background-color: #e6f4ea; color: #1e8e3e; border: 1px solid #ceead6; }
+    .btn-sheet:hover { background-color: #dcece0; }
+
+    .btn-back { color: var(--text-muted); background: transparent; }
+    .btn-back:hover { color: var(--color-primary); background: var(--color-primary-light); }
+
+    .theme-toggle { 
+        background: transparent; border: 1px solid var(--border-light); 
+        color: var(--text-muted); padding: 6px 12px; border-radius: 20px; 
+        cursor: pointer; font-size: 12px; font-weight: 600;
+    }
+
+    /* --------- Sticky Controls Bar --------- */
+    .sticky-controls-wrapper {
+        position: sticky;
+        top: 0;
+        z-index: 1000;
+        background: rgba(255, 255, 255, 0.95);
+        backdrop-filter: blur(10px);
+        border-bottom: 1px solid var(--border-light);
+        box-shadow: var(--shadow-sm);
+        padding: 10px 16px;
+    }
+    [data-theme="dark"] .sticky-controls-wrapper { background: rgba(45, 55, 72, 0.95); }
+
+    .controls-grid { 
+        max-width: 1280px;
+        margin: 0 auto;
+        display: flex;
+        align-items: center;
+        gap: 16px;
+        flex-wrap: wrap;
+    }
+
+    .year-selector-wrapper {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        background: var(--bg-card);
+        padding: 4px 12px;
+        border: 1px solid var(--border-light);
+        border-radius: var(--radius-input);
+        box-shadow: 0 1px 2px rgba(0,0,0,0.03);
+    }
+    .year-selector-wrapper select {
+        border: none;
+        background: transparent;
+        font-size: 14px;
+        font-weight: 600;
+        color: var(--text-main);
+        outline: none;
+        cursor: pointer;
     }
 
     .nav-pills {
-      display: flex;
-      gap: 8px;
-      overflow-x: auto;
-      padding-bottom: 4px;
+        display: flex;
+        gap: 8px;
+        overflow-x: auto;
+        padding-bottom: 0px;
+        flex-grow: 1; 
     }
 
     .nav-btn {
-      padding: 6px 14px;
-      border-radius: 20px;
-      border: 1px solid transparent;
-      background: var(--bg-card);
-      color: var(--text-main);
-      font-size: 13px;
-      cursor: pointer;
-      white-space: nowrap;
-      box-shadow: 0 1px 3px rgba(0,0,0,0.05);
-      transition: 0.2s;
+        padding: 6px 14px;
+        border-radius: 20px;
+        border: 1px solid var(--border-light);
+        background: var(--bg-card);
+        color: var(--text-muted);
+        font-size: 13px;
+        cursor: pointer;
+        white-space: nowrap;
+        transition: 0.2s;
+        display: flex;
+        align-items: center;
+        gap: 6px;
     }
     .nav-btn:hover {
-      border-color: #81b2d9;
-      color: #81b2d9;
-      transform: translateY(-1px);
+        border-color: var(--color-primary);
+        color: var(--color-primary);
+        background: var(--color-primary-light);
+    }
+    .nav-btn.active {
+        background: var(--color-primary);
+        color: white;
+        border-color: var(--color-primary);
     }
 
-    /* --------- Main Layout --------- */
+    /* --------- Content Area --------- */
     .container {
-      max-width: 1200px;
+      max-width: 1280px;
       margin: 20px auto 60px;
-      padding: 0 20px;
+      padding: 0 16px;
     }
 
     .card {
       background: var(--bg-card);
-      border-radius: 16px;
+      border-radius: var(--radius-card);
       padding: 20px;
       margin-bottom: 20px;
       box-shadow: var(--shadow-card);
-      border: 1px solid var(--border-color);
+      border: 1px solid var(--border-light);
     }
 
     .card-header {
       display: flex;
       justify-content: space-between;
       align-items: center;
-      margin-bottom: 6px;
+      margin-bottom: 12px;
       flex-wrap: wrap;
       gap: 10px;
     }
 
     .card-title {
-      font-size: 18px;
+      font-size: 16px;
       font-weight: 700;
       color: var(--text-main);
       display: flex;
       align-items: center;
       gap: 8px;
     }
+    
+    .card-title::before {
+        content: '';
+        display: block;
+        width: 4px;
+        height: 16px;
+        background: var(--color-primary);
+        border-radius: 2px;
+    }
 
     .card-subtitle {
       font-size: 13px;
       color: var(--text-muted);
       margin-bottom: 16px;
-      line-height: 1.5;
-    }
-
-    /* --------- Controls --------- */
-    .controls {
-      display: flex;
-      align-items: center;
-      gap: 10px;
-      margin-bottom: 16px;
-      font-size: 14px;
-    }
-    select, input {
-      padding: 6px 10px;
-      border-radius: 8px;
-      border: 1px solid var(--border-color);
-      background: var(--bg-card);
-      color: var(--text-main);
-      font-family: inherit;
     }
 
     /* --------- Charts --------- */
-    
-    /* 1. 直條圖容器 (固定高度) */
-    .chart-container-vertical {
-      position: relative;
-      width: 100%;
-      height: 400px; 
-      margin-top: 10px;
-    }
-    
-    /* 2. 橫條圖容器 (動態高度，預設 min-height) */
-    .chart-container-horizontal {
-      position: relative;
-      width: 100%;
-      min-height: 200px; /* JS 會覆寫這個高度 */
-      margin-top: 10px;
-    }
-    
-    .chart-wrapper-scrollable {
-      max-height: 600px;
-      overflow-y: auto;
-      border: 1px solid var(--border-color);
+    .chart-wrapper-base, .chart-wrapper-scrollable {
+      border: 1px solid var(--border-light);
       border-radius: 12px;
       padding: 10px;
       background: linear-gradient(to bottom, var(--bg-card), var(--bg-body));
     }
-    
-    .chart-wrapper-base {
-      border: 1px solid var(--border-color);
-      border-radius: 12px;
-      padding: 10px;
-      background: linear-gradient(to bottom, var(--bg-card), var(--bg-body));
-    }
+    .chart-container-vertical { position: relative; width: 100%; height: 400px; margin-top: 10px; }
+    .chart-container-horizontal { position: relative; width: 100%; min-height: 200px; margin-top: 10px; }
+    .chart-wrapper-scrollable { max-height: 600px; overflow-y: auto; }
 
     /* --------- Utilization Cards --------- */
     .util-grid {
@@ -233,218 +264,140 @@
     }
     .util-card {
       background: var(--bg-card);
-      border: 1px solid var(--border-color);
+      border: 1px solid var(--border-light);
       border-radius: 12px;
       padding: 16px;
       position: relative;
       overflow: hidden;
+      transition: transform 0.2s;
     }
+    .util-card:hover { transform: translateY(-3px); box-shadow: var(--shadow-card); }
+    
     .util-level-tag {
-      position: absolute;
-      top: 12px;
-      right: 12px;
-      font-size: 10px;
-      padding: 2px 8px;
-      border-radius: 10px;
-      font-weight: 600;
+      position: absolute; top: 12px; right: 12px; font-size: 10px;
+      padding: 2px 8px; border-radius: 10px; font-weight: 600;
     }
     .util-val { font-size: 24px; font-weight: 700; margin: 4px 0; }
     .util-desc { font-size: 11px; color: var(--text-muted); margin-bottom: 8px; }
-    .util-bar {
-      height: 6px; background: var(--border-color); border-radius: 3px; overflow: hidden;
-    }
+    .util-bar { height: 6px; background: var(--border-light); border-radius: 3px; overflow: hidden; }
     .util-bar-fill { height: 100%; border-radius: 3px; }
 
     /* --------- Timeline --------- */
     .timeline-wrapper {
-      width: 100%;
-      overflow-x: auto;
-      border: 1px solid var(--border-color);
-      border-radius: 12px;
-      background: var(--bg-card);
+      width: 100%; overflow-x: auto;
+      border: 1px solid var(--border-light);
+      border-radius: 12px; background: var(--bg-card);
     }
-
-    .timeline-grid-layout {
-      display: grid;
-      grid-template-columns: 100px repeat(12, 1fr); 
-      min-width: 800px;
-    }
-
+    .timeline-grid-layout { display: grid; grid-template-columns: 100px repeat(12, 1fr); min-width: 800px; }
+    
     .timeline-header {
-      border-bottom: 1px solid var(--border-color);
-      background: rgba(180, 207, 164, 0.1);
-      font-size: 12px;
-      color: var(--text-muted);
-      font-weight: 600;
+      border-bottom: 1px solid var(--border-light);
+      background: var(--color-primary-light);
+      font-size: 12px; color: var(--text-muted); font-weight: 600;
     }
-
-    .timeline-header-cell {
-      padding: 10px 4px;
-      text-align: center;
-      border-right: 1px dashed var(--border-color);
-    }
+    .timeline-header-cell { padding: 10px 4px; text-align: center; border-right: 1px dashed var(--border-light); }
     .timeline-header-cell:first-child { text-align: right; padding-right: 10px; }
     .timeline-header-cell:last-child { border-right: none; }
-
-    .timeline-row {
-      border-bottom: 1px solid var(--border-color);
-      position: relative;
-      height: 44px;
-      align-items: center;
-    }
+    
+    .timeline-row { border-bottom: 1px solid var(--border-light); position: relative; height: 44px; align-items: center; }
     .timeline-row:last-child { border-bottom: none; }
-
+    
     .timeline-name-col {
-      padding: 0 10px;
-      display: flex;
-      align-items: center;
-      justify-content: flex-end;
-      font-size: 13px;
-      font-weight: 500;
-      color: var(--text-main);
-      border-right: 1px solid var(--border-color);
-      background: var(--bg-card);
-      z-index: 2;
+      padding: 0 10px; display: flex; align-items: center; justify-content: flex-end;
+      font-size: 13px; font-weight: 500; color: var(--text-main);
+      border-right: 1px solid var(--border-light); background: var(--bg-card); z-index: 2;
     }
-
-    .timeline-bars-container {
-      grid-column: 2 / span 12; 
-      position: relative;
-      height: 100%;
-    }
-
-    .grid-lines {
-      position: absolute;
-      inset: 0;
-      display: grid;
-      grid-template-columns: repeat(12, 1fr);
-      pointer-events: none;
-      z-index: 0;
-    }
-    .grid-line {
-      border-right: 1px dashed var(--border-color);
-      height: 100%;
-    }
-
+    .timeline-bars-container { grid-column: 2 / span 12; position: relative; height: 100%; }
+    .grid-lines { position: absolute; inset: 0; display: grid; grid-template-columns: repeat(12, 1fr); pointer-events: none; z-index: 0; }
+    .grid-line { border-right: 1px dashed var(--border-light); height: 100%; }
+    
     .timeline-item {
-      position: absolute;
-      top: 10px;
-      bottom: 10px;
-      border-radius: 4px;
-      display: block; 
-      overflow: hidden; 
-      box-shadow: 0 1px 3px rgba(0,0,0,0.1);
-      z-index: 1;
-      opacity: 0.9;
-      transition: all 0.2s;
-      cursor: help; 
+      position: absolute; top: 10px; bottom: 10px; border-radius: 4px;
+      display: block; overflow: hidden; box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+      z-index: 1; opacity: 0.9; transition: all 0.2s; cursor: help;
     }
-    .timeline-item:hover {
-      transform: scaleY(1.15);
-      z-index: 10;
-      opacity: 1;
-      box-shadow: 0 4px 8px rgba(0,0,0,0.15);
-    }
+    .timeline-item:hover { transform: scaleY(1.15); z-index: 10; opacity: 1; box-shadow: 0 4px 8px rgba(0,0,0,0.15); }
     
     .status-done { background: #8ba47c; }
     .status-active { background: #f4d35e; }
-    .status-future { background: #fbc2c2; }
+    .status-future { background: #ffb88a; }
 
     /* --------- Table & Filters --------- */
-    .table-header-actions {
-      flex-grow: 1;
-      display: flex;
-      gap: 10px;
-      align-items: center;
-      justify-content: flex-end;
-      flex-wrap: wrap;
-    }
-
-    .filter-group {
-      display: flex;
-      gap: 8px;
-    }
+    .table-header-actions { flex-grow: 1; display: flex; gap: 10px; align-items: center; justify-content: flex-end; flex-wrap: wrap; }
+    .filter-group { display: flex; gap: 8px; flex-wrap: wrap; }
     
     .filter-select {
-      padding: 6px 24px 6px 10px; 
-      border-radius: 8px;
-      border: 1px solid var(--border-color);
-      background-color: var(--bg-body);
-      color: var(--text-main);
-      font-size: 13px;
-      cursor: pointer;
-      appearance: none;
+      padding: 6px 24px 6px 10px; border-radius: 8px; border: 1px solid var(--border-light);
+      background-color: var(--bg-body); color: var(--text-main); font-size: 13px;
+      cursor: pointer; appearance: none;
       background-image: url("data:image/svg+xml;charset=US-ASCII,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%22292.4%22%20height%3D%22292.4%22%3E%3Cpath%20fill%3D%22%237d8c86%22%20d%3D%22M287%2069.4a17.6%2017.6%200%200%200-13-5.4H18.4c-5%200-9.3%201.8-12.9%205.4A17.6%2017.6%200%200%200%200%2082.2c0%205%201.8%209.3%205.4%2012.9l128%20127.9c3.6%203.6%207.8%205.4%2012.8%205.4s9.2-1.8%2012.8-5.4L287%2095c3.5-3.5%205.4-7.8%205.4-12.8%200-5-1.9-9.2-5.5-12.8z%22%2F%3E%3C%2Fsvg%3E");
-      background-repeat: no-repeat;
-      background-position: right 8px center;
-      background-size: 8px auto;
+      background-repeat: no-repeat; background-position: right 8px center; background-size: 8px auto;
     }
-
-    .table-container {
-      overflow-x: auto;
-      border: 1px solid var(--border-color);
-      border-radius: 12px;
-    }
+    
+    .table-container { overflow-x: auto; border: 1px solid var(--border-light); border-radius: 12px; }
     table { width: 100%; border-collapse: collapse; font-size: 13px; }
-    th { background: rgba(0,0,0,0.02); text-align: left; padding: 12px; color: var(--text-muted); }
-    td { padding: 10px 12px; border-top: 1px solid var(--border-color); }
+    th { background: rgba(0,0,0,0.02); text-align: left; padding: 12px; color: var(--text-muted); white-space: nowrap; }
+    td { padding: 10px 12px; border-top: 1px solid var(--border-light); white-space: nowrap; }
     tr:hover td { background: rgba(0,0,0,0.02); }
-
-    .highlight-num { font-weight: 700; color: var(--accent-primary); }
+    .highlight-num { font-weight: 700; color: var(--color-primary); }
     
     /* RWD */
     @media (max-width: 768px) {
-      .timeline-grid-layout { min-width: 600px; }
-      .nav-pills { padding-bottom: 8px; }
       .brand-row { flex-direction: column; align-items: flex-start; gap: 10px; }
-      .header-actions { width: 100%; justify-content: space-between; margin-top: 5px;} 
-      .card-header { flex-direction: column; align-items: flex-start; }
+      .controls-grid { gap: 10px; overflow-x: auto; padding-bottom: 4px; }
+      .nav-pills { width: 100%; }
       .table-header-actions { justify-content: flex-start; width: 100%; }
-      .filter-group { width: 100%; display: flex; gap: 8px; }
-      .filter-select { flex: 1; }
       #searchInput { width: 100% !important; margin-top: 4px; }
     }
   </style>
 </head>
 <body>
 
-  <header class="page-header">
-    <div class="page-header-inner">
-      <div class="brand-row">
+  <div class="brand-bar">
+      <div class="brand-left">
         <div class="logo-area">
-          <img src="./icons/logo.png" alt="寶新 Logo" class="logo-img">
-          <div style="font-size: 18px; font-weight:700;">產品工程部出差統計看板</div>
+          <img src="../logo.png" alt="寶新 Logo" class="logo-img">
+          <div class="brand-title-group">
+              <div class="brand-title">產品工程部出差統計看板</div>
+              <div class="brand-subtitle">Business Trip Analytics Dashboard</div>
+          </div>
         </div>
-        
-        <div class="header-actions">
-           <a href="../index.html" class="header-btn">
-             <i class="fa-solid fa-house"></i> 回首頁
+      </div>
+      
+      <div class="brand-actions">
+           <a href="https://docs.google.com/spreadsheets/d/1FJEwp02CBL8A_9WH455RsA1YsuakMCFdtakyesh9i2s/edit?gid=840585085#gid=840585085" target="_blank" class="action-btn btn-sheet">
+            <i class="fa-solid fa-file-pen"></i> Edit Data
            </a>
-           <button class="header-btn" id="themeBtn">
-             <span>◐</span> 模式
-           </button>
+
+           <a href="../index.html" class="action-btn btn-back">
+             ← 回到數據中控台
+           </a>
+           <button class="theme-toggle" id="themeBtn">◐</button>
+      </div>
+  </div>
+
+  <div class="sticky-controls-wrapper">
+    <div class="controls-grid">
+        
+        <div class="year-selector-wrapper">
+            <i class="fa-regular fa-calendar"></i>
+            <select id="yearSelect"></select>
         </div>
-      </div>
-      
-      <p class="page-desc">整合 Google 表單資料，即時視覺化年度出差分佈與人力負載。</p>
-      
-      <div class="nav-pills" style="margin-top: 12px;">
-        <button class="nav-btn" onclick="scrollToId('section-stats')">📊 統計圖表</button>
-        <button class="nav-btn" onclick="scrollToId('section-util')">🍰 利用率</button>
-        <button class="nav-btn" onclick="scrollToId('section-timeline')">📅 時間軸</button>
-        <button class="nav-btn" onclick="scrollToId('section-list')">📝 詳細列表</button>
-      </div>
+
+        <div class="nav-pills">
+            <button class="nav-btn" onclick="scrollToId('section-stats')"><i class="fa-solid fa-chart-column"></i> 統計</button>
+            <button class="nav-btn" onclick="scrollToId('section-util')"><i class="fa-solid fa-chart-pie"></i> 利用率</button>
+            <button class="nav-btn" onclick="scrollToId('section-timeline')"><i class="fa-solid fa-timeline"></i> 時間軸</button>
+            <button class="nav-btn" onclick="scrollToId('section-list')"><i class="fa-solid fa-table-list"></i> 列表</button>
+        </div>
+
     </div>
-  </header>
+  </div>
 
   <main class="container">
     
-    <div class="controls">
-      <label>
-        選擇年份：
-        <select id="yearSelect"></select>
-      </label>
-      <span style="color: var(--text-muted); font-size: 12px;">(資料來源：Google 試算表 CSV)</span>
+    <div style="font-size: 12px; color: var(--text-muted); margin-bottom: 10px; text-align: right;">
+        (資料來源：Google 試算表 CSV)
     </div>
 
     <section id="section-stats" class="card">
@@ -490,7 +443,7 @@
       <div class="card-subtitle">
         <span style="color:#8ba47c">● 已完成</span> &nbsp; 
         <span style="color:#f4d35e">● 進行中</span> &nbsp; 
-        <span style="color:#fbc2c2">● 未來計畫</span>
+        <span style="color:#ffb88a">● 未來計畫</span>
         <span style="margin-left:12px; color:var(--text-muted); font-size:12px;">(滑鼠懸停於區塊可查看詳細日期)</span>
       </div>
 
@@ -546,7 +499,7 @@
        1. Configuration & Data Parsing
        ========================================= */
     const CSV_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vQI-ac_9JPcK5zQSCPT6xS1YYWUAv7n8-isJ_TrHuFSHGAK4I7d0EG8ZofBK36dvd9e4HM5FZCbVCr1/pub?output=csv";
-    const MORANDI_COLORS = ["#b4cfa4", "#81b2d9", "#f4d35e", "#ffb88a", "#e39b99", "#a0c5e3", "#d3b8e1"];
+    const MORANDI_COLORS = ["#8ba47c", "#f4d35e", "#ffb88a", "#81b2d9", "#e39b99", "#a0c5e3", "#d3b8e1"];
     
     let allRecords = [];
     let currentYear = new Date().getFullYear();
@@ -571,7 +524,7 @@
         years.forEach(y => {
           const opt = document.createElement("option");
           opt.value = y;
-          opt.textContent = y;
+          opt.textContent = `${y}年度`;
           sel.appendChild(opt);
         });
 
@@ -877,7 +830,7 @@
 
       sorted.forEach(d => {
         const tr = document.createElement('tr');
-        // 修改：移除天數的背景色，改用粗體與主題色文字
+        // 天數粗體 + 主題色
         tr.innerHTML = `
           <td style="font-weight:600">${d.name}</td>
           <td>${d.location}</td>
@@ -885,7 +838,7 @@
             ${d.startDate.toISOString().slice(0,10)} ~ ${d.endDate.toISOString().slice(0,10)}
           </td>
           <td>
-             <span style="font-weight:700; color:var(--accent-primary); margin-right:2px;">${d.days}</span>
+             <span style="font-weight:700; color:var(--color-primary); margin-right:2px;">${d.days}</span>
              <span style="font-size:11px; color:var(--text-muted);">天</span>
           </td>
           <td style="max-width:200px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">${d.project}</td>
@@ -912,6 +865,15 @@
         const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
         document.documentElement.setAttribute('data-theme', isDark ? 'light' : 'dark');
       });
+
+      // 導航按鈕高亮邏輯
+      const navBtns = document.querySelectorAll('.nav-btn');
+      navBtns.forEach(btn => {
+          btn.addEventListener('click', function() {
+              navBtns.forEach(b => b.classList.remove('active'));
+              this.classList.add('active');
+          });
+      });
     }
 
     function setupTheme() {
@@ -921,7 +883,16 @@
     }
 
     function scrollToId(id) {
-      document.getElementById(id).scrollIntoView({ behavior: 'smooth', block: 'start' });
+        // 因為有凍結列，所以捲動時要扣除上方的高度
+        const element = document.getElementById(id);
+        const headerOffset = 140; 
+        const elementPosition = element.getBoundingClientRect().top;
+        const offsetPosition = elementPosition + window.pageYOffset - headerOffset;
+
+        window.scrollTo({
+            top: offsetPosition,
+            behavior: "smooth"
+        });
     }
   </script>
 </body>
