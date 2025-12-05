@@ -311,7 +311,7 @@
     .grid-lines { position: absolute; inset: 0; display: grid; grid-template-columns: repeat(12, 1fr); pointer-events: none; z-index: 0; }
     .grid-line { border-right: 1px dashed var(--border-light); height: 100%; }
     
-    /* 🔴 新增：Today 紅色虛線與標籤樣式 */
+    /* Today Line */
     .today-line {
       position: absolute;
       top: 0; bottom: 0;
@@ -320,11 +320,11 @@
       z-index: 20;
       pointer-events: none;
     }
-    /* 🔴 只在第一行顯示 "Today" 標籤 */
+    /* Only show label on the first row */
     .timeline-body .timeline-row:first-child .today-line::after {
       content: 'Today';
       position: absolute;
-      top: -20px; /* 顯示在格線上方 */
+      top: -20px; 
       left: 50%;
       transform: translateX(-50%);
       background-color: #e53e3e;
@@ -366,6 +366,12 @@
     td { padding: 10px 12px; border-top: 1px solid var(--border-light); white-space: nowrap; }
     tr:hover td { background: rgba(0,0,0,0.02); }
     .highlight-num { font-weight: 700; color: var(--color-primary); }
+
+    /* 🟢 新增：列表狀態標籤樣式 */
+    .status-badge { padding: 3px 8px; border-radius: 12px; font-size: 11px; font-weight: 600; color: #fff; display: inline-block; min-width: 60px; text-align: center;}
+    .badge-done { background-color: #8ba47c; }   /* 已完成 */
+    .badge-active { background-color: #f4d35e; color: #4a4a4a; } /* 進行中 */
+    .badge-plan { background-color: #ffb88a; color: #4a4a4a; }   /* 計畫中 */
     
     /* RWD */
     @media (max-width: 768px) {
@@ -411,9 +417,9 @@
         </div>
 
         <div class="nav-pills">
+            <button class="nav-btn" onclick="scrollToId('section-timeline')"><i class="fa-solid fa-timeline"></i> 時間軸</button>
             <button class="nav-btn" onclick="scrollToId('section-stats')"><i class="fa-solid fa-chart-column"></i> 統計</button>
             <button class="nav-btn" onclick="scrollToId('section-util')"><i class="fa-solid fa-chart-pie"></i> 利用率</button>
-            <button class="nav-btn" onclick="scrollToId('section-timeline')"><i class="fa-solid fa-timeline"></i> 時間軸</button>
             <button class="nav-btn" onclick="scrollToId('section-list')"><i class="fa-solid fa-table-list"></i> 列表</button>
         </div>
 
@@ -425,6 +431,31 @@
     <div style="font-size: 12px; color: var(--text-muted); margin-bottom: 10px; text-align: right;">
         (資料來源：Google 試算表 CSV)
     </div>
+
+    <section id="section-timeline" class="card">
+      <div class="card-header">
+        <div class="card-title">年度出差時間軸</div>
+      </div>
+      <div class="card-subtitle">
+        <span style="color:#8ba47c">● 已完成</span> &nbsp; 
+        <span style="color:#f4d35e">● 進行中</span> &nbsp; 
+        <span style="color:#ffb88a">● 未來計畫</span>
+        <span style="margin-left:12px; color:var(--text-muted); font-size:12px;">(滑鼠懸停於區塊可查看詳細日期)</span>
+      </div>
+
+      <div class="timeline-wrapper">
+        <div class="timeline-grid-layout timeline-header">
+          <div class="timeline-header-cell">人員</div>
+          <div class="timeline-header-cell">1月</div><div class="timeline-header-cell">2月</div>
+          <div class="timeline-header-cell">3月</div><div class="timeline-header-cell">4月</div>
+          <div class="timeline-header-cell">5月</div><div class="timeline-header-cell">6月</div>
+          <div class="timeline-header-cell">7月</div><div class="timeline-header-cell">8月</div>
+          <div class="timeline-header-cell">9月</div><div class="timeline-header-cell">10月</div>
+          <div class="timeline-header-cell">11月</div><div class="timeline-header-cell">12月</div>
+        </div>
+        <div id="timelineBody" class="timeline-body"></div>
+      </div>
+    </section>
 
     <section id="section-stats" class="card">
       <div class="card-header">
@@ -462,31 +493,6 @@
         </div>
     </section>
 
-    <section id="section-timeline" class="card">
-      <div class="card-header">
-        <div class="card-title">年度出差時間軸</div>
-      </div>
-      <div class="card-subtitle">
-        <span style="color:#8ba47c">● 已完成</span> &nbsp; 
-        <span style="color:#f4d35e">● 進行中</span> &nbsp; 
-        <span style="color:#ffb88a">● 未來計畫</span>
-        <span style="margin-left:12px; color:var(--text-muted); font-size:12px;">(滑鼠懸停於區塊可查看詳細日期)</span>
-      </div>
-
-      <div class="timeline-wrapper">
-        <div class="timeline-grid-layout timeline-header">
-          <div class="timeline-header-cell">人員</div>
-          <div class="timeline-header-cell">1月</div><div class="timeline-header-cell">2月</div>
-          <div class="timeline-header-cell">3月</div><div class="timeline-header-cell">4月</div>
-          <div class="timeline-header-cell">5月</div><div class="timeline-header-cell">6月</div>
-          <div class="timeline-header-cell">7月</div><div class="timeline-header-cell">8月</div>
-          <div class="timeline-header-cell">9月</div><div class="timeline-header-cell">10月</div>
-          <div class="timeline-header-cell">11月</div><div class="timeline-header-cell">12月</div>
-        </div>
-        <div id="timelineBody" class="timeline-body"></div>
-      </div>
-    </section>
-
     <section id="section-list" class="card">
       <div class="card-header">
         <div class="card-title">詳細資料列表</div>
@@ -508,7 +514,7 @@
             <tr>
               <th>姓名</th>
               <th>地點</th>
-              <th>日期區間</th>
+              <th>狀態</th> <th>日期區間</th>
               <th>天數</th>
               <th>專案內容</th>
             </tr>
@@ -850,6 +856,7 @@
       const nameVal = document.getElementById('filterName').value;
       const locVal = document.getElementById('filterLocation').value;
       const searchVal = document.getElementById('searchInput').value.toLowerCase();
+      const today = new Date(); // 🟢 獲取當前日期用於比對
 
       tbody.innerHTML = "";
       
@@ -867,16 +874,27 @@
       const sorted = filtered.sort((a,b) => a.startDate - b.startDate);
       
       if(sorted.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="5" style="text-align:center; padding:20px; color:var(--text-muted);">無符合資料</td></tr>';
+        tbody.innerHTML = '<tr><td colspan="6" style="text-align:center; padding:20px; color:var(--text-muted);">無符合資料</td></tr>';
         return;
       }
 
       sorted.forEach(d => {
         const tr = document.createElement('tr');
-        // 天數粗體 + 主題色
+        
+        // 🟢 判斷狀態
+        let statusHtml = '';
+        if (d.endDate < today) {
+            statusHtml = '<span class="status-badge badge-done">已完成</span>';
+        } else if (d.startDate <= today && d.endDate >= today) {
+            statusHtml = '<span class="status-badge badge-active">進行中</span>';
+        } else {
+            statusHtml = '<span class="status-badge badge-plan">計畫中</span>';
+        }
+
         tr.innerHTML = `
           <td style="font-weight:600">${d.name}</td>
           <td>${d.location}</td>
+          <td>${statusHtml}</td>
           <td style="font-size:12px; color:var(--text-muted)">
             ${d.startDate.toISOString().slice(0,10)} ~ ${d.endDate.toISOString().slice(0,10)}
           </td>
@@ -909,7 +927,6 @@
         document.documentElement.setAttribute('data-theme', isDark ? 'light' : 'dark');
       });
 
-      // 導航按鈕高亮邏輯
       const navBtns = document.querySelectorAll('.nav-btn');
       navBtns.forEach(btn => {
           btn.addEventListener('click', function() {

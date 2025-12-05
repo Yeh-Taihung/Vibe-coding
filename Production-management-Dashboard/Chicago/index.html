@@ -2,7 +2,7 @@
 <html lang="zh-Hant">
 <head>
   <meta charset="UTF-8" />
-  <title>芝加哥項目現場人力看板 v24 | Dynamic Titles</title>
+  <title>芝加哥項目現場人力看板 v25 | Status Column Added</title>
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" />
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
@@ -150,7 +150,7 @@
         padding: 20px; margin-bottom: 20px; box-shadow: var(--shadow-card); border: none;
     }
     .card-header-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; flex-wrap: wrap; gap:10px; }
-    .card-title { font-size: 16px; font-weight: 700; color: var(--text-main); transition: all 0.3s ease; } /* Added transition */
+    .card-title { font-size: 16px; font-weight: 700; color: var(--text-main); transition: all 0.3s ease; } 
     
     .project-info-bar { 
         display: flex; flex-wrap: wrap; background: var(--bg-card);
@@ -236,6 +236,13 @@
     .tag-expired { background: #ffebee; color: #c53030; } 
     
     .tag-visa { border: 1px solid var(--border-light); color: var(--text-muted); padding: 1px 6px; border-radius: 4px; font-size: 11px; }
+
+    /* 🟢 新增：列表狀態標籤樣式 */
+    .status-badge { padding: 2px 8px; border-radius: 12px; font-size: 11px; font-weight: 600; display: inline-block; min-width: 60px; text-align: center; color: #fff; }
+    .badge-past { background: var(--status-neutral); color: #4a5568; } /* 已離崗 (灰色) */
+    .badge-active { background: var(--status-success); } /* 進行中 (綠色) */
+    .badge-plan { background: var(--status-plan); } /* 計畫中 (藍色) */
+
   </style>
 </head>
 <body>
@@ -246,7 +253,7 @@
               <img src="../../logo.png" alt="Mr.Yes Logo" class="logo-img">
               <div>
                   <div style="line-height:1.2">芝加哥項目現場人力看板</div>
-                  <div style="font-size:11px; font-weight:400; color:var(--text-muted)">Project Field Manpower Dashboard v24</div>
+                  <div style="font-size:11px; font-weight:400; color:var(--text-muted)">Project Field Manpower Dashboard v25</div>
               </div>
           </div>
       </div>
@@ -371,7 +378,15 @@
         <table>
           <thead>
             <tr>
-              <th>產線</th><th>姓名</th><th>供應商</th><th>工種</th><th>職責</th><th>簽證</th><th>到崗日</th><th>離開日</th><th>簽證狀態</th>
+              <th>產線</th>
+              <th>姓名</th>
+              <th>狀態</th> <th>供應商</th>
+              <th>工種</th>
+              <th>職責</th>
+              <th>簽證</th>
+              <th>到崗日</th>
+              <th>離開日</th>
+              <th>簽證狀態</th>
             </tr>
           </thead>
           <tbody id="tableBody"></tbody>
@@ -496,7 +511,7 @@
         d.arrivalDate <= TODAY && (d.leaveDate === null || d.leaveDate >= TODAY)
       );
 
-      // ✨ New: Generate Title Prefix based on filters
+      // Dynamic Title Prefix
       const s = document.getElementById('filterSupplier').value;
       const l = document.getElementById('filterLine').value;
       const r = document.getElementById('filterRole').value;
@@ -505,12 +520,11 @@
       if (l) titlePrefix += l + " ";
       if (r) titlePrefix += r + " ";
       
-      // Update Section Titles
       document.getElementById('title-role').textContent = titlePrefix + "工種人力分布";
       document.getElementById('title-gantt').textContent = titlePrefix + "工作甘特圖";
       document.getElementById('title-list').textContent = titlePrefix + "詳細列表";
 
-      renderKpiBar(activePeople, titlePrefix); // Pass prefix to KPI
+      renderKpiBar(activePeople, titlePrefix);
       renderChart(activePeople);   
       renderTimeline(filtered, year); 
       renderTable(filtered); 
@@ -533,7 +547,6 @@
       }
     }
 
-    // ✨ Updated: Accept titlePrefix
     function renderKpiBar(activeData, prefix = "") {
       const container = document.getElementById('kpiBar');
       container.innerHTML = "";
@@ -667,10 +680,20 @@
                       daysToVisa <= 30 ? `<span class="tag tag-warning">剩${daysToVisa}天</span>` : 
                       `<span class="tag tag-normal">正常</span>`;
         
+        // 🟢 新增：狀態判斷邏輯
+        let statusHtml = '';
+        if (d.leaveDate && d.leaveDate < TODAY) {
+            statusHtml = '<span class="status-badge badge-past">已離崗</span>';
+        } else if (d.arrivalDate > TODAY) {
+            statusHtml = '<span class="status-badge badge-plan">計畫中</span>';
+        } else {
+            statusHtml = '<span class="status-badge badge-active">進行中</span>';
+        }
+
         tr.innerHTML = `
           <td><span style="font-weight:600;color:var(--text-muted)">${d.line}</span></td>
           <td><strong>${d.name}</strong></td>
-          <td>${d.supplier}</td>
+          <td>${statusHtml}</td> <td>${d.supplier}</td>
           <td>${d.role}</td>
           <td>${d.duty}</td> <td><span class="tag-visa">${d.visaType}</span></td> <td>${d.arrivalDate.toLocaleDateString()}</td>
           <td>${d.leaveDate ? d.leaveDate.toLocaleDateString() : '在職'}</td>
