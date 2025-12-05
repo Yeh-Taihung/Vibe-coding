@@ -2,7 +2,7 @@
 <html lang="zh-Hant">
 <head>
   <meta charset="UTF-8" />
-  <title>芝加哥項目現場人力看板 v22 | Enhanced Data</title>
+  <title>芝加哥項目現場人力看板 v24 | Dynamic Titles</title>
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" />
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
@@ -27,6 +27,7 @@
       --status-warning: #f6ad55;     
       --status-danger: #e53e3e;      
       --status-neutral: #cbd5e0;     
+      --status-plan: #63b3ed;
 
       --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
       --shadow-card: 0 4px 15px -2px rgba(0, 0, 0, 0.05);
@@ -148,8 +149,8 @@
         background: var(--bg-card); border-radius: var(--radius-card); 
         padding: 20px; margin-bottom: 20px; box-shadow: var(--shadow-card); border: none;
     }
-    .card-header-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; }
-    .card-title { font-size: 16px; font-weight: 700; color: var(--text-main); }
+    .card-header-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; flex-wrap: wrap; gap:10px; }
+    .card-title { font-size: 16px; font-weight: 700; color: var(--text-main); transition: all 0.3s ease; } /* Added transition */
     
     .project-info-bar { 
         display: flex; flex-wrap: wrap; background: var(--bg-card);
@@ -210,9 +211,17 @@
         font-size: 10px; color: #fff; display: flex; align-items: center; padding-left: 6px; 
         white-space: nowrap; overflow: hidden; box-shadow: 0 1px 2px rgba(0,0,0,0.1); z-index: 5;
     }
+    
     .status-active { background: var(--status-success); } 
-    .status-plan { background: #63b3ed; opacity: 0.7; }
-    .status-past { background: var(--status-neutral); opacity: 0.6; }
+    .status-plan { background: var(--status-plan); opacity: 0.8; }
+    .status-past { background: var(--status-neutral); opacity: 0.8; }
+
+    /* Gantt Legend */
+    .gantt-legend {
+        display: flex; gap: 15px; font-size: 12px; color: var(--text-muted); align-items: center;
+    }
+    .legend-item { display: flex; align-items: center; gap: 6px; }
+    .legend-dot { width: 10px; height: 10px; border-radius: 50%; display: inline-block; }
 
     /* Table */
     .table-responsive { overflow-x: auto; }
@@ -226,7 +235,6 @@
     .tag-warning { background: #fffaf0; color: #dd6b20; } 
     .tag-expired { background: #ffebee; color: #c53030; } 
     
-    /* 簽證標籤樣式 */
     .tag-visa { border: 1px solid var(--border-light); color: var(--text-muted); padding: 1px 6px; border-radius: 4px; font-size: 11px; }
   </style>
 </head>
@@ -238,13 +246,13 @@
               <img src="../../logo.png" alt="Mr.Yes Logo" class="logo-img">
               <div>
                   <div style="line-height:1.2">芝加哥項目現場人力看板</div>
-                  <div style="font-size:11px; font-weight:400; color:var(--text-muted)">Project Field Manpower Dashboard v22</div>
+                  <div style="font-size:11px; font-weight:400; color:var(--text-muted)">Project Field Manpower Dashboard v24</div>
               </div>
           </div>
       </div>
 
       <div class="brand-actions">
-          <a href="https://docs.google.com/spreadsheets/d/18ABTFrdN-Npyt90FdOmx4cV1d_G8uOuTooIAuZN_hrs/edit?gid=0#gid=0">
+          <a href="https://docs.google.com/spreadsheets/d/18ABTFrdN-Npyt90FdOmx4cV1d_G8uOuTooIAuZN_hrs/edit?gid=0#gid=0" target="_blank" class="action-btn btn-sheet">
             <i class="fa-solid fa-file-pen"></i> Edit Data
           </a>
           
@@ -282,30 +290,30 @@
 
     <div class="project-info-bar">
       <div class="p-item">
-        <div class="p-label" style="color:#3182ce;">📅 資料更新</div>
+        <div class="p-label" style="color:#3182ce;">📅 資料更新日期</div>
         <div class="p-value" id="dataUpdated">-</div>
       </div>
       <div class="p-item">
-        <div class="p-label" style="color:#f4d35e;">📍 地點</div>
+        <div class="p-label" style="color:#f4d35e;">📍 項目地點</div>
         <div class="p-value" id="projLoc">-</div>
       </div>
       <div class="p-item">
-        <div class="p-label">🏁 啟動日</div>
+        <div class="p-label">🏁 項目啟動日</div>
         <div class="p-value" id="projStart">-</div>
       </div>
       <div class="p-item">
-        <div class="p-label">🎯 完成日</div>
+        <div class="p-label">🎯 項目計畫完成日</div>
         <div class="p-value" id="projEnd">-</div>
       </div>
       <div class="p-item">
-        <div class="p-label">⏳ 剩餘天數</div>
+        <div class="p-label">⏳ 項目剩餘天數</div>
         <div class="p-value" id="projCountdown">-</div>
       </div>
     </div>
 
     <section class="card">
       <div class="card-header-row">
-        <div class="card-title">工種人力分布</div>
+        <div class="card-title" id="title-role">工種人力分布</div>
       </div>
       <div class="chart-wrapper">
         <canvas id="roleChart"></canvas>
@@ -314,13 +322,27 @@
 
     <section class="card">
       <div class="card-header-row">
-        <div class="card-title">工作甘特圖</div>
-        <select id="ganttFilter" style="width: auto; height: 32px; font-size: 12px; border-radius:6px;">
-            <option value="all">顯示全部</option>
-            <option value="active">僅顯示在崗</option>
-        </select>
+        <div class="card-title" id="title-gantt">工作甘特圖</div>
+        <div style="display:flex; align-items:center; gap:10px;">
+            <div class="gantt-legend" style="display:none;" id="desktopLegend">
+                <div class="legend-item"><span class="legend-dot" style="background:var(--status-neutral)"></span>已離崗</div>
+                <div class="legend-item"><span class="legend-dot" style="background:var(--status-success)"></span>目前在崗</div>
+                <div class="legend-item"><span class="legend-dot" style="background:var(--status-plan)"></span>計畫前往</div>
+            </div>
+            
+            <select id="ganttFilter" style="width: auto; height: 32px; font-size: 12px; border-radius:6px;">
+                <option value="all">顯示全部</option>
+                <option value="active">僅顯示在崗</option>
+            </select>
+        </div>
       </div>
       
+      <div class="gantt-legend" style="margin-bottom:10px; padding:0 4px;" id="mobileLegend">
+          <div class="legend-item"><span class="legend-dot" style="background:var(--status-neutral)"></span>已離崗</div>
+          <div class="legend-item"><span class="legend-dot" style="background:var(--status-success)"></span>目前在崗</div>
+          <div class="legend-item"><span class="legend-dot" style="background:var(--status-plan)"></span>計畫前往</div>
+      </div>
+
       <div class="gantt-scroll-wrapper">
         <div class="gantt-min-width-container">
             <div class="grid-bg-layer" id="gridBgLayer"></div>
@@ -344,18 +366,12 @@
     </section>
 
     <section class="card">
-      <div class="card-title" style="margin-bottom: 20px;">詳細列表</div>
+      <div class="card-title" id="title-list" style="margin-bottom: 20px;">詳細列表</div>
       <div class="table-responsive">
         <table>
           <thead>
             <tr>
-              <th>產線</th>
-              <th>姓名</th>
-              <th>供應商</th>
-              <th>工種</th>
-              <th>職責</th> <th>簽證</th> <th>到崗日</th>
-              <th>離開日</th>
-              <th>簽證狀態</th>
+              <th>產線</th><th>姓名</th><th>供應商</th><th>工種</th><th>職責</th><th>簽證</th><th>到崗日</th><th>離開日</th><th>簽證狀態</th>
             </tr>
           </thead>
           <tbody id="tableBody"></tbody>
@@ -365,12 +381,22 @@
   </main>
 
   <script>
-    // 🔴 請填入你的 Google Sheet CSV 連結
     const CSV_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vTMpYtnj16wQP-OeZcdw62yofr9JI-sdwElid5nEjbXT4KQoJaVfHU-Aj4jGwCyNn0E8KEiJKL7U5GL/pub?output=csv";
 
     const ROLE_COLOR_MAP = {
-        "PLC": "#00a99d", "機器人": "#3182ce", "電工": "#f6ad55", "鉗工": "#e53e3e", "其他": "#a0aec0"      
+        "PLC": "#00a99d", "PLC工程師": "#00a99d",
+        "機器人": "#3182ce", "機器人工程師": "#3182ce",
+        "電工": "#f6ad55",
+        "鉗工": "#e53e3e",
+        "現場項目經理": "#805ad5", "項目經理": "#805ad5",
+        "AGV": "#38b2ac",
+        "視覺工程師": "#d53f8c",
+        "MES軟件工程師": "#dd6b20",
+        "機械設計": "#718096", "機械工程師": "#718096",
+        "其他": "#cbd5e0"
     };
+    
+    const FALLBACK_PALETTE = ["#e53e3e", "#dd6b20", "#d69e2e", "#38a169", "#319795", "#3182ce", "#00b5d8", "#805ad5", "#d53f8c"];
 
     let allRecords = [];
     let projectMeta = { start: null, end: null, location: "", lastUpdated: "" };
@@ -379,6 +405,10 @@
     const TODAY = new Date();
 
     document.addEventListener("DOMContentLoaded", async () => {
+      if(window.innerWidth > 768) {
+          document.getElementById('desktopLegend').style.display = 'flex';
+          document.getElementById('mobileLegend').style.display = 'none';
+      }
       await fetchData();
       setupEvents();
     });
@@ -397,7 +427,6 @@
       }
     }
 
-    // ✨ 核心修改：解析新欄位邏輯
     function parseCsv(text) {
       const lines = text.trim().split(/\r?\n/);
       allRecords = [];
@@ -407,11 +436,8 @@
       for (let i = 1; i < lines.length; i++) {
           const cols = lines[i].split(',').map(c => c.replace(/^"|"$/g, '').trim());
           
-          // Meta Data 位置調整：因為前面插入了2欄，所以 Meta Data 索引往後移
-          // 0:Supplier, 1:Name, 2:Role, 3:Duty(新), 4:Line, 5:VisaType(新), 6:Arrival, 7:Leave, 8:VisaExp
-          // 9:ProjStart, 10:ProjEnd, 11:Location, 12:Update
           if (!foundMeta && cols.length >= 10 && cols[9]) {
-              const potentialDate = new Date(cols[9]); // 索引 9
+              const potentialDate = new Date(cols[9]);
               if (!isNaN(potentialDate.getTime())) {
                   projectMeta.start = potentialDate;
                   if (cols[10]) projectMeta.end = new Date(cols[10]);
@@ -423,20 +449,15 @@
 
           if (cols.length < 7) continue; 
           
-          // 到崗日現在是索引 6
           const arrival = new Date(cols[6]);
           if (isNaN(arrival.getTime())) continue;
 
           allRecords.push({
-            supplier: cols[0], 
-            name: cols[1], 
-            role: cols[2],
-            duty: cols[3] || "-", // 新增：職責
-            line: cols[4], 
-            visaType: cols[5] || "-", // 新增：簽證類型
+            supplier: cols[0], name: cols[1], role: cols[2], duty: cols[3] || "-", 
+            line: cols[4], visaType: cols[5] || "-", 
             arrivalDate: arrival,
-            leaveDate: cols[7] ? new Date(cols[7]) : null, // 離開日索引 7
-            visaExpiry: new Date(cols[8]), // 簽證到期索引 8
+            leaveDate: cols[7] ? new Date(cols[7]) : null, 
+            visaExpiry: new Date(cols[8]), 
             year: arrival.getFullYear()
           });
       }
@@ -475,7 +496,21 @@
         d.arrivalDate <= TODAY && (d.leaveDate === null || d.leaveDate >= TODAY)
       );
 
-      renderKpiBar(activePeople); 
+      // ✨ New: Generate Title Prefix based on filters
+      const s = document.getElementById('filterSupplier').value;
+      const l = document.getElementById('filterLine').value;
+      const r = document.getElementById('filterRole').value;
+      let titlePrefix = "";
+      if (s) titlePrefix += s + " ";
+      if (l) titlePrefix += l + " ";
+      if (r) titlePrefix += r + " ";
+      
+      // Update Section Titles
+      document.getElementById('title-role').textContent = titlePrefix + "工種人力分布";
+      document.getElementById('title-gantt').textContent = titlePrefix + "工作甘特圖";
+      document.getElementById('title-list').textContent = titlePrefix + "詳細列表";
+
+      renderKpiBar(activePeople, titlePrefix); // Pass prefix to KPI
       renderChart(activePeople);   
       renderTimeline(filtered, year); 
       renderTable(filtered); 
@@ -498,7 +533,8 @@
       }
     }
 
-    function renderKpiBar(activeData) {
+    // ✨ Updated: Accept titlePrefix
+    function renderKpiBar(activeData, prefix = "") {
       const container = document.getElementById('kpiBar');
       container.innerHTML = "";
       
@@ -507,9 +543,9 @@
       const visaExpired = activeData.filter(d => d.visaExpiry < TODAY).length;
 
       const kpis = [
-        { title: "目前在崗", val: `${activeData.length} <span style='font-size:12px'>人</span>`, color: "var(--status-success)" },
-        { title: "簽證即將到期", val: `${visaWarning} <span style='font-size:12px'>人</span>`, color: "var(--status-warning)" },
-        { title: "簽證已過期", val: `${visaExpired} <span style='font-size:12px'>人</span>`, color: "var(--status-danger)" }
+        { title: `${prefix}目前在崗`, val: `${activeData.length} <span style='font-size:12px'>人</span>`, color: "var(--status-success)" },
+        { title: `${prefix}簽證即將到期`, val: `${visaWarning} <span style='font-size:12px'>人</span>`, color: "var(--status-warning)" },
+        { title: `${prefix}簽證已過期`, val: `${visaExpired} <span style='font-size:12px'>人</span>`, color: "var(--status-danger)" }
       ];
 
       kpis.forEach(k => {
@@ -525,15 +561,21 @@
       const roleCounts = {};
       activeData.forEach(d => roleCounts[d.role] = (roleCounts[d.role] || 0) + 1);
 
+      const labels = Object.keys(roleCounts);
+      const data = Object.values(roleCounts);
+      const bgColors = labels.map((role, idx) => {
+          return ROLE_COLOR_MAP[role] || FALLBACK_PALETTE[idx % FALLBACK_PALETTE.length];
+      });
+
       if (chartInstance) chartInstance.destroy();
       chartInstance = new Chart(ctx, {
         type: 'bar',
         data: {
-          labels: Object.keys(roleCounts),
+          labels: labels,
           datasets: [{
             label: '人數',
-            data: Object.values(roleCounts),
-            backgroundColor: Object.keys(roleCounts).map(r => ROLE_COLOR_MAP[r] || "#a0aec0"),
+            data: data,
+            backgroundColor: bgColors, 
             borderRadius: 6,
             maxBarThickness: 40 
           }]
@@ -605,7 +647,6 @@
             bar.className = `gantt-bar ${statusClass}`;
             bar.style.left = startPct + '%';
             bar.style.width = widthPct + '%';
-            // 甘特圖 Hover 顯示職責與簽證
             bar.title = `${name} (${trip.role})\n職責: ${trip.duty}\n簽證: ${trip.visaType}\n日期: ${trip.arrivalDate.toLocaleDateString()} ~ ${trip.leaveDate ? trip.leaveDate.toLocaleDateString() : '尚未定'}`;
             barsArea.appendChild(bar);
           }
