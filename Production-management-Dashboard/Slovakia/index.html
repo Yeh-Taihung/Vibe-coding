@@ -2,7 +2,7 @@
 <html lang="zh-Hant">
 <head>
   <meta charset="UTF-8" />
-  <title>斯洛伐克項目現場人力看板 v17 | Logo & Today Fixed</title>
+  <title>芝加哥項目現場人力看板 v25 | Status Column Added</title>
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" />
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
@@ -14,7 +14,7 @@
       --color-primary: #00a99d;      
       --color-primary-light: #e0f2f1;
       --color-secondary: #f4d35e;    
-      --color-accent: #e53e3e; /* 確保 Today 線是紅色 */     
+      --color-accent: #e53e3e;    
       
       --bg-body: #f4f8f8;            
       --bg-card: #ffffff;
@@ -26,8 +26,8 @@
       --status-success: #00a99d;     
       --status-warning: #f6ad55;     
       --status-danger: #e53e3e;      
-      --status-info: #63b3ed;        
       --status-neutral: #cbd5e0;     
+      --status-plan: #63b3ed;
 
       --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
       --shadow-card: 0 4px 15px -2px rgba(0, 0, 0, 0.05);
@@ -55,7 +55,6 @@
     }
 
     /* --------- Header Layout --------- */
-    /* 1. Brand Bar */
     .brand-bar {
         padding: 12px 16px;
         display: flex;
@@ -66,43 +65,22 @@
         background: var(--bg-body);
     }
 
-    .brand-left {
-        display: flex;
-        align-items: center;
-        gap: 12px;
-    }
+    .brand-left { display: flex; align-items: center; gap: 12px; }
 
-    /* 1. Logo 區域修正 */
     .logo-area { 
         font-size: 18px; font-weight: 700; color: var(--color-primary); 
         display: flex; align-items: center; gap: 10px;
     }
     
-    /* Logo 圖片樣式 */
-    .logo-img {
-        height: 40px; /* 設定高度，寬度自動 */
-        width: auto;
-        object-fit: contain;
-    }
+    .logo-img { height: 40px; width: auto; object-fit: contain; }
 
-    .brand-actions {
-        display: flex;
-        align-items: center;
-        gap: 12px;
-    }
+    .brand-actions { display: flex; align-items: center; gap: 12px; }
 
     .action-btn {
-        display: flex;
-        align-items: center;
-        gap: 6px;
-        font-size: 13px;
-        font-weight: 500;
-        padding: 6px 12px;
-        border-radius: 20px;
-        text-decoration: none;
-        transition: all 0.2s;
-        cursor: pointer;
-        border: 1px solid transparent;
+        display: flex; align-items: center; gap: 6px;
+        font-size: 13px; font-weight: 500; padding: 6px 12px;
+        border-radius: 20px; text-decoration: none;
+        transition: all 0.2s; cursor: pointer; border: 1px solid transparent;
     }
     
     .btn-sheet { background-color: #e6f4ea; color: #1e8e3e; border: 1px solid #ceead6; }
@@ -116,11 +94,9 @@
         cursor: pointer; font-size: 12px; font-weight: 600;
     }
 
-    /* 2. Controls Bar (Sticky) */
+    /* --------- Controls (Sticky) --------- */
     .sticky-controls-wrapper {
-        position: sticky;
-        top: 0;
-        z-index: 1000;
+        position: sticky; top: 0; z-index: 1000;
         background: rgba(255, 255, 255, 0.95);
         backdrop-filter: blur(10px);
         border-bottom: 1px solid var(--border-light);
@@ -129,14 +105,10 @@
     }
     [data-theme="dark"] .sticky-controls-wrapper { background: rgba(45, 55, 72, 0.95); }
 
-    /* RWD: Controls Grid */
     .controls-grid { 
-        max-width: 1280px;
-        margin: 0 auto;
-        display: grid; 
+        max-width: 1280px; margin: 0 auto; display: grid; 
         grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); 
-        gap: 8px; 
-        align-items: center;
+        gap: 8px; align-items: center;
     }
     @media (max-width: 600px) {
         .controls-grid { grid-template-columns: 1fr 1fr; }
@@ -144,79 +116,46 @@
     }
 
     .filter-group select, .filter-group input { 
-        padding: 0 12px; 
-        border-radius: var(--radius-input); 
-        border: 1px solid var(--border-light); 
-        background: var(--bg-card); 
-        color: var(--text-main); 
-        width: 100%; 
-        font-size: 14px; 
-        height: 40px; 
-        line-height: 40px;
-        appearance: none;
-        outline: none;
-        box-shadow: 0 1px 2px rgba(0,0,0,0.03);
+        padding: 0 12px; border-radius: var(--radius-input); 
+        border: 1px solid var(--border-light); background: var(--bg-card); 
+        color: var(--text-main); width: 100%; font-size: 14px; 
+        height: 40px; appearance: none; outline: none;
     }
 
-    /* 3. KPI Bar */
+    /* --------- KPI Bar --------- */
     .kpi-bar {
-        padding: 16px 16px 0;
-        max-width: 1280px;
-        margin: 0 auto;
-        display: grid;
-        grid-template-columns: repeat(3, 1fr);
-        gap: 12px;
+        padding: 16px 16px 0; max-width: 1280px; margin: 0 auto;
+        display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px;
     }
-    @media (max-width: 600px) {
-        .kpi-bar { grid-template-columns: 1fr; gap: 8px; }
-    }
+    @media (max-width: 600px) { .kpi-bar { grid-template-columns: 1fr; gap: 8px; } }
 
     .kpi-card {
-        background: var(--bg-card);
-        border-radius: 12px;
-        padding: 12px 16px;
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        box-shadow: 0 2px 4px rgba(0,0,0,0.02);
-        border: 1px solid var(--border-light);
-        position: relative;
-        overflow: hidden;
+        background: var(--bg-card); border-radius: 12px; padding: 12px 16px;
+        display: flex; justify-content: space-between; align-items: center;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.02); border: 1px solid var(--border-light);
+        position: relative; overflow: hidden;
     }
     .kpi-card::before {
         content: ''; position: absolute; left: 0; top: 0; bottom: 0; width: 4px;
         background: var(--kpi-color);
     }
-    .kpi-info { display: flex; flex-direction: column; }
     .kpi-title { font-size: 12px; color: var(--text-muted); font-weight: 500; margin-bottom: 2px; }
     .kpi-val { font-size: 18px; font-weight: 700; color: var(--text-main); }
 
-    /* --------- Content Area --------- */
+    /* --------- Content --------- */
     .container { max-width: 1280px; margin: 16px auto 60px; padding: 0 16px; }
     
     .card { 
-        background: var(--bg-card); 
-        border-radius: var(--radius-card); 
-        padding: 20px; 
-        margin-bottom: 20px; 
-        box-shadow: var(--shadow-card); 
-        border: none;
+        background: var(--bg-card); border-radius: var(--radius-card); 
+        padding: 20px; margin-bottom: 20px; box-shadow: var(--shadow-card); border: none;
     }
-    @media (max-width: 600px) {
-        .card { padding: 16px; margin-bottom: 16px; }
-    }
-
-    .card-header-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; flex-wrap: wrap; gap: 10px; }
-    .card-title { font-size: 16px; font-weight: 700; color: var(--text-main); display: flex; align-items: center; gap: 8px; }
+    .card-header-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; flex-wrap: wrap; gap:10px; }
+    .card-title { font-size: 16px; font-weight: 700; color: var(--text-main); transition: all 0.3s ease; } 
     
     .project-info-bar { 
-        display: flex; flex-wrap: wrap; 
-        background: var(--bg-card);
-        border: 1px solid var(--border-light);
-        border-radius: var(--radius-card); 
-        margin-bottom: 20px; 
-        overflow: hidden;
-        box-shadow: var(--shadow-card);
+        display: flex; flex-wrap: wrap; background: var(--bg-card);
+        border: 1px solid var(--border-light); border-radius: var(--radius-card); 
+        margin-bottom: 20px; overflow: hidden; box-shadow: var(--shadow-card);
     }
     .p-item { 
         flex: 1; min-width: 140px; padding: 16px; 
@@ -224,20 +163,15 @@
         border-right: 1px solid var(--border-light);
     }
     .p-item:last-child { border-right: none; }
-    @media (max-width: 768px) {
-        .p-item { flex: 0 0 50%; min-width: 0; border-bottom: 1px solid var(--border-light); border-right: 1px solid var(--border-light); }
-        .p-item:nth-child(even) { border-right: none; }
-    }
     .p-label { font-size: 10px; color: var(--text-muted); font-weight: 600; text-transform: uppercase; margin-bottom: 4px; }
-    .p-value { font-size: 15px; font-weight: 700; color: var(--text-main); word-break: break-all; }
+    .p-value { font-size: 15px; font-weight: 700; color: var(--text-main); }
 
     .chart-wrapper { position: relative; height: 300px; width: 100%; }
 
-    /* Gantt Chart */
+    /* Gantt */
     .gantt-scroll-wrapper {
         width: 100%; overflow-x: auto; border: 1px solid var(--border-light);
         border-radius: 12px; background: var(--bg-card); position: relative;
-        -webkit-overflow-scrolling: touch;
     }
     .gantt-min-width-container { min-width: 800px; position: relative; }
     
@@ -249,46 +183,27 @@
     [data-theme="dark"] .sticky-col-header, [data-theme="dark"] .sticky-col-cell { background: #2d3748; }
 
     .timeline-header-row { display: flex; border-bottom: 1px solid var(--border-light); background: #f7fafc; height: 40px; }
-    [data-theme="dark"] .timeline-header-row { background: #2d3748; }
-
-    .th-name { display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 700; color: var(--text-muted); }
     .th-months { flex-grow: 1; display: grid; grid-template-columns: repeat(12, 1fr); height: 100%; }
-    .th-month { display: flex; align-items: center; justify-content: center; font-size: 11px; color: var(--text-muted); font-weight: 600; border-right: 1px solid var(--border-light); }
+    .th-month { display: flex; align-items: center; justify-content: center; font-size: 11px; color: var(--text-muted); border-right: 1px solid var(--border-light); }
+    .th-name { display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 700; color: var(--text-muted); }
 
     .person-row { display: flex; height: 48px; border-bottom: 1px solid var(--border-light); position: relative; }
     .person-name { display: flex; flex-direction: column; justify-content: center; padding-left: 10px; font-size: 12px; font-weight: 600; overflow: hidden; }
-    .person-role { font-size: 10px; color: var(--text-muted); font-weight: 400; }
+    .person-role { font-size: 10px; color: var(--text-muted); }
     .person-bars-area { flex-grow: 1; position: relative; }
 
     .grid-bg-layer { position: absolute; top: 0; left: 120px; right: 0; bottom: 0; display: grid; grid-template-columns: repeat(12, 1fr); pointer-events: none; z-index: 1; }
     .grid-line { border-right: 1px dashed var(--border-light); height: 100%; }
     
-    /* 2. Today Line 修復：紅色虛線 + 標籤 */
+    /* Today Line */
     .today-line { 
-        position: absolute; 
-        top: 0; 
-        bottom: 0; 
-        width: 0px; /* 線本身是 border */
-        border-left: 2px dashed var(--color-accent); 
-        z-index: 15; 
-        pointer-events: none; 
+        position: absolute; top: 0; bottom: 0; width: 0px; 
+        border-left: 2px dashed var(--color-accent); z-index: 15; pointer-events: none; 
     }
-    
-    /* Today 文字標籤 */
     .today-line::after {
-        content: 'Today';
-        position: absolute;
-        top: 0; /* 固定在線的最上方 */
-        left: 50%;
-        transform: translateX(-50%);
-        background-color: var(--color-accent);
-        color: white;
-        padding: 2px 6px;
-        border-radius: 0 0 4px 4px; /* 下方圓角 */
-        font-size: 10px;
-        font-weight: bold;
-        white-space: nowrap;
-        box-shadow: 0 1px 3px rgba(0,0,0,0.2);
+        content: 'Today'; position: absolute; top: 0; left: 50%; transform: translateX(-50%);
+        background-color: var(--color-accent); color: white; padding: 2px 6px;
+        border-radius: 0 0 4px 4px; font-size: 10px; font-weight: bold; white-space: nowrap;
     }
     
     .gantt-bar { 
@@ -296,13 +211,21 @@
         font-size: 10px; color: #fff; display: flex; align-items: center; padding-left: 6px; 
         white-space: nowrap; overflow: hidden; box-shadow: 0 1px 2px rgba(0,0,0,0.1); z-index: 5;
     }
+    
     .status-active { background: var(--status-success); } 
-    .status-plan { background: #63b3ed; opacity: 0.7; }
-    .status-past { background: var(--status-neutral); opacity: 0.6; }
+    .status-plan { background: var(--status-plan); opacity: 0.8; }
+    .status-past { background: var(--status-neutral); opacity: 0.8; }
+
+    /* Gantt Legend */
+    .gantt-legend {
+        display: flex; gap: 15px; font-size: 12px; color: var(--text-muted); align-items: center;
+    }
+    .legend-item { display: flex; align-items: center; gap: 6px; }
+    .legend-dot { width: 10px; height: 10px; border-radius: 50%; display: inline-block; }
 
     /* Table */
-    .table-responsive { overflow-x: auto; -webkit-overflow-scrolling: touch; }
-    table { width: 100%; min-width: 600px; border-collapse: collapse; font-size: 13px; }
+    .table-responsive { overflow-x: auto; }
+    table { width: 100%; min-width: 800px; border-collapse: collapse; font-size: 13px; }
     th { text-align: left; padding: 12px; color: var(--text-muted); background: #f7fafc; white-space: nowrap; }
     td { padding: 12px; border-top: 1px solid var(--border-light); white-space: nowrap; }
     [data-theme="dark"] th { background: #2d3748; }
@@ -311,6 +234,15 @@
     .tag-normal { background: #e6fffa; color: #2c7a7b; }
     .tag-warning { background: #fffaf0; color: #dd6b20; } 
     .tag-expired { background: #ffebee; color: #c53030; } 
+    
+    .tag-visa { border: 1px solid var(--border-light); color: var(--text-muted); padding: 1px 6px; border-radius: 4px; font-size: 11px; }
+
+    /* 🟢 新增：列表狀態標籤樣式 */
+    .status-badge { padding: 2px 8px; border-radius: 12px; font-size: 11px; font-weight: 600; display: inline-block; min-width: 60px; text-align: center; color: #fff; }
+    .badge-past { background: var(--status-neutral); color: #4a5568; } /* 已離崗 (灰色) */
+    .badge-active { background: var(--status-success); } /* 進行中 (綠色) */
+    .badge-plan { background: var(--status-plan); } /* 計畫中 (藍色) */
+
   </style>
 </head>
 <body>
@@ -320,8 +252,8 @@
           <div class="logo-area">
               <img src="../../logo.png" alt="Mr.Yes Logo" class="logo-img">
               <div>
-                  <div style="line-height:1.2">斯洛伐克項目現場人力看板</div>
-                  <div style="font-size:11px; font-weight:400; color:var(--text-muted)">Project Field Manpower Dashboard v17</div>
+                  <div style="line-height:1.2">芝加哥項目現場人力看板</div>
+                  <div style="font-size:11px; font-weight:400; color:var(--text-muted)">Project Field Manpower Dashboard v25</div>
               </div>
           </div>
       </div>
@@ -354,7 +286,7 @@
               <select id="filterRole"><option value="">全部工種</option></select>
           </div>
           <div class="filter-group search-group">
-              <input type="text" id="searchInput" placeholder="🔍 搜尋姓名、工種...">
+              <input type="text" id="searchInput" placeholder="🔍 搜尋姓名、工種、職責...">
           </div>
       </div>
   </div>
@@ -365,30 +297,30 @@
 
     <div class="project-info-bar">
       <div class="p-item">
-        <div class="p-label" style="color:#3182ce;">📅 資料更新</div>
+        <div class="p-label" style="color:#3182ce;">📅 資料更新日期</div>
         <div class="p-value" id="dataUpdated">-</div>
       </div>
       <div class="p-item">
-        <div class="p-label" style="color:#f4d35e;">📍 地點</div>
+        <div class="p-label" style="color:#f4d35e;">📍 項目地點</div>
         <div class="p-value" id="projLoc">-</div>
       </div>
       <div class="p-item">
-        <div class="p-label">🏁 啟動日</div>
+        <div class="p-label">🏁 項目啟動日</div>
         <div class="p-value" id="projStart">-</div>
       </div>
       <div class="p-item">
-        <div class="p-label">🎯 完成日</div>
+        <div class="p-label">🎯 項目計畫完成日</div>
         <div class="p-value" id="projEnd">-</div>
       </div>
       <div class="p-item">
-        <div class="p-label">⏳ 剩餘天數</div>
+        <div class="p-label">⏳ 項目剩餘天數</div>
         <div class="p-value" id="projCountdown">-</div>
       </div>
     </div>
 
     <section class="card">
       <div class="card-header-row">
-        <div class="card-title">工種人力分布</div>
+        <div class="card-title" id="title-role">工種人力分布</div>
       </div>
       <div class="chart-wrapper">
         <canvas id="roleChart"></canvas>
@@ -397,13 +329,27 @@
 
     <section class="card">
       <div class="card-header-row">
-        <div class="card-title">工作甘特圖</div>
-        <select id="ganttFilter" style="width: auto; height: 32px; font-size: 12px; border-radius:6px;">
-            <option value="all">顯示全部</option>
-            <option value="active">僅顯示在崗</option>
-        </select>
+        <div class="card-title" id="title-gantt">工作甘特圖</div>
+        <div style="display:flex; align-items:center; gap:10px;">
+            <div class="gantt-legend" style="display:none;" id="desktopLegend">
+                <div class="legend-item"><span class="legend-dot" style="background:var(--status-neutral)"></span>已離崗</div>
+                <div class="legend-item"><span class="legend-dot" style="background:var(--status-success)"></span>目前在崗</div>
+                <div class="legend-item"><span class="legend-dot" style="background:var(--status-plan)"></span>計畫前往</div>
+            </div>
+            
+            <select id="ganttFilter" style="width: auto; height: 32px; font-size: 12px; border-radius:6px;">
+                <option value="all">顯示全部</option>
+                <option value="active">僅顯示在崗</option>
+            </select>
+        </div>
       </div>
       
+      <div class="gantt-legend" style="margin-bottom:10px; padding:0 4px;" id="mobileLegend">
+          <div class="legend-item"><span class="legend-dot" style="background:var(--status-neutral)"></span>已離崗</div>
+          <div class="legend-item"><span class="legend-dot" style="background:var(--status-success)"></span>目前在崗</div>
+          <div class="legend-item"><span class="legend-dot" style="background:var(--status-plan)"></span>計畫前往</div>
+      </div>
+
       <div class="gantt-scroll-wrapper">
         <div class="gantt-min-width-container">
             <div class="grid-bg-layer" id="gridBgLayer"></div>
@@ -427,12 +373,20 @@
     </section>
 
     <section class="card">
-      <div class="card-title" style="margin-bottom: 20px;">詳細列表</div>
+      <div class="card-title" id="title-list" style="margin-bottom: 20px;">詳細列表</div>
       <div class="table-responsive">
         <table>
           <thead>
             <tr>
-              <th>產線</th><th>姓名</th><th>供應商</th><th>工種</th><th>到崗日</th><th>離開日</th><th>簽證狀態</th>
+              <th>產線</th>
+              <th>姓名</th>
+              <th>狀態</th> <th>供應商</th>
+              <th>工種</th>
+              <th>職責</th>
+              <th>簽證</th>
+              <th>到崗日</th>
+              <th>離開日</th>
+              <th>簽證狀態</th>
             </tr>
           </thead>
           <tbody id="tableBody"></tbody>
@@ -442,12 +396,22 @@
   </main>
 
   <script>
-    // 🔴 請填入你的 Google Sheet CSV 連結
     const CSV_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vRoqWq49alMLU17qqK0znLPZgDIEVLwqKFwQHPhE1qa1p0SKvlD9oxseH1U_fws9lAogtaueQSFJUEr/pub?output=csv";
 
     const ROLE_COLOR_MAP = {
-        "PLC": "#00a99d", "機器人": "#3182ce", "電工": "#f6ad55", "鉗工": "#e53e3e", "其他": "#a0aec0"      
+        "PLC": "#00a99d", "PLC工程師": "#00a99d",
+        "機器人": "#3182ce", "機器人工程師": "#3182ce",
+        "電工": "#f6ad55",
+        "鉗工": "#e53e3e",
+        "現場項目經理": "#805ad5", "項目經理": "#805ad5",
+        "AGV": "#38b2ac",
+        "視覺工程師": "#d53f8c",
+        "MES軟件工程師": "#dd6b20",
+        "機械設計": "#718096", "機械工程師": "#718096",
+        "其他": "#cbd5e0"
     };
+    
+    const FALLBACK_PALETTE = ["#e53e3e", "#dd6b20", "#d69e2e", "#38a169", "#319795", "#3182ce", "#00b5d8", "#805ad5", "#d53f8c"];
 
     let allRecords = [];
     let projectMeta = { start: null, end: null, location: "", lastUpdated: "" };
@@ -456,6 +420,10 @@
     const TODAY = new Date();
 
     document.addEventListener("DOMContentLoaded", async () => {
+      if(window.innerWidth > 768) {
+          document.getElementById('desktopLegend').style.display = 'flex';
+          document.getElementById('mobileLegend').style.display = 'none';
+      }
       await fetchData();
       setupEvents();
     });
@@ -483,27 +451,28 @@
       for (let i = 1; i < lines.length; i++) {
           const cols = lines[i].split(',').map(c => c.replace(/^"|"$/g, '').trim());
           
-          if (!foundMeta && cols.length >= 8 && cols[7]) {
-              const potentialDate = new Date(cols[7]);
+          if (!foundMeta && cols.length >= 10 && cols[9]) {
+              const potentialDate = new Date(cols[9]);
               if (!isNaN(potentialDate.getTime())) {
                   projectMeta.start = potentialDate;
-                  if (cols[8]) projectMeta.end = new Date(cols[8]);
-                  if (cols[9]) projectMeta.location = cols[9];
-                  if (cols[10]) projectMeta.lastUpdated = cols[10];
+                  if (cols[10]) projectMeta.end = new Date(cols[10]);
+                  if (cols[11]) projectMeta.location = cols[11];
+                  if (cols[12]) projectMeta.lastUpdated = cols[12];
                   foundMeta = true; 
               }
           }
 
           if (cols.length < 7) continue; 
           
-          const arrival = new Date(cols[4]);
+          const arrival = new Date(cols[6]);
           if (isNaN(arrival.getTime())) continue;
 
           allRecords.push({
-            supplier: cols[0], name: cols[1], role: cols[2], line: cols[3], 
+            supplier: cols[0], name: cols[1], role: cols[2], duty: cols[3] || "-", 
+            line: cols[4], visaType: cols[5] || "-", 
             arrivalDate: arrival,
-            leaveDate: cols[5] ? new Date(cols[5]) : null,
-            visaExpiry: new Date(cols[6]),
+            leaveDate: cols[7] ? new Date(cols[7]) : null, 
+            visaExpiry: new Date(cols[8]), 
             year: arrival.getFullYear()
           });
       }
@@ -542,7 +511,20 @@
         d.arrivalDate <= TODAY && (d.leaveDate === null || d.leaveDate >= TODAY)
       );
 
-      renderKpiBar(activePeople); 
+      // Dynamic Title Prefix
+      const s = document.getElementById('filterSupplier').value;
+      const l = document.getElementById('filterLine').value;
+      const r = document.getElementById('filterRole').value;
+      let titlePrefix = "";
+      if (s) titlePrefix += s + " ";
+      if (l) titlePrefix += l + " ";
+      if (r) titlePrefix += r + " ";
+      
+      document.getElementById('title-role').textContent = titlePrefix + "工種人力分布";
+      document.getElementById('title-gantt').textContent = titlePrefix + "工作甘特圖";
+      document.getElementById('title-list').textContent = titlePrefix + "詳細列表";
+
+      renderKpiBar(activePeople, titlePrefix);
       renderChart(activePeople);   
       renderTimeline(filtered, year); 
       renderTable(filtered); 
@@ -565,7 +547,7 @@
       }
     }
 
-    function renderKpiBar(activeData) {
+    function renderKpiBar(activeData, prefix = "") {
       const container = document.getElementById('kpiBar');
       container.innerHTML = "";
       
@@ -574,9 +556,9 @@
       const visaExpired = activeData.filter(d => d.visaExpiry < TODAY).length;
 
       const kpis = [
-        { title: "目前在崗", val: `${activeData.length} <span style='font-size:12px'>人</span>`, color: "var(--status-success)" },
-        { title: "簽證即將到期", val: `${visaWarning} <span style='font-size:12px'>人</span>`, color: "var(--status-warning)" },
-        { title: "簽證已過期", val: `${visaExpired} <span style='font-size:12px'>人</span>`, color: "var(--status-danger)" }
+        { title: `${prefix}目前在崗`, val: `${activeData.length} <span style='font-size:12px'>人</span>`, color: "var(--status-success)" },
+        { title: `${prefix}簽證即將到期`, val: `${visaWarning} <span style='font-size:12px'>人</span>`, color: "var(--status-warning)" },
+        { title: `${prefix}簽證已過期`, val: `${visaExpired} <span style='font-size:12px'>人</span>`, color: "var(--status-danger)" }
       ];
 
       kpis.forEach(k => {
@@ -592,15 +574,21 @@
       const roleCounts = {};
       activeData.forEach(d => roleCounts[d.role] = (roleCounts[d.role] || 0) + 1);
 
+      const labels = Object.keys(roleCounts);
+      const data = Object.values(roleCounts);
+      const bgColors = labels.map((role, idx) => {
+          return ROLE_COLOR_MAP[role] || FALLBACK_PALETTE[idx % FALLBACK_PALETTE.length];
+      });
+
       if (chartInstance) chartInstance.destroy();
       chartInstance = new Chart(ctx, {
         type: 'bar',
         data: {
-          labels: Object.keys(roleCounts),
+          labels: labels,
           datasets: [{
             label: '人數',
-            data: Object.values(roleCounts),
-            backgroundColor: Object.keys(roleCounts).map(r => ROLE_COLOR_MAP[r] || "#a0aec0"),
+            data: data,
+            backgroundColor: bgColors, 
             borderRadius: 6,
             maxBarThickness: 40 
           }]
@@ -672,6 +660,7 @@
             bar.className = `gantt-bar ${statusClass}`;
             bar.style.left = startPct + '%';
             bar.style.width = widthPct + '%';
+            bar.title = `${name} (${trip.role})\n職責: ${trip.duty}\n簽證: ${trip.visaType}\n日期: ${trip.arrivalDate.toLocaleDateString()} ~ ${trip.leaveDate ? trip.leaveDate.toLocaleDateString() : '尚未定'}`;
             barsArea.appendChild(bar);
           }
         });
@@ -691,12 +680,22 @@
                       daysToVisa <= 30 ? `<span class="tag tag-warning">剩${daysToVisa}天</span>` : 
                       `<span class="tag tag-normal">正常</span>`;
         
+        // 🟢 新增：狀態判斷邏輯
+        let statusHtml = '';
+        if (d.leaveDate && d.leaveDate < TODAY) {
+            statusHtml = '<span class="status-badge badge-past">已離崗</span>';
+        } else if (d.arrivalDate > TODAY) {
+            statusHtml = '<span class="status-badge badge-plan">計畫中</span>';
+        } else {
+            statusHtml = '<span class="status-badge badge-active">進行中</span>';
+        }
+
         tr.innerHTML = `
           <td><span style="font-weight:600;color:var(--text-muted)">${d.line}</span></td>
           <td><strong>${d.name}</strong></td>
-          <td>${d.supplier}</td>
+          <td>${statusHtml}</td> <td>${d.supplier}</td>
           <td>${d.role}</td>
-          <td>${d.arrivalDate.toLocaleDateString()}</td>
+          <td>${d.duty}</td> <td><span class="tag-visa">${d.visaType}</span></td> <td>${d.arrivalDate.toLocaleDateString()}</td>
           <td>${d.leaveDate ? d.leaveDate.toLocaleDateString() : '在職'}</td>
           <td>${visaTag}</td>
         `;
@@ -711,7 +710,7 @@
       const q = document.getElementById('searchInput').value.toLowerCase();
       return data.filter(d => 
         (s===""||d.supplier===s) && (l===""||d.line===l) && (r===""||d.role===r) &&
-        (q===""||d.name.toLowerCase().includes(q)||d.role.toLowerCase().includes(q))
+        (q===""||d.name.toLowerCase().includes(q)||d.role.toLowerCase().includes(q)||d.duty.toLowerCase().includes(q))
       );
     }
 
