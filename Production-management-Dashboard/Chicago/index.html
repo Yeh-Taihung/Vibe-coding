@@ -2,7 +2,7 @@
 <html lang="zh-Hant">
 <head>
   <meta charset="UTF-8" />
-  <title>芝加哥項目現場人力看板 v17 | Logo & Today Fixed</title>
+  <title>芝加哥項目現場人力看板 v22 | Enhanced Data</title>
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" />
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
@@ -14,7 +14,7 @@
       --color-primary: #00a99d;      
       --color-primary-light: #e0f2f1;
       --color-secondary: #f4d35e;    
-      --color-accent: #e53e3e; /* 確保 Today 線是紅色 */     
+      --color-accent: #e53e3e;    
       
       --bg-body: #f4f8f8;            
       --bg-card: #ffffff;
@@ -26,7 +26,6 @@
       --status-success: #00a99d;     
       --status-warning: #f6ad55;     
       --status-danger: #e53e3e;      
-      --status-info: #63b3ed;        
       --status-neutral: #cbd5e0;     
 
       --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
@@ -55,7 +54,6 @@
     }
 
     /* --------- Header Layout --------- */
-    /* 1. Brand Bar */
     .brand-bar {
         padding: 12px 16px;
         display: flex;
@@ -66,43 +64,22 @@
         background: var(--bg-body);
     }
 
-    .brand-left {
-        display: flex;
-        align-items: center;
-        gap: 12px;
-    }
+    .brand-left { display: flex; align-items: center; gap: 12px; }
 
-    /* 1. Logo 區域修正 */
     .logo-area { 
         font-size: 18px; font-weight: 700; color: var(--color-primary); 
         display: flex; align-items: center; gap: 10px;
     }
     
-    /* Logo 圖片樣式 */
-    .logo-img {
-        height: 40px; /* 設定高度，寬度自動 */
-        width: auto;
-        object-fit: contain;
-    }
+    .logo-img { height: 40px; width: auto; object-fit: contain; }
 
-    .brand-actions {
-        display: flex;
-        align-items: center;
-        gap: 12px;
-    }
+    .brand-actions { display: flex; align-items: center; gap: 12px; }
 
     .action-btn {
-        display: flex;
-        align-items: center;
-        gap: 6px;
-        font-size: 13px;
-        font-weight: 500;
-        padding: 6px 12px;
-        border-radius: 20px;
-        text-decoration: none;
-        transition: all 0.2s;
-        cursor: pointer;
-        border: 1px solid transparent;
+        display: flex; align-items: center; gap: 6px;
+        font-size: 13px; font-weight: 500; padding: 6px 12px;
+        border-radius: 20px; text-decoration: none;
+        transition: all 0.2s; cursor: pointer; border: 1px solid transparent;
     }
     
     .btn-sheet { background-color: #e6f4ea; color: #1e8e3e; border: 1px solid #ceead6; }
@@ -116,11 +93,9 @@
         cursor: pointer; font-size: 12px; font-weight: 600;
     }
 
-    /* 2. Controls Bar (Sticky) */
+    /* --------- Controls (Sticky) --------- */
     .sticky-controls-wrapper {
-        position: sticky;
-        top: 0;
-        z-index: 1000;
+        position: sticky; top: 0; z-index: 1000;
         background: rgba(255, 255, 255, 0.95);
         backdrop-filter: blur(10px);
         border-bottom: 1px solid var(--border-light);
@@ -129,14 +104,10 @@
     }
     [data-theme="dark"] .sticky-controls-wrapper { background: rgba(45, 55, 72, 0.95); }
 
-    /* RWD: Controls Grid */
     .controls-grid { 
-        max-width: 1280px;
-        margin: 0 auto;
-        display: grid; 
+        max-width: 1280px; margin: 0 auto; display: grid; 
         grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); 
-        gap: 8px; 
-        align-items: center;
+        gap: 8px; align-items: center;
     }
     @media (max-width: 600px) {
         .controls-grid { grid-template-columns: 1fr 1fr; }
@@ -144,79 +115,46 @@
     }
 
     .filter-group select, .filter-group input { 
-        padding: 0 12px; 
-        border-radius: var(--radius-input); 
-        border: 1px solid var(--border-light); 
-        background: var(--bg-card); 
-        color: var(--text-main); 
-        width: 100%; 
-        font-size: 14px; 
-        height: 40px; 
-        line-height: 40px;
-        appearance: none;
-        outline: none;
-        box-shadow: 0 1px 2px rgba(0,0,0,0.03);
+        padding: 0 12px; border-radius: var(--radius-input); 
+        border: 1px solid var(--border-light); background: var(--bg-card); 
+        color: var(--text-main); width: 100%; font-size: 14px; 
+        height: 40px; appearance: none; outline: none;
     }
 
-    /* 3. KPI Bar */
+    /* --------- KPI Bar --------- */
     .kpi-bar {
-        padding: 16px 16px 0;
-        max-width: 1280px;
-        margin: 0 auto;
-        display: grid;
-        grid-template-columns: repeat(3, 1fr);
-        gap: 12px;
+        padding: 16px 16px 0; max-width: 1280px; margin: 0 auto;
+        display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px;
     }
-    @media (max-width: 600px) {
-        .kpi-bar { grid-template-columns: 1fr; gap: 8px; }
-    }
+    @media (max-width: 600px) { .kpi-bar { grid-template-columns: 1fr; gap: 8px; } }
 
     .kpi-card {
-        background: var(--bg-card);
-        border-radius: 12px;
-        padding: 12px 16px;
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        box-shadow: 0 2px 4px rgba(0,0,0,0.02);
-        border: 1px solid var(--border-light);
-        position: relative;
-        overflow: hidden;
+        background: var(--bg-card); border-radius: 12px; padding: 12px 16px;
+        display: flex; justify-content: space-between; align-items: center;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.02); border: 1px solid var(--border-light);
+        position: relative; overflow: hidden;
     }
     .kpi-card::before {
         content: ''; position: absolute; left: 0; top: 0; bottom: 0; width: 4px;
         background: var(--kpi-color);
     }
-    .kpi-info { display: flex; flex-direction: column; }
     .kpi-title { font-size: 12px; color: var(--text-muted); font-weight: 500; margin-bottom: 2px; }
     .kpi-val { font-size: 18px; font-weight: 700; color: var(--text-main); }
 
-    /* --------- Content Area --------- */
+    /* --------- Content --------- */
     .container { max-width: 1280px; margin: 16px auto 60px; padding: 0 16px; }
     
     .card { 
-        background: var(--bg-card); 
-        border-radius: var(--radius-card); 
-        padding: 20px; 
-        margin-bottom: 20px; 
-        box-shadow: var(--shadow-card); 
-        border: none;
+        background: var(--bg-card); border-radius: var(--radius-card); 
+        padding: 20px; margin-bottom: 20px; box-shadow: var(--shadow-card); border: none;
     }
-    @media (max-width: 600px) {
-        .card { padding: 16px; margin-bottom: 16px; }
-    }
-
-    .card-header-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; flex-wrap: wrap; gap: 10px; }
-    .card-title { font-size: 16px; font-weight: 700; color: var(--text-main); display: flex; align-items: center; gap: 8px; }
+    .card-header-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; }
+    .card-title { font-size: 16px; font-weight: 700; color: var(--text-main); }
     
     .project-info-bar { 
-        display: flex; flex-wrap: wrap; 
-        background: var(--bg-card);
-        border: 1px solid var(--border-light);
-        border-radius: var(--radius-card); 
-        margin-bottom: 20px; 
-        overflow: hidden;
-        box-shadow: var(--shadow-card);
+        display: flex; flex-wrap: wrap; background: var(--bg-card);
+        border: 1px solid var(--border-light); border-radius: var(--radius-card); 
+        margin-bottom: 20px; overflow: hidden; box-shadow: var(--shadow-card);
     }
     .p-item { 
         flex: 1; min-width: 140px; padding: 16px; 
@@ -224,20 +162,15 @@
         border-right: 1px solid var(--border-light);
     }
     .p-item:last-child { border-right: none; }
-    @media (max-width: 768px) {
-        .p-item { flex: 0 0 50%; min-width: 0; border-bottom: 1px solid var(--border-light); border-right: 1px solid var(--border-light); }
-        .p-item:nth-child(even) { border-right: none; }
-    }
     .p-label { font-size: 10px; color: var(--text-muted); font-weight: 600; text-transform: uppercase; margin-bottom: 4px; }
-    .p-value { font-size: 15px; font-weight: 700; color: var(--text-main); word-break: break-all; }
+    .p-value { font-size: 15px; font-weight: 700; color: var(--text-main); }
 
     .chart-wrapper { position: relative; height: 300px; width: 100%; }
 
-    /* Gantt Chart */
+    /* Gantt */
     .gantt-scroll-wrapper {
         width: 100%; overflow-x: auto; border: 1px solid var(--border-light);
         border-radius: 12px; background: var(--bg-card); position: relative;
-        -webkit-overflow-scrolling: touch;
     }
     .gantt-min-width-container { min-width: 800px; position: relative; }
     
@@ -249,46 +182,27 @@
     [data-theme="dark"] .sticky-col-header, [data-theme="dark"] .sticky-col-cell { background: #2d3748; }
 
     .timeline-header-row { display: flex; border-bottom: 1px solid var(--border-light); background: #f7fafc; height: 40px; }
-    [data-theme="dark"] .timeline-header-row { background: #2d3748; }
-
-    .th-name { display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 700; color: var(--text-muted); }
     .th-months { flex-grow: 1; display: grid; grid-template-columns: repeat(12, 1fr); height: 100%; }
-    .th-month { display: flex; align-items: center; justify-content: center; font-size: 11px; color: var(--text-muted); font-weight: 600; border-right: 1px solid var(--border-light); }
+    .th-month { display: flex; align-items: center; justify-content: center; font-size: 11px; color: var(--text-muted); border-right: 1px solid var(--border-light); }
+    .th-name { display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 700; color: var(--text-muted); }
 
     .person-row { display: flex; height: 48px; border-bottom: 1px solid var(--border-light); position: relative; }
     .person-name { display: flex; flex-direction: column; justify-content: center; padding-left: 10px; font-size: 12px; font-weight: 600; overflow: hidden; }
-    .person-role { font-size: 10px; color: var(--text-muted); font-weight: 400; }
+    .person-role { font-size: 10px; color: var(--text-muted); }
     .person-bars-area { flex-grow: 1; position: relative; }
 
     .grid-bg-layer { position: absolute; top: 0; left: 120px; right: 0; bottom: 0; display: grid; grid-template-columns: repeat(12, 1fr); pointer-events: none; z-index: 1; }
     .grid-line { border-right: 1px dashed var(--border-light); height: 100%; }
     
-    /* 2. Today Line 修復：紅色虛線 + 標籤 */
+    /* Today Line */
     .today-line { 
-        position: absolute; 
-        top: 0; 
-        bottom: 0; 
-        width: 0px; /* 線本身是 border */
-        border-left: 2px dashed var(--color-accent); 
-        z-index: 15; 
-        pointer-events: none; 
+        position: absolute; top: 0; bottom: 0; width: 0px; 
+        border-left: 2px dashed var(--color-accent); z-index: 15; pointer-events: none; 
     }
-    
-    /* Today 文字標籤 */
     .today-line::after {
-        content: 'Today';
-        position: absolute;
-        top: 0; /* 固定在線的最上方 */
-        left: 50%;
-        transform: translateX(-50%);
-        background-color: var(--color-accent);
-        color: white;
-        padding: 2px 6px;
-        border-radius: 0 0 4px 4px; /* 下方圓角 */
-        font-size: 10px;
-        font-weight: bold;
-        white-space: nowrap;
-        box-shadow: 0 1px 3px rgba(0,0,0,0.2);
+        content: 'Today'; position: absolute; top: 0; left: 50%; transform: translateX(-50%);
+        background-color: var(--color-accent); color: white; padding: 2px 6px;
+        border-radius: 0 0 4px 4px; font-size: 10px; font-weight: bold; white-space: nowrap;
     }
     
     .gantt-bar { 
@@ -301,8 +215,8 @@
     .status-past { background: var(--status-neutral); opacity: 0.6; }
 
     /* Table */
-    .table-responsive { overflow-x: auto; -webkit-overflow-scrolling: touch; }
-    table { width: 100%; min-width: 600px; border-collapse: collapse; font-size: 13px; }
+    .table-responsive { overflow-x: auto; }
+    table { width: 100%; min-width: 800px; border-collapse: collapse; font-size: 13px; }
     th { text-align: left; padding: 12px; color: var(--text-muted); background: #f7fafc; white-space: nowrap; }
     td { padding: 12px; border-top: 1px solid var(--border-light); white-space: nowrap; }
     [data-theme="dark"] th { background: #2d3748; }
@@ -311,6 +225,9 @@
     .tag-normal { background: #e6fffa; color: #2c7a7b; }
     .tag-warning { background: #fffaf0; color: #dd6b20; } 
     .tag-expired { background: #ffebee; color: #c53030; } 
+    
+    /* 簽證標籤樣式 */
+    .tag-visa { border: 1px solid var(--border-light); color: var(--text-muted); padding: 1px 6px; border-radius: 4px; font-size: 11px; }
   </style>
 </head>
 <body>
@@ -321,13 +238,13 @@
               <img src="../../logo.png" alt="Mr.Yes Logo" class="logo-img">
               <div>
                   <div style="line-height:1.2">芝加哥項目現場人力看板</div>
-                  <div style="font-size:11px; font-weight:400; color:var(--text-muted)">Project Field Manpower Dashboard v17</div>
+                  <div style="font-size:11px; font-weight:400; color:var(--text-muted)">Project Field Manpower Dashboard v22</div>
               </div>
           </div>
       </div>
 
       <div class="brand-actions">
-          <a href="https://docs.google.com/spreadsheets/d/18ABTFrdN-Npyt90FdOmx4cV1d_G8uOuTooIAuZN_hrs/edit?gid=0#gid=0" target="_blank" class="action-btn btn-sheet">
+          <a href="https://docs.google.com/spreadsheets/d/18ABTFrdN-Npyt90FdOmx4cV1d_G8uOuTooIAuZN_hrs/edit?gid=0#gid=0">
             <i class="fa-solid fa-file-pen"></i> Edit Data
           </a>
           
@@ -354,7 +271,7 @@
               <select id="filterRole"><option value="">全部工種</option></select>
           </div>
           <div class="filter-group search-group">
-              <input type="text" id="searchInput" placeholder="🔍 搜尋姓名、工種...">
+              <input type="text" id="searchInput" placeholder="🔍 搜尋姓名、工種、職責...">
           </div>
       </div>
   </div>
@@ -432,7 +349,13 @@
         <table>
           <thead>
             <tr>
-              <th>產線</th><th>姓名</th><th>供應商</th><th>工種</th><th>到崗日</th><th>離開日</th><th>簽證狀態</th>
+              <th>產線</th>
+              <th>姓名</th>
+              <th>供應商</th>
+              <th>工種</th>
+              <th>職責</th> <th>簽證</th> <th>到崗日</th>
+              <th>離開日</th>
+              <th>簽證狀態</th>
             </tr>
           </thead>
           <tbody id="tableBody"></tbody>
@@ -474,6 +397,7 @@
       }
     }
 
+    // ✨ 核心修改：解析新欄位邏輯
     function parseCsv(text) {
       const lines = text.trim().split(/\r?\n/);
       allRecords = [];
@@ -483,27 +407,36 @@
       for (let i = 1; i < lines.length; i++) {
           const cols = lines[i].split(',').map(c => c.replace(/^"|"$/g, '').trim());
           
-          if (!foundMeta && cols.length >= 8 && cols[7]) {
-              const potentialDate = new Date(cols[7]);
+          // Meta Data 位置調整：因為前面插入了2欄，所以 Meta Data 索引往後移
+          // 0:Supplier, 1:Name, 2:Role, 3:Duty(新), 4:Line, 5:VisaType(新), 6:Arrival, 7:Leave, 8:VisaExp
+          // 9:ProjStart, 10:ProjEnd, 11:Location, 12:Update
+          if (!foundMeta && cols.length >= 10 && cols[9]) {
+              const potentialDate = new Date(cols[9]); // 索引 9
               if (!isNaN(potentialDate.getTime())) {
                   projectMeta.start = potentialDate;
-                  if (cols[8]) projectMeta.end = new Date(cols[8]);
-                  if (cols[9]) projectMeta.location = cols[9];
-                  if (cols[10]) projectMeta.lastUpdated = cols[10];
+                  if (cols[10]) projectMeta.end = new Date(cols[10]);
+                  if (cols[11]) projectMeta.location = cols[11];
+                  if (cols[12]) projectMeta.lastUpdated = cols[12];
                   foundMeta = true; 
               }
           }
 
           if (cols.length < 7) continue; 
           
-          const arrival = new Date(cols[4]);
+          // 到崗日現在是索引 6
+          const arrival = new Date(cols[6]);
           if (isNaN(arrival.getTime())) continue;
 
           allRecords.push({
-            supplier: cols[0], name: cols[1], role: cols[2], line: cols[3], 
+            supplier: cols[0], 
+            name: cols[1], 
+            role: cols[2],
+            duty: cols[3] || "-", // 新增：職責
+            line: cols[4], 
+            visaType: cols[5] || "-", // 新增：簽證類型
             arrivalDate: arrival,
-            leaveDate: cols[5] ? new Date(cols[5]) : null,
-            visaExpiry: new Date(cols[6]),
+            leaveDate: cols[7] ? new Date(cols[7]) : null, // 離開日索引 7
+            visaExpiry: new Date(cols[8]), // 簽證到期索引 8
             year: arrival.getFullYear()
           });
       }
@@ -672,6 +605,8 @@
             bar.className = `gantt-bar ${statusClass}`;
             bar.style.left = startPct + '%';
             bar.style.width = widthPct + '%';
+            // 甘特圖 Hover 顯示職責與簽證
+            bar.title = `${name} (${trip.role})\n職責: ${trip.duty}\n簽證: ${trip.visaType}\n日期: ${trip.arrivalDate.toLocaleDateString()} ~ ${trip.leaveDate ? trip.leaveDate.toLocaleDateString() : '尚未定'}`;
             barsArea.appendChild(bar);
           }
         });
@@ -696,7 +631,7 @@
           <td><strong>${d.name}</strong></td>
           <td>${d.supplier}</td>
           <td>${d.role}</td>
-          <td>${d.arrivalDate.toLocaleDateString()}</td>
+          <td>${d.duty}</td> <td><span class="tag-visa">${d.visaType}</span></td> <td>${d.arrivalDate.toLocaleDateString()}</td>
           <td>${d.leaveDate ? d.leaveDate.toLocaleDateString() : '在職'}</td>
           <td>${visaTag}</td>
         `;
@@ -711,7 +646,7 @@
       const q = document.getElementById('searchInput').value.toLowerCase();
       return data.filter(d => 
         (s===""||d.supplier===s) && (l===""||d.line===l) && (r===""||d.role===r) &&
-        (q===""||d.name.toLowerCase().includes(q)||d.role.toLowerCase().includes(q))
+        (q===""||d.name.toLowerCase().includes(q)||d.role.toLowerCase().includes(q)||d.duty.toLowerCase().includes(q))
       );
     }
 
