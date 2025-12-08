@@ -2,7 +2,7 @@
 <html lang="zh-Hant">
 <head>
   <meta charset="UTF-8" />
-  <title>產品工程部-人員出差統計看板 | Vibe Coding</title>
+  <title>產品工程部-人員出差統計看板 v26 | Global Filters</title>
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" />
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
@@ -143,7 +143,8 @@
         flex-wrap: wrap;
     }
 
-    .year-selector-wrapper {
+    /* 通用篩選器樣式 */
+    .filter-wrapper {
         display: flex;
         align-items: center;
         gap: 8px;
@@ -152,15 +153,23 @@
         border: 1px solid var(--border-light);
         border-radius: var(--radius-input);
         box-shadow: 0 1px 2px rgba(0,0,0,0.03);
+        min-width: 140px; /* 稍微加寬 */
     }
-    .year-selector-wrapper select {
+    .filter-wrapper i {
+        color: var(--text-muted);
+        font-size: 13px;
+    }
+    .filter-wrapper select {
         border: none;
         background: transparent;
-        font-size: 14px;
+        font-size: 13px;
         font-weight: 600;
         color: var(--text-main);
         outline: none;
         cursor: pointer;
+        width: 100%;
+        max-width: 180px; /* 限制最大寬度避免過長 */
+        text-overflow: ellipsis;
     }
 
     .nav-pills {
@@ -169,6 +178,7 @@
         overflow-x: auto;
         padding-bottom: 0px;
         flex-grow: 1; 
+        justify-content: flex-end; /* 靠右對齊 */
     }
 
     .nav-btn {
@@ -228,6 +238,7 @@
       display: flex;
       align-items: center;
       gap: 8px;
+      transition: all 0.3s ease;
     }
     
     .card-title::before {
@@ -320,7 +331,6 @@
       z-index: 20;
       pointer-events: none;
     }
-    /* Only show label on the first row */
     .timeline-body .timeline-row:first-child .today-line::after {
       content: 'Today';
       position: absolute;
@@ -366,12 +376,6 @@
     td { padding: 10px 12px; border-top: 1px solid var(--border-light); white-space: nowrap; }
     tr:hover td { background: rgba(0,0,0,0.02); }
     .highlight-num { font-weight: 700; color: var(--color-primary); }
-
-    /* 🟢 新增：列表狀態標籤樣式 */
-    .status-badge { padding: 3px 8px; border-radius: 12px; font-size: 11px; font-weight: 600; color: #fff; display: inline-block; min-width: 60px; text-align: center;}
-    .badge-done { background-color: #8ba47c; }   /* 已完成 */
-    .badge-active { background-color: #f4d35e; color: #4a4a4a; } /* 進行中 */
-    .badge-plan { background-color: #ffb88a; color: #4a4a4a; }   /* 計畫中 */
     
     /* RWD */
     @media (max-width: 768px) {
@@ -411,15 +415,29 @@
   <div class="sticky-controls-wrapper">
     <div class="controls-grid">
         
-        <div class="year-selector-wrapper">
+        <div class="filter-wrapper">
             <i class="fa-regular fa-calendar"></i>
             <select id="yearSelect"></select>
         </div>
 
+        <div class="filter-wrapper">
+            <i class="fa-solid fa-user"></i>
+            <select id="filterNameGlobal">
+                <option value="">全部人員</option>
+            </select>
+        </div>
+
+        <div class="filter-wrapper">
+            <i class="fa-solid fa-briefcase"></i>
+            <select id="filterProjectGlobal">
+                <option value="">全部專案</option>
+            </select>
+        </div>
+
         <div class="nav-pills">
-            <button class="nav-btn" onclick="scrollToId('section-timeline')"><i class="fa-solid fa-timeline"></i> 時間軸</button>
             <button class="nav-btn" onclick="scrollToId('section-stats')"><i class="fa-solid fa-chart-column"></i> 統計</button>
             <button class="nav-btn" onclick="scrollToId('section-util')"><i class="fa-solid fa-chart-pie"></i> 利用率</button>
+            <button class="nav-btn" onclick="scrollToId('section-timeline')"><i class="fa-solid fa-timeline"></i> 時間軸</button>
             <button class="nav-btn" onclick="scrollToId('section-list')"><i class="fa-solid fa-table-list"></i> 列表</button>
         </div>
 
@@ -432,9 +450,45 @@
         (資料來源：Google 試算表 CSV)
     </div>
 
+    <section id="section-stats" class="card">
+      <div class="card-header">
+        <div class="card-title" id="title-stats">出差天數統計</div>
+      </div>
+      <div class="card-subtitle">依人員與專案統計該年度累積出差總天數。</div>
+
+      <div style="font-weight:600; font-size:14px; margin-bottom:8px;">1. 依人員統計 (直條圖)</div>
+      <div class="chart-wrapper-base">
+        <div class="chart-container-vertical">
+          <canvas id="peopleChart"></canvas>
+        </div>
+      </div>
+      
+      <div style="margin-top:20px; font-weight:600; font-size:14px; margin-bottom:8px;">2. 依專案/項目統計 (橫條圖)</div>
+      <div class="chart-wrapper-scrollable">
+        <div class="chart-container-horizontal" id="projectChartContainer">
+          <canvas id="projectChart"></canvas>
+        </div>
+      </div>
+    </section>
+
+    <section id="section-util" class="card">
+      <div class="card-header">
+        <div class="card-title" id="title-util">出差利用率 (人力負載)</div>
+        <div style="font-size:12px; color:var(--text-muted);">基準：<span class="highlight-num">240天</span>/年</div>
+      </div>
+      <div class="card-subtitle" style="line-height: 1.6;">
+        <span style="color:#8ba47c; font-weight:600;">A級 ≥80%</span>：高利用 (需留意疲勞與輪替)<br>
+        <span style="color:#f4d35e; font-weight:600;">B級 60-80%</span>：出差主力 (穩定支援)<br>
+        <span style="color:#ffb88a; font-weight:600;">C級 40-60%</span>：均衡型 (可視情況調整)<br>
+        <span style="color:#e39b99; font-weight:600;">D級 <40%</span>：機動支援 (可增加安排)
+      </div>
+      <div id="utilGrid" class="util-grid">
+        </div>
+    </section>
+
     <section id="section-timeline" class="card">
       <div class="card-header">
-        <div class="card-title">年度出差時間軸</div>
+        <div class="card-title" id="title-timeline">年度出差時間軸</div>
       </div>
       <div class="card-subtitle">
         <span style="color:#8ba47c">● 已完成</span> &nbsp; 
@@ -457,50 +511,11 @@
       </div>
     </section>
 
-    <section id="section-stats" class="card">
-      <div class="card-header">
-        <div class="card-title">出差天數統計</div>
-      </div>
-      <div class="card-subtitle">依人員與專案統計該年度累積出差總天數。</div>
-
-      <div style="font-weight:600; font-size:14px; margin-bottom:8px;">1. 依人員統計 (直條圖)</div>
-      <div class="chart-wrapper-base">
-        <div class="chart-container-vertical">
-          <canvas id="peopleChart"></canvas>
-        </div>
-      </div>
-      
-      <div style="margin-top:20px; font-weight:600; font-size:14px; margin-bottom:8px;">2. 依專案/項目統計 (橫條圖)</div>
-      <div class="chart-wrapper-scrollable">
-        <div class="chart-container-horizontal" id="projectChartContainer">
-          <canvas id="projectChart"></canvas>
-        </div>
-      </div>
-    </section>
-
-    <section id="section-util" class="card">
-      <div class="card-header">
-        <div class="card-title">出差利用率 (人力負載)</div>
-        <div style="font-size:12px; color:var(--text-muted);">基準：<span class="highlight-num">240天</span>/年</div>
-      </div>
-      <div class="card-subtitle" style="line-height: 1.6;">
-        <span style="color:#8ba47c; font-weight:600;">A級 ≥80%</span>：高利用 (需留意疲勞與輪替)<br>
-        <span style="color:#f4d35e; font-weight:600;">B級 60-80%</span>：出差主力 (穩定支援)<br>
-        <span style="color:#ffb88a; font-weight:600;">C級 40-60%</span>：均衡型 (可視情況調整)<br>
-        <span style="color:#e39b99; font-weight:600;">D級 <40%</span>：機動支援 (可增加安排)
-      </div>
-      <div id="utilGrid" class="util-grid">
-        </div>
-    </section>
-
     <section id="section-list" class="card">
       <div class="card-header">
-        <div class="card-title">詳細資料列表</div>
+        <div class="card-title" id="title-list">詳細資料列表</div>
         <div class="table-header-actions">
           <div class="filter-group">
-            <select id="filterName" class="filter-select">
-              <option value="">全部人員</option>
-            </select>
             <select id="filterLocation" class="filter-select">
               <option value="">全部地點</option>
             </select>
@@ -514,7 +529,7 @@
             <tr>
               <th>姓名</th>
               <th>地點</th>
-              <th>狀態</th> <th>日期區間</th>
+              <th>日期區間</th>
               <th>天數</th>
               <th>專案內容</th>
             </tr>
@@ -549,6 +564,7 @@
         const text = await res.text();
         allRecords = parseCsv(text);
         
+        // Populate Year Select
         const years = [...new Set(allRecords.map(r => r.year))].sort((a,b)=>b-a);
         const sel = document.getElementById("yearSelect");
         if(years.length > 0) currentYear = years[0]; 
@@ -560,7 +576,10 @@
           sel.appendChild(opt);
         });
 
-        renderAll(currentYear);
+        // 🟢 初始化全域篩選器
+        populateGlobalFilters(allRecords);
+
+        renderAll();
 
       } catch (err) {
         console.error("Data Load Error:", err);
@@ -602,13 +621,61 @@
       return data;
     }
 
-    function renderAll(year) {
-      const yearData = allRecords.filter(r => r.year == year);
-      renderCharts(yearData);
-      renderUtil(yearData);
-      renderTimeline(yearData, year);
-      renderDropdownFilters(yearData); 
-      renderTable(yearData);
+    // 🟢 新增：填充全域篩選器邏輯
+    function populateGlobalFilters(data) {
+        const nameSet = new Set();
+        const projectSet = new Set();
+        
+        data.forEach(d => {
+            if(d.name) nameSet.add(d.name);
+            if(d.project) projectSet.add(d.project);
+        });
+
+        const nameSel = document.getElementById('filterNameGlobal');
+        [...nameSet].sort().forEach(n => {
+            const opt = document.createElement('option');
+            opt.value = n;
+            opt.textContent = n;
+            nameSel.appendChild(opt);
+        });
+
+        const projSel = document.getElementById('filterProjectGlobal');
+        [...projectSet].sort().forEach(p => {
+            const opt = document.createElement('option');
+            opt.value = p;
+            opt.textContent = p;
+            projSel.appendChild(opt);
+        });
+    }
+
+    // 🟢 修改：RenderAll 現在包含全域篩選與標題更新
+    function renderAll() {
+      // 1. 取得篩選條件
+      const year = document.getElementById('yearSelect').value;
+      const name = document.getElementById('filterNameGlobal').value;
+      const project = document.getElementById('filterProjectGlobal').value;
+
+      // 2. 篩選資料 (先篩選年份，再篩選人員與專案)
+      let filtered = allRecords.filter(r => r.year == year);
+      if (name) filtered = filtered.filter(r => r.name === name);
+      if (project) filtered = filtered.filter(r => r.project === project);
+
+      // 3. 更新區塊標題前綴
+      let titlePrefix = "";
+      if (name) titlePrefix += name + " ";
+      if (project) titlePrefix += project + " ";
+      
+      document.getElementById('title-stats').textContent = titlePrefix + "出差天數統計";
+      document.getElementById('title-util').textContent = titlePrefix + "出差利用率 (人力負載)";
+      document.getElementById('title-timeline').textContent = titlePrefix + "年度出差時間軸";
+      document.getElementById('title-list').textContent = titlePrefix + "詳細資料列表";
+
+      // 4. 渲染各區塊 (傳入已篩選的資料)
+      renderCharts(filtered);
+      renderUtil(filtered);
+      renderTimeline(filtered, year);
+      renderDropdownFilters(filtered); 
+      renderTable(filtered); // 表格接收的也是已經過濾過的資料
     }
 
     /* =========================================
@@ -622,10 +689,7 @@
         projectMap[d.project] = (projectMap[d.project] || 0) + d.days;
       });
 
-      // 1. 人員：直條圖 (Vertical)
       drawVerticalChart('peopleChart', peopleMap, "人員出差天數");
-      
-      // 2. 專案：橫條圖 (Horizontal) + 動態高度
       drawHorizontalChart('projectChart', 'projectChartContainer', projectMap, "專案投入天數");
     }
 
@@ -770,7 +834,7 @@
         }
         barsContainer.appendChild(gridLines);
 
-        // 🔴 新增：計算並繪製 Today 紅線
+        // Today Line
         if (parseInt(year) === today.getFullYear()) {
              const startOfYear = new Date(today.getFullYear(), 0, 0);
              const diff = today - startOfYear;
@@ -827,21 +891,11 @@
        ========================================= */
     
     function renderDropdownFilters(data) {
-      const nameSelect = document.getElementById('filterName');
+      // 這裡只需保留「地點」篩選，因為「人員」已移至全域
       const locSelect = document.getElementById('filterLocation');
-      
-      nameSelect.innerHTML = '<option value="">全部人員</option>';
       locSelect.innerHTML = '<option value="">全部地點</option>';
 
-      const uniqueNames = [...new Set(data.map(d => d.name))].filter(Boolean).sort();
       const uniqueLocations = [...new Set(data.map(d => d.location))].filter(Boolean).sort();
-
-      uniqueNames.forEach(n => {
-        const opt = document.createElement('option');
-        opt.value = n;
-        opt.textContent = n;
-        nameSelect.appendChild(opt);
-      });
 
       uniqueLocations.forEach(l => {
         const opt = document.createElement('option');
@@ -853,48 +907,34 @@
 
     function renderTable(data) {
       const tbody = document.getElementById('tableBody');
-      const nameVal = document.getElementById('filterName').value;
+      // filterName 已移除
       const locVal = document.getElementById('filterLocation').value;
       const searchVal = document.getElementById('searchInput').value.toLowerCase();
-      const today = new Date(); // 🟢 獲取當前日期用於比對
 
       tbody.innerHTML = "";
       
       const filtered = data.filter(d => {
-        const matchName = nameVal === "" || d.name === nameVal;
         const matchLoc = locVal === "" || d.location === locVal;
         const matchSearch = searchVal === "" || 
           d.project.toLowerCase().includes(searchVal) ||
           d.location.toLowerCase().includes(searchVal) || 
           d.name.toLowerCase().includes(searchVal);
         
-        return matchName && matchLoc && matchSearch;
+        return matchLoc && matchSearch;
       });
 
       const sorted = filtered.sort((a,b) => a.startDate - b.startDate);
       
       if(sorted.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="6" style="text-align:center; padding:20px; color:var(--text-muted);">無符合資料</td></tr>';
+        tbody.innerHTML = '<tr><td colspan="5" style="text-align:center; padding:20px; color:var(--text-muted);">無符合資料</td></tr>';
         return;
       }
 
       sorted.forEach(d => {
         const tr = document.createElement('tr');
-        
-        // 🟢 判斷狀態
-        let statusHtml = '';
-        if (d.endDate < today) {
-            statusHtml = '<span class="status-badge badge-done">已完成</span>';
-        } else if (d.startDate <= today && d.endDate >= today) {
-            statusHtml = '<span class="status-badge badge-active">進行中</span>';
-        } else {
-            statusHtml = '<span class="status-badge badge-plan">計畫中</span>';
-        }
-
         tr.innerHTML = `
           <td style="font-weight:600">${d.name}</td>
           <td>${d.location}</td>
-          <td>${statusHtml}</td>
           <td style="font-size:12px; color:var(--text-muted)">
             ${d.startDate.toISOString().slice(0,10)} ~ ${d.endDate.toISOString().slice(0,10)}
           </td>
@@ -909,15 +949,26 @@
     }
 
     function setupEvents() {
-      document.getElementById('yearSelect').addEventListener('change', (e) => {
-        currentYear = e.target.value;
-        renderAll(currentYear);
+      // 監聽年份與兩個全域篩選器
+      ['yearSelect', 'filterNameGlobal', 'filterProjectGlobal'].forEach(id => {
+          document.getElementById(id).addEventListener('change', () => {
+              renderAll(); // 任何一個變動都會觸發重新渲染
+          });
       });
 
-      ['filterName', 'filterLocation', 'searchInput'].forEach(id => {
-        document.getElementById(id).addEventListener('input', () => {
-          const yearData = allRecords.filter(r => r.year == currentYear);
-          renderTable(yearData);
+      ['filterLocation', 'searchInput'].forEach(id => {
+        document.getElementById(id).addEventListener(id === 'searchInput' ? 'input' : 'change', () => {
+            // 這邊只重新渲染表格，因為這是表格專用的局部篩選
+            // 但傳入 renderTable 的資料必須是已經經過全域篩選後的
+            const year = document.getElementById('yearSelect').value;
+            const name = document.getElementById('filterNameGlobal').value;
+            const project = document.getElementById('filterProjectGlobal').value;
+            
+            let filtered = allRecords.filter(r => r.year == year);
+            if (name) filtered = filtered.filter(r => r.name === name);
+            if (project) filtered = filtered.filter(r => r.project === project);
+            
+            renderTable(filtered);
         });
       });
 
@@ -943,7 +994,6 @@
     }
 
     function scrollToId(id) {
-        // 因為有凍結列，所以捲動時要扣除上方的高度
         const element = document.getElementById(id);
         const headerOffset = 140; 
         const elementPosition = element.getBoundingClientRect().top;
