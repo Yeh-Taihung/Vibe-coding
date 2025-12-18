@@ -178,7 +178,7 @@
       <div class="brand">
           <i class="fa-solid fa-file-contract"></i>
           <div>
-              <div>合約管理看板</div>
+              <div>經手合約管理看板</div>
               <div style="font-size: 0.75rem; font-weight: 400; opacity: 0.8;">Contract Lifecycle Management</div>
           </div>
       </div>
@@ -187,7 +187,7 @@
               <i class="fa-solid fa-pen-to-square"></i> 編輯資料
           </a>
           <a href="../index.html" class="btn btn-back">
-              <i class="fa-solid fa-house"></i> 回首頁
+              <i class="fa-solid fa-house"></i> 回到數據中控台
           </a>
       </div>
   </header>
@@ -209,7 +209,7 @@
           </div>
           <div class="card">
               <div class="card-header">
-                  <div class="card-title"><i class="fa-solid fa-building-user"></i> 前五大合作廠商</div>
+                  <div class="card-title"><i class="fa-solid fa-building-user"></i> 前五大合作廠商 (排除我方)</div>
               </div>
               <div style="height: 250px; position: relative;">
                   <canvas id="partnerChart"></canvas>
@@ -243,15 +243,15 @@
               <table id="contractTable">
                   <thead>
                       <tr>
-                          <th>狀態</th>
+                          <th>合約狀態</th>
                           <th>合約名稱</th>
                           <th>合約種類</th>
-                          <th>乙方 (廠商)</th>
+                          <th>甲方</th> <th>乙方</th>
                           <th>金額/費率</th>
                           <th>生效日</th>
                           <th>到期日</th>
                           <th>預警狀態</th>
-                          <th>負責人</th>
+                          <th>經辦單位/人</th>
                       </tr>
                   </thead>
                   <tbody>
@@ -383,7 +383,6 @@
     }
 
     function renderCharts() {
-        // --- 狀態圓餅圖 ---
         const statusCounts = {};
         allData.forEach(d => statusCounts[d.status] = (statusCounts[d.status] || 0) + 1);
         
@@ -403,9 +402,8 @@
             options: { responsive: true, maintainAspectRatio: false }
         });
 
-        // --- 🟢 修改：合作廠商邏輯 (排除寶新) ---
+        // 合作廠商邏輯 (排除寶新)
         const partnerCounts = {};
-        // 設定要排除的公司關鍵字
         const myCompanyKey = "寶新"; 
 
         allData.forEach(d => {
@@ -413,7 +411,6 @@
             const pa = d.partyA || "";
             const pb = d.partyB || "";
 
-            // 邏輯：如果甲方有"寶新"，那乙方就是廠商；反之亦然。如果兩邊都沒有，預設抓乙方。
             if (pa.includes(myCompanyKey)) {
                 realPartner = pb;
             } else if (pb.includes(myCompanyKey)) {
@@ -429,9 +426,7 @@
 
         const sortedPartners = Object.entries(partnerCounts).sort((a,b) => b[1] - a[1]).slice(0, 5);
         
-        // 🟢 修改：定義一組顏色陣列 (Palette) 用於長條圖
         const barColors = ['#6A7B88', '#F6AD55', '#D4A5A5', '#63B3ED', '#48BB78'];
-        // 根據資料數量動態產生背景色
         const bgColors = sortedPartners.map((_, i) => barColors[i % barColors.length]);
 
         const ctxPartner = document.getElementById('partnerChart').getContext('2d');
@@ -444,9 +439,9 @@
                 datasets: [{
                     label: '合約數',
                     data: sortedPartners.map(p => p[1]),
-                    backgroundColor: bgColors, // 🟢 套用多色
+                    backgroundColor: bgColors,
                     borderRadius: 4,
-                    barThickness: 25 // 🟢 修改：固定粗細 (25px)，不會因為資料少而變肥
+                    barThickness: 25 
                 }]
             },
             options: { 
@@ -454,7 +449,7 @@
                 maintainAspectRatio: false,
                 indexAxis: 'y',
                 scales: { x: { ticks: { precision: 0 } } },
-                plugins: { legend: { display: false } } // 隱藏圖例，比較清爽
+                plugins: { legend: { display: false } } 
             }
         });
     }
@@ -514,11 +509,12 @@
                 }
             }
 
+            // 🟢 修改：在表格中加入 d.partyA
             tr.innerHTML = `
                 <td>${badgeHtml}</td>
                 <td style="font-weight:600; color:var(--text-main); max-width:200px; white-space:normal;">${d.name}</td>
                 <td><span style="font-size:0.8rem; color:#4a5568; background:#edf2f7; padding:2px 6px; border-radius:4px;">${d.type}</span></td>
-                <td>${d.partyB}</td>
+                <td>${d.partyA}</td> <td>${d.partyB}</td>
                 <td style="font-weight:500;">${amountDisplay}</td>
                 <td style="color:var(--text-muted);">${displayStartDate}</td>
                 <td style="color:var(--text-muted);">${displayEndDate}</td>

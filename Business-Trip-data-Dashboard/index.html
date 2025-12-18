@@ -2,7 +2,7 @@
 <html lang="zh-Hant">
 <head>
   <meta charset="UTF-8" />
-  <title>產品工程部-人員出差統計看板 v26 | Global Filters</title>
+  <title>產品工程部-人員出差統計看板 v27 | Consistent UI</title>
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" />
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
@@ -108,7 +108,7 @@
         border: 1px solid transparent;
     }
     
-    /* Google Sheet 按鈕樣式 */
+    /* Google Sheet 按鈕樣式 - 綠色風格 */
     .btn-sheet { background-color: #e6f4ea; color: #1e8e3e; border: 1px solid #ceead6; }
     .btn-sheet:hover { background-color: #dcece0; }
 
@@ -153,7 +153,7 @@
         border: 1px solid var(--border-light);
         border-radius: var(--radius-input);
         box-shadow: 0 1px 2px rgba(0,0,0,0.03);
-        min-width: 140px; /* 稍微加寬 */
+        min-width: 140px; 
     }
     .filter-wrapper i {
         color: var(--text-muted);
@@ -168,7 +168,7 @@
         outline: none;
         cursor: pointer;
         width: 100%;
-        max-width: 180px; /* 限制最大寬度避免過長 */
+        max-width: 180px;
         text-overflow: ellipsis;
     }
 
@@ -394,7 +394,7 @@
         <div class="logo-area">
           <img src="../logo.png" alt="寶新 Logo" class="logo-img">
           <div class="brand-title-group">
-              <div class="brand-title">產品工程部出差統計看板</div>
+              <div class="brand-title">產品工程部人員出差統計看板</div>
               <div class="brand-subtitle">Business Trip Analytics Dashboard</div>
           </div>
         </div>
@@ -402,11 +402,11 @@
       
       <div class="brand-actions">
            <a href="https://docs.google.com/spreadsheets/d/1FJEwp02CBL8A_9WH455RsA1YsuakMCFdtakyesh9i2s/edit?gid=840585085#gid=840585085" target="_blank" class="action-btn btn-sheet">
-            <i class="fa-solid fa-file-pen"></i> Edit Data
+            <i class="fa-solid fa-pen-to-square"></i> 編輯資料
            </a>
 
            <a href="../index.html" class="action-btn btn-back">
-             ← 回到數據中控台
+             <i class="fa-solid fa-house"></i> 回到數據中控台
            </a>
            <button class="theme-toggle" id="themeBtn">◐</button>
       </div>
@@ -564,7 +564,6 @@
         const text = await res.text();
         allRecords = parseCsv(text);
         
-        // Populate Year Select
         const years = [...new Set(allRecords.map(r => r.year))].sort((a,b)=>b-a);
         const sel = document.getElementById("yearSelect");
         if(years.length > 0) currentYear = years[0]; 
@@ -576,9 +575,7 @@
           sel.appendChild(opt);
         });
 
-        // 🟢 初始化全域篩選器
         populateGlobalFilters(allRecords);
-
         renderAll();
 
       } catch (err) {
@@ -621,11 +618,9 @@
       return data;
     }
 
-    // 🟢 新增：填充全域篩選器邏輯
     function populateGlobalFilters(data) {
         const nameSet = new Set();
         const projectSet = new Set();
-        
         data.forEach(d => {
             if(d.name) nameSet.add(d.name);
             if(d.project) projectSet.add(d.project);
@@ -648,19 +643,15 @@
         });
     }
 
-    // 🟢 修改：RenderAll 現在包含全域篩選與標題更新
     function renderAll() {
-      // 1. 取得篩選條件
       const year = document.getElementById('yearSelect').value;
       const name = document.getElementById('filterNameGlobal').value;
       const project = document.getElementById('filterProjectGlobal').value;
 
-      // 2. 篩選資料 (先篩選年份，再篩選人員與專案)
       let filtered = allRecords.filter(r => r.year == year);
       if (name) filtered = filtered.filter(r => r.name === name);
       if (project) filtered = filtered.filter(r => r.project === project);
 
-      // 3. 更新區塊標題前綴
       let titlePrefix = "";
       if (name) titlePrefix += name + " ";
       if (project) titlePrefix += project + " ";
@@ -670,12 +661,11 @@
       document.getElementById('title-timeline').textContent = titlePrefix + "年度出差時間軸";
       document.getElementById('title-list').textContent = titlePrefix + "詳細資料列表";
 
-      // 4. 渲染各區塊 (傳入已篩選的資料)
       renderCharts(filtered);
       renderUtil(filtered);
       renderTimeline(filtered, year);
       renderDropdownFilters(filtered); 
-      renderTable(filtered); // 表格接收的也是已經過濾過的資料
+      renderTable(filtered);
     }
 
     /* =========================================
@@ -712,7 +702,7 @@
           }]
         },
         options: {
-          indexAxis: 'x', // 直條
+          indexAxis: 'x', 
           maintainAspectRatio: false,
           responsive: true,
           plugins: { legend: { display: false } },
@@ -748,7 +738,7 @@
           }]
         },
         options: {
-          indexAxis: 'y', // 橫條
+          indexAxis: 'y', 
           maintainAspectRatio: false,
           responsive: true,
           plugins: { legend: { display: false } },
@@ -834,7 +824,6 @@
         }
         barsContainer.appendChild(gridLines);
 
-        // Today Line
         if (parseInt(year) === today.getFullYear()) {
              const startOfYear = new Date(today.getFullYear(), 0, 0);
              const diff = today - startOfYear;
@@ -891,7 +880,6 @@
        ========================================= */
     
     function renderDropdownFilters(data) {
-      // 這裡只需保留「地點」篩選，因為「人員」已移至全域
       const locSelect = document.getElementById('filterLocation');
       locSelect.innerHTML = '<option value="">全部地點</option>';
 
@@ -907,7 +895,6 @@
 
     function renderTable(data) {
       const tbody = document.getElementById('tableBody');
-      // filterName 已移除
       const locVal = document.getElementById('filterLocation').value;
       const searchVal = document.getElementById('searchInput').value.toLowerCase();
 
@@ -949,17 +936,14 @@
     }
 
     function setupEvents() {
-      // 監聽年份與兩個全域篩選器
       ['yearSelect', 'filterNameGlobal', 'filterProjectGlobal'].forEach(id => {
           document.getElementById(id).addEventListener('change', () => {
-              renderAll(); // 任何一個變動都會觸發重新渲染
+              renderAll(); 
           });
       });
 
       ['filterLocation', 'searchInput'].forEach(id => {
         document.getElementById(id).addEventListener(id === 'searchInput' ? 'input' : 'change', () => {
-            // 這邊只重新渲染表格，因為這是表格專用的局部篩選
-            // 但傳入 renderTable 的資料必須是已經經過全域篩選後的
             const year = document.getElementById('yearSelect').value;
             const name = document.getElementById('filterNameGlobal').value;
             const project = document.getElementById('filterProjectGlobal').value;
