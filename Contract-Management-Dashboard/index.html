@@ -178,7 +178,7 @@
       <div class="brand">
           <i class="fa-solid fa-file-contract"></i>
           <div>
-              <div>經手合約管理看板</div>
+              <div>合約管理看板</div>
               <div style="font-size: 0.75rem; font-weight: 400; opacity: 0.8;">Contract Lifecycle Management</div>
           </div>
       </div>
@@ -209,7 +209,7 @@
           </div>
           <div class="card">
               <div class="card-header">
-                  <div class="card-title"><i class="fa-solid fa-building-user"></i> 前五大合作廠商 (排除我方)</div>
+                  <div class="card-title"><i class="fa-solid fa-building-user"></i> 主要五大合作廠商</div>
               </div>
               <div style="height: 250px; position: relative;">
                   <canvas id="partnerChart"></canvas>
@@ -359,9 +359,9 @@
 
         const kpiHTML = `
             <div class="kpi-card" style="--kpi-color: #6A7B88;">
-                <div class="kpi-title">總經手合約</div>
+                <div class="kpi-title">經手合約數量總計</div>
                 <div class="kpi-value">${total}</div>
-                <div class="kpi-sub">包含草擬與執行中</div>
+                <div class="kpi-sub">包含草擬與協議中合約</div>
             </div>
             <div class="kpi-card" style="--kpi-color: #F6AD55;">
                 <div class="kpi-title">待簽核/協議中</div>
@@ -369,7 +369,7 @@
                 <div class="kpi-sub">需關注進度</div>
             </div>
              <div class="kpi-card" style="--kpi-color: #E53E3E;">
-                <div class="kpi-title">已過期 (簽訂中)</div>
+                <div class="kpi-title">已過期</div>
                 <div class="kpi-value">${expired}</div>
                 <div class="kpi-sub">合約已生效但期限已過</div>
             </div>
