@@ -10,28 +10,27 @@
   <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700&family=Inter:wght@400;600&display=swap" rel="stylesheet">
 
   <style>
-    /* --------- 🎨 CSS 變數：莫蘭迪配色 (專業、沈穩) --------- */
+    /* --------- 🎨 CSS 變數：莫蘭迪配色 --------- */
     :root {
-      --primary: #6A7B88;         /* 莫蘭迪深灰藍 (主色) */
-      --primary-light: #E8ECEF;   /* 淺灰底色 */
-      --accent: #D4A5A5;          /* 莫蘭迪粉 (強調/過期) */
-      --secondary: #9FB1BC;       /* 輔助藍灰 */
+      --primary: #6A7B88;         /* 莫蘭迪深灰藍 */
+      --primary-light: #E8ECEF;   
+      --accent: #D4A5A5;          /* 莫蘭迪粉 */
       
-      --bg-body: #F5F7FA;         /* 頁面背景 */
-      --bg-card: #FFFFFF;         /* 卡片背景 */
+      --bg-body: #F5F7FA;         
+      --bg-card: #FFFFFF;         
       
-      --text-main: #2C3E50;       /* 主要文字 */
-      --text-muted: #7F8C8D;      /* 次要文字 */
+      --text-main: #2C3E50;       
+      --text-muted: #7F8C8D;      
       --border: #E2E8F0;
       
       /* 狀態顏色 */
-      --st-draft: #CBD5E0;        /* 草擬 (灰) */
-      --st-review: #F6AD55;       /* 送審 (橘) */
-      --st-nego: #63B3ED;         /* 協議 (藍) */
-      --st-signed: #48BB78;       /* 完成 (綠) */
-      --st-cancel: #E53E3E;       /* 取消 (紅) */
+      --st-draft: #CBD5E0;        /* 草擬 - 灰 */
+      --st-review: #F6AD55;       /* 送審 - 橘 */
+      --st-nego: #63B3ED;         /* 協議 - 藍 */
+      --st-signed: #48BB78;       /* 簽訂 - 綠 */
+      --st-cancel: #E53E3E;       /* 取消 - 紅 */
 
-      --shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03);
+      --shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
       --radius: 12px;
     }
 
@@ -42,7 +41,12 @@
       background: var(--bg-body); 
       color: var(--text-main); 
       padding-bottom: 40px;
+      /* 預設隱藏內容，直到密碼驗證通過 */
+      visibility: hidden; 
     }
+    
+    /* 讓密碼驗證視窗本身是可見的 */
+    .password-overlay { visibility: visible; }
 
     /* --------- Header --------- */
     .header {
@@ -64,7 +68,6 @@
         color: var(--primary);
         font-size: 1.1rem;
     }
-    .brand i { font-size: 1.4rem; }
     .header-actions .btn {
         padding: 6px 12px;
         border-radius: 6px;
@@ -81,7 +84,7 @@
     .btn-back:hover { color: var(--text-main); }
 
     /* --------- KPI Cards --------- */
-    .container { max-width: 1200px; margin: 20px auto; padding: 0 16px; }
+    .container { max-width: 1280px; margin: 20px auto; padding: 0 16px; }
     
     .kpi-grid {
         display: grid;
@@ -95,12 +98,13 @@
         border-radius: var(--radius);
         box-shadow: var(--shadow);
         border-left: 4px solid var(--kpi-color);
+        position: relative;
     }
     .kpi-title { font-size: 0.85rem; color: var(--text-muted); margin-bottom: 5px; }
     .kpi-value { font-size: 1.8rem; font-weight: 700; color: var(--text-main); }
     .kpi-sub { font-size: 0.8rem; color: var(--text-muted); margin-top: 5px; }
 
-    /* --------- Main Grid (Charts & Table) --------- */
+    /* --------- Main Grid (Charts) --------- */
     .dashboard-layout {
         display: grid;
         grid-template-columns: 1fr 1fr;
@@ -126,7 +130,7 @@
     }
     .card-title { font-weight: 700; color: var(--primary); display: flex; align-items: center; gap: 8px; }
 
-    /* --------- Filters --------- */
+    /* --------- Filters & Table --------- */
     .filter-bar {
         display: flex;
         gap: 10px;
@@ -143,7 +147,6 @@
     }
     .filter-input { flex: 1; min-width: 200px; }
 
-    /* --------- Table --------- */
     .table-container { overflow-x: auto; }
     table { width: 100%; border-collapse: collapse; font-size: 0.9rem; white-space: nowrap; }
     th { text-align: left; padding: 12px; background: #F8FAFC; color: var(--text-muted); font-weight: 600; border-bottom: 1px solid var(--border); }
@@ -151,18 +154,19 @@
     tr:hover td { background: #F8FAFC; }
 
     /* Status Badges */
-    .badge { padding: 4px 10px; border-radius: 20px; font-size: 0.75rem; font-weight: 600; display: inline-block; }
-    .badge-draft { background: #EDF2F7; color: #4A5568; }
-    .badge-review { background: #FEFCBF; color: #B7791F; }
-    .badge-nego { background: #EBF8FF; color: #2B6CB0; }
-    .badge-signed { background: #C6F6D5; color: #276749; }
-    .badge-cancel { background: #FED7D7; color: #9B2C2C; }
+    .badge { padding: 4px 10px; border-radius: 20px; font-size: 0.75rem; font-weight: 600; display: inline-block; min-width: 60px; text-align: center; }
+    .badge-draft { background: var(--st-draft); color: #4A5568; }
+    .badge-review { background: var(--st-review); color: #7B341E; }
+    .badge-nego { background: var(--st-nego); color: #102A43; }
+    .badge-signed { background: var(--st-signed); color: #FFFFFF; }
+    .badge-cancel { background: var(--st-cancel); color: #FFFFFF; }
 
     /* Warning Tags */
-    .tag-expiry { font-size: 0.75rem; font-weight: 600; padding: 2px 6px; border-radius: 4px; }
+    .tag-expiry { font-size: 0.75rem; font-weight: 600; padding: 2px 8px; border-radius: 4px; display: inline-block;}
     .tag-danger { color: #C53030; background: #FFF5F5; border: 1px solid #FC8181; }
     .tag-warning { color: #C05621; background: #FFFAF0; border: 1px solid #FBD38D; }
-    .tag-ok { color: #2F855A; background: #F0FFF4; opacity: 0.7; }
+    .tag-ok { color: #2F855A; background: #F0FFF4; border: 1px solid #C6F6D5; }
+    .tag-neutral { color: var(--text-muted); background: #F1F5F9; border: 1px solid #E2E8F0; }
 
     /* Loading */
     .loading { text-align: center; padding: 40px; color: var(--text-muted); }
@@ -205,7 +209,7 @@
           </div>
           <div class="card">
               <div class="card-header">
-                  <div class="card-title"><i class="fa-solid fa-building-user"></i> 前五大合作廠商 (乙方)</div>
+                  <div class="card-title"><i class="fa-solid fa-building-user"></i> 前五大合作廠商</div>
               </div>
               <div style="height: 250px; position: relative;">
                   <canvas id="partnerChart"></canvas>
@@ -220,17 +224,18 @@
           </div>
           
           <div class="filter-bar">
-              <input type="text" id="searchInput" class="filter-input" placeholder="🔍 搜尋合約名稱、廠商...">
+              <input type="text" id="searchInput" class="filter-input" placeholder="🔍 搜尋合約名稱、廠商、負責人...">
               <select id="statusFilter" class="filter-select">
-                  <option value="">所有狀態</option>
-                  <option value="送審中">送審中</option>
-                  <option value="完成合約簽定">已簽定</option>
-                  <option value="草擬中">草擬中</option>
+                  <option value="">全部狀態</option>
+                  <option value="合約簽訂">🟢 合約簽訂</option>
+                  <option value="送審中">🟠 送審中</option>
+                  <option value="協議中">🔵 協議中</option>
+                  <option value="草擬中">⚪ 草擬中</option>
               </select>
               <select id="expiryFilter" class="filter-select">
-                  <option value="">所有期限</option>
-                  <option value="expired">已過期</option>
-                  <option value="warning">即將到期 (<30天)</option>
+                  <option value="">全部期限</option>
+                  <option value="expired">已過期 (簽訂後)</option>
+                  <option value="warning">即將到期 (30天內)</option>
               </select>
           </div>
 
@@ -240,10 +245,12 @@
                       <tr>
                           <th>狀態</th>
                           <th>合約名稱</th>
+                          <th>合約種類</th>
                           <th>乙方 (廠商)</th>
+                          <th>金額/費率</th>
                           <th>生效日</th>
                           <th>到期日</th>
-                          <th>剩餘天數/預警</th>
+                          <th>預警狀態</th>
                           <th>負責人</th>
                       </tr>
                   </thead>
@@ -256,12 +263,22 @@
   </main>
 
   <script>
-    // ❗❗ 請將下方的 URL 替換成你的 Google Sheet 發布 CSV 連結
+    // 🔒 密碼保護
+    (function checkPassword() {
+        const MY_PASSWORD = "8888"; 
+        let userPass = prompt("請輸入管理密碼以存取看板：", "");
+        if (userPass === MY_PASSWORD) {
+            document.body.style.visibility = "visible";
+        } else {
+            alert("密碼錯誤，將返回首頁。");
+            window.location.href = "../index.html"; 
+        }
+    })();
+
     const CSV_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vTJeO861CXhXlcMVU-soyQ4pVsfRZJxJl1WbQF8p6lNVPjlU0wyHOPFXfPSFSHAq-XABOSaM4UR-FcP/pub?output=csv";
     
-    // 定義今天的日期 (用於計算過期)
     const TODAY = new Date();
-    TODAY.setHours(0,0,0,0); // 清除時間，只比對日期
+    TODAY.setHours(0,0,0,0); 
 
     let allData = [];
     let statusChartRef = null;
@@ -274,112 +291,99 @@
 
     async function fetchData() {
         try {
-            // 由於這是示範，若連結無效會使用假資料
             const res = await fetch(CSV_URL);
             if(!res.ok) throw new Error("Network response was not ok");
             const text = await res.text();
             parseCSV(text);
         } catch (error) {
-            console.warn("使用預設假資料模式 (因為 CSV 讀取失敗)", error);
+            console.warn("CSV 讀取失敗，使用預設資料展示模式", error);
             useMockData();
         }
     }
 
-    // 解析 CSV
     function parseCSV(text) {
-        const rows = text.trim().split(/\r?\n/).slice(1); // 去掉標題
+        const rows = text.trim().split(/\r?\n/).slice(1); 
         allData = rows.map(row => {
-            // 處理 CSV 的逗號分隔 (簡單版)
-            const cols = row.split(',').map(c => c.replace(/^"|"$/g, '').trim());
+            const cols = row.split(/,(?=(?:(?:[^"]*"){2})*[^"]*$)/).map(c => c.replace(/^"|"$/g, '').trim());
             
-            // 對應前面定義的 Excel 欄位索引
-            const endDateStr = cols[5]; // 假設 F 欄是結束日
+            // A[0]:合約名稱, B[1]:甲方, C[2]:乙方 ...
+            const endDateStr = cols[6]; 
             const endDate = endDateStr ? new Date(endDateStr) : null;
             
             return {
-                name: cols[0] || "未命名合約",
+                name: cols[0] || "未命名",
                 partyA: cols[1] || "-",
                 partyB: cols[2] || "-",
                 status: cols[3] || "草擬中",
-                startDate: cols[4],
+                type: cols[4] || "-",
+                startDate: cols[5], 
                 endDate: endDate,
-                amount: cols[6] || 0,
-                owner: cols[7] || "-",
-                rawDate: endDateStr
+                amount: cols[7],
+                owner: cols[8] || "-"
             };
         });
 
         updateDashboard();
     }
 
-    // 備用假資料 (若無 CSV 時顯示)
     function useMockData() {
         allData = [
-            { name: "年度伺服器採購合約", partyB: "戴爾科技", status: "送審中", endDate: new Date("2025-12-31"), owner: "Leo" },
-            { name: "辦公室清潔服務協議", partyB: "潔淨家", status: "完成合約簽定", endDate: new Date("2023-12-15"), owner: "Admin" }, // 過期
-            { name: "雲端服務續約", partyB: "Google Cloud", status: "協議中", endDate: new Date(new Date().setDate(TODAY.getDate() + 15)), owner: "IT" }, // 快過期
-            { name: "新產品行銷案", partyB: "奧美廣告", status: "草擬中", endDate: null, owner: "Marketing" },
-            { name: "機台維護合約", partyB: "台積電", status: "完成合約簽定", endDate: new Date("2025-06-30"), owner: "Leo" },
+            { name: "芝加哥產線安裝協議", partyA: "寶新新能源", partyB: "安徽巨一", status: "草擬中", type: "安裝人力", startDate: "2025/06/01", endDate: new Date("2025/10/31"), amount: "500/Day", owner: "Leo" },
+            { name: "年度伺服器採購", partyA: "寶新新能源", partyB: "戴爾科技", status: "送審中", type: "設備買賣", startDate: "2024/01/01", endDate: new Date("2025/12/31"), amount: "1200000", owner: "IT" },
+            { name: "客戶銷售合約", partyA: "Tesla Inc.", partyB: "寶新新能源", status: "合約簽訂", type: "銷售", startDate: "2024/01/01", endDate: new Date("2026/12/31"), amount: "5000000", owner: "Sales" },
         ];
         updateDashboard();
     }
 
     function updateDashboard() {
-        // 1. 產生 KPI
         renderKPI();
-        // 2. 產生圖表
         renderCharts();
-        // 3. 產生表格
         renderTable(allData);
-        
-        // 更新時間
         document.getElementById('lastUpdate').textContent = `資料更新於: ${new Date().toLocaleString()}`;
     }
 
-    // --- 渲染 KPI ---
     function renderKPI() {
         const total = allData.length;
-        const reviewing = allData.filter(d => d.status.includes("送審") || d.status.includes("協議")).length;
+        const pending = allData.filter(d => ["草擬中", "送審中", "協議中"].includes(d.status)).length;
         
-        // 計算過期與即將過期
         let expired = 0;
         let warning = 0;
         
         allData.forEach(d => {
-            if(!d.endDate) return;
-            const diffDays = (d.endDate - TODAY) / (1000 * 60 * 60 * 24);
-            if (diffDays < 0) expired++;
-            else if (diffDays <= 30) warning++;
+            if (d.status === "合約簽訂" && d.endDate) {
+                const diffDays = (d.endDate - TODAY) / (1000 * 60 * 60 * 24);
+                if (diffDays < 0) expired++;
+                else if (diffDays <= 30) warning++;
+            }
         });
 
         const kpiHTML = `
             <div class="kpi-card" style="--kpi-color: #6A7B88;">
-                <div class="kpi-title">總合約數</div>
+                <div class="kpi-title">總經手合約</div>
                 <div class="kpi-value">${total}</div>
-                <div class="kpi-sub">目前列管中的合約</div>
+                <div class="kpi-sub">包含草擬與執行中</div>
             </div>
             <div class="kpi-card" style="--kpi-color: #F6AD55;">
-                <div class="kpi-title">待處理 (送審/協議)</div>
-                <div class="kpi-value">${reviewing}</div>
-                <div class="kpi-sub">需要關注進度</div>
+                <div class="kpi-title">待簽核/協議中</div>
+                <div class="kpi-value">${pending}</div>
+                <div class="kpi-sub">需關注進度</div>
             </div>
              <div class="kpi-card" style="--kpi-color: #E53E3E;">
-                <div class="kpi-title">已過期合約</div>
+                <div class="kpi-title">已過期 (簽訂中)</div>
                 <div class="kpi-value">${expired}</div>
-                <div class="kpi-sub">請確認是否續約或結案</div>
+                <div class="kpi-sub">合約已生效但期限已過</div>
             </div>
             <div class="kpi-card" style="--kpi-color: #D69E2E;">
-                <div class="kpi-title">30天內到期</div>
+                <div class="kpi-title">即將到期 (<30天)</div>
                 <div class="kpi-value">${warning}</div>
-                <div class="kpi-sub">即將到期預警</div>
+                <div class="kpi-sub">請確認是否續約</div>
             </div>
         `;
         document.getElementById('kpiArea').innerHTML = kpiHTML;
     }
 
-    // --- 渲染圖表 ---
     function renderCharts() {
-        // 圓餅圖：狀態分佈
+        // --- 狀態圓餅圖 ---
         const statusCounts = {};
         allData.forEach(d => statusCounts[d.status] = (statusCounts[d.status] || 0) + 1);
         
@@ -392,19 +396,44 @@
                 labels: Object.keys(statusCounts),
                 datasets: [{
                     data: Object.values(statusCounts),
-                    backgroundColor: ['#CBD5E0', '#F6AD55', '#63B3ED', '#48BB78', '#E53E3E']
+                    backgroundColor: ['#48BB78', '#F6AD55', '#63B3ED', '#CBD5E0', '#E53E3E'],
+                    borderWidth: 0
                 }]
             },
             options: { responsive: true, maintainAspectRatio: false }
         });
 
-        // 長條圖：前五大廠商
+        // --- 🟢 修改：合作廠商邏輯 (排除寶新) ---
         const partnerCounts = {};
+        // 設定要排除的公司關鍵字
+        const myCompanyKey = "寶新"; 
+
         allData.forEach(d => {
-            if(d.partyB && d.partyB !== "-") partnerCounts[d.partyB] = (partnerCounts[d.partyB] || 0) + 1;
+            let realPartner = "";
+            const pa = d.partyA || "";
+            const pb = d.partyB || "";
+
+            // 邏輯：如果甲方有"寶新"，那乙方就是廠商；反之亦然。如果兩邊都沒有，預設抓乙方。
+            if (pa.includes(myCompanyKey)) {
+                realPartner = pb;
+            } else if (pb.includes(myCompanyKey)) {
+                realPartner = pa;
+            } else {
+                realPartner = pb; // 預設值
+            }
+
+            if(realPartner && realPartner !== "-" && realPartner !== "") {
+                partnerCounts[realPartner] = (partnerCounts[realPartner] || 0) + 1;
+            }
         });
+
         const sortedPartners = Object.entries(partnerCounts).sort((a,b) => b[1] - a[1]).slice(0, 5);
         
+        // 🟢 修改：定義一組顏色陣列 (Palette) 用於長條圖
+        const barColors = ['#6A7B88', '#F6AD55', '#D4A5A5', '#63B3ED', '#48BB78'];
+        // 根據資料數量動態產生背景色
+        const bgColors = sortedPartners.map((_, i) => barColors[i % barColors.length]);
+
         const ctxPartner = document.getElementById('partnerChart').getContext('2d');
         if(partnerChartRef) partnerChartRef.destroy();
 
@@ -413,21 +442,23 @@
             data: {
                 labels: sortedPartners.map(p => p[0]),
                 datasets: [{
-                    label: '合約數量',
+                    label: '合約數',
                     data: sortedPartners.map(p => p[1]),
-                    backgroundColor: '#9FB1BC',
-                    borderRadius: 4
+                    backgroundColor: bgColors, // 🟢 套用多色
+                    borderRadius: 4,
+                    barThickness: 25 // 🟢 修改：固定粗細 (25px)，不會因為資料少而變肥
                 }]
             },
             options: { 
                 responsive: true, 
                 maintainAspectRatio: false,
-                indexAxis: 'y'
+                indexAxis: 'y',
+                scales: { x: { ticks: { precision: 0 } } },
+                plugins: { legend: { display: false } } // 隱藏圖例，比較清爽
             }
         });
     }
 
-    // --- 渲染表格 (含邏輯判斷) ---
     function renderTable(data) {
         const tbody = document.querySelector('#contractTable tbody');
         tbody.innerHTML = "";
@@ -435,41 +466,62 @@
         data.forEach(d => {
             const tr = document.createElement('tr');
             
-            // 狀態徽章邏輯
             let badgeClass = "badge-draft";
-            if(d.status.includes("送審")) badgeClass = "badge-review";
-            else if(d.status.includes("協議")) badgeClass = "badge-nego";
-            else if(d.status.includes("完成")) badgeClass = "badge-signed";
-            else if(d.status.includes("取消")) badgeClass = "badge-cancel";
+            if(d.status === "送審中") badgeClass = "badge-review";
+            else if(d.status === "協議中") badgeClass = "badge-nego";
+            else if(d.status === "合約簽訂") badgeClass = "badge-signed";
+            else if(d.status === "取消簽訂") badgeClass = "badge-cancel";
             
             const badgeHtml = `<span class="badge ${badgeClass}">${d.status}</span>`;
 
-            // 到期日邏輯
-            let expiryHtml = "-";
-            let warningHtml = "-";
-            
-            if (d.endDate) {
-                const dateStr = d.endDate.toLocaleDateString();
-                const diffTime = d.endDate - TODAY;
-                const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24)); 
-                
-                expiryHtml = dateStr;
+            let displayStartDate = "-";
+            let displayEndDate = "-";
+            let warningHtml = "";
 
-                if (diffDays < 0) {
-                    warningHtml = `<span class="tag-expiry tag-danger">已過期 ${Math.abs(diffDays)} 天</span>`;
-                } else if (diffDays <= 30) {
-                    warningHtml = `<span class="tag-expiry tag-warning">剩 ${diffDays} 天</span>`;
+            if (d.status === "合約簽訂") {
+                displayStartDate = d.startDate || "-";
+                displayEndDate = d.endDate ? d.endDate.toLocaleDateString() : "-";
+                
+                if (d.endDate) {
+                    const diffDays = Math.ceil((d.endDate - TODAY) / (1000 * 60 * 60 * 24));
+                    if (diffDays < 0) {
+                        warningHtml = `<span class="tag-expiry tag-danger">過期 ${Math.abs(diffDays)} 天</span>`;
+                    } else if (diffDays <= 30) {
+                        warningHtml = `<span class="tag-expiry tag-warning">剩 ${diffDays} 天</span>`;
+                    } else {
+                        warningHtml = `<span class="tag-expiry tag-ok">正常</span>`;
+                    }
                 } else {
-                    warningHtml = `<span class="tag-expiry tag-ok">正常</span>`;
+                    warningHtml = `<span class="tag-expiry tag-neutral">無期限</span>`;
+                }
+            } else if (d.status === "取消簽訂") {
+                displayStartDate = "-";
+                displayEndDate = "-";
+                warningHtml = `<span class="tag-expiry tag-neutral" style="text-decoration:line-through">已終止</span>`;
+            } else {
+                displayStartDate = "-";
+                displayEndDate = "-";
+                warningHtml = `<span class="tag-expiry tag-neutral">${d.status}</span>`;
+            }
+
+            let amountDisplay = "-";
+            if (d.amount) {
+                const cleanNum = d.amount.replace(/,/g, '');
+                if (!isNaN(parseFloat(cleanNum)) && isFinite(cleanNum)) {
+                    amountDisplay = `$${parseInt(cleanNum).toLocaleString()}`;
+                } else {
+                    amountDisplay = d.amount;
                 }
             }
 
             tr.innerHTML = `
                 <td>${badgeHtml}</td>
-                <td style="font-weight:600; color:var(--text-main);">${d.name}</td>
+                <td style="font-weight:600; color:var(--text-main); max-width:200px; white-space:normal;">${d.name}</td>
+                <td><span style="font-size:0.8rem; color:#4a5568; background:#edf2f7; padding:2px 6px; border-radius:4px;">${d.type}</span></td>
                 <td>${d.partyB}</td>
-                <td style="color:var(--text-muted);">${d.startDate || '-'}</td>
-                <td style="color:var(--text-muted);">${expiryHtml}</td>
+                <td style="font-weight:500;">${amountDisplay}</td>
+                <td style="color:var(--text-muted);">${displayStartDate}</td>
+                <td style="color:var(--text-muted);">${displayEndDate}</td>
                 <td>${warningHtml}</td>
                 <td>${d.owner}</td>
             `;
@@ -477,7 +529,6 @@
         });
     }
 
-    // --- 篩選功能 ---
     function setupFilters() {
         const searchInput = document.getElementById('searchInput');
         const statusFilter = document.getElementById('statusFilter');
@@ -489,22 +540,22 @@
             const e = expiryFilter.value;
 
             const filtered = allData.filter(d => {
-                // 文字搜尋
-                const matchText = d.name.toLowerCase().includes(q) || d.partyB.toLowerCase().includes(q);
-                // 狀態篩選
+                const matchText = d.name.toLowerCase().includes(q) || d.partyB.toLowerCase().includes(q) || d.owner.toLowerCase().includes(q);
                 const matchStatus = s === "" || d.status === s;
-                // 到期篩選
+                
                 let matchExpiry = true;
                 if (e === 'expired') {
-                    matchExpiry = d.endDate && d.endDate < TODAY;
+                    matchExpiry = d.status === "合約簽訂" && d.endDate && d.endDate < TODAY;
                 } else if (e === 'warning') {
-                    const diffDays = d.endDate ? (d.endDate - TODAY) / (1000 * 60 * 60 * 24) : 999;
-                    matchExpiry = diffDays >= 0 && diffDays <= 30;
+                    if (d.status !== "合約簽訂" || !d.endDate) {
+                        matchExpiry = false;
+                    } else {
+                        const diffDays = (d.endDate - TODAY) / (1000 * 60 * 60 * 24);
+                        matchExpiry = diffDays >= 0 && diffDays <= 30;
+                    }
                 }
-
                 return matchText && matchStatus && matchExpiry;
             });
-
             renderTable(filtered);
         }
 
@@ -512,7 +563,6 @@
         statusFilter.addEventListener('change', filterData);
         expiryFilter.addEventListener('change', filterData);
     }
-
   </script>
 </body>
 </html>
