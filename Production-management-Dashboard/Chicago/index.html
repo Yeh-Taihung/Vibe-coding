@@ -2,7 +2,7 @@
 <html lang="zh-Hant">
 <head>
   <meta charset="UTF-8" />
-  <title>芝加哥項目現場人力看板 v25 | Status Column Added</title>
+  <title>芝加哥項目現場人力看板 v28 | Visa Check & Work Days</title>
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" />
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
@@ -237,11 +237,11 @@
     
     .tag-visa { border: 1px solid var(--border-light); color: var(--text-muted); padding: 1px 6px; border-radius: 4px; font-size: 11px; }
 
-    /* 🟢 新增：列表狀態標籤樣式 */
+    /* Status Badges */
     .status-badge { padding: 2px 8px; border-radius: 12px; font-size: 11px; font-weight: 600; display: inline-block; min-width: 60px; text-align: center; color: #fff; }
-    .badge-past { background: var(--status-neutral); color: #4a5568; } /* 已離崗 (灰色) */
-    .badge-active { background: var(--status-success); } /* 進行中 (綠色) */
-    .badge-plan { background: var(--status-plan); } /* 計畫中 (藍色) */
+    .badge-past { background: var(--status-neutral); color: #4a5568; }
+    .badge-active { background: var(--status-success); }
+    .badge-plan { background: var(--status-plan); }
 
   </style>
 </head>
@@ -253,7 +253,7 @@
               <img src="../../logo.png" alt="Mr.Yes Logo" class="logo-img">
               <div>
                   <div style="line-height:1.2">芝加哥項目現場人力看板</div>
-                  <div style="font-size:11px; font-weight:400; color:var(--text-muted)">Project Field Manpower Dashboard v25</div>
+                  <div style="font-size:11px; font-weight:400; color:var(--text-muted)">Project Field Manpower Dashboard v28</div>
               </div>
           </div>
       </div>
@@ -297,23 +297,23 @@
 
     <div class="project-info-bar">
       <div class="p-item">
-        <div class="p-label" style="color:#3182ce;">📅 資料更新日期</div>
+        <div class="p-label" style="color:#3182ce;">📅 資料更新</div>
         <div class="p-value" id="dataUpdated">-</div>
       </div>
       <div class="p-item">
-        <div class="p-label" style="color:#f4d35e;">📍 項目地點</div>
+        <div class="p-label" style="color:#f4d35e;">📍 地點</div>
         <div class="p-value" id="projLoc">-</div>
       </div>
       <div class="p-item">
-        <div class="p-label">🏁 項目啟動日</div>
+        <div class="p-label">🏁 啟動日</div>
         <div class="p-value" id="projStart">-</div>
       </div>
       <div class="p-item">
-        <div class="p-label">🎯 項目計畫完成日</div>
+        <div class="p-label">🎯 完成日</div>
         <div class="p-value" id="projEnd">-</div>
       </div>
       <div class="p-item">
-        <div class="p-label">⏳ 項目剩餘天數</div>
+        <div class="p-label">⏳ 剩餘天數</div>
         <div class="p-value" id="projCountdown">-</div>
       </div>
     </div>
@@ -378,15 +378,7 @@
         <table>
           <thead>
             <tr>
-              <th>產線</th>
-              <th>姓名</th>
-              <th>狀態</th> <th>供應商</th>
-              <th>工種</th>
-              <th>職責</th>
-              <th>簽證</th>
-              <th>到崗日</th>
-              <th>離開日</th>
-              <th>簽證狀態</th>
+              <th>產線</th><th>姓名</th><th>狀態</th><th>供應商</th><th>工種</th><th>職責</th><th>簽證</th><th>到崗日</th><th>離開日</th><th>簽證狀態</th>
             </tr>
           </thead>
           <tbody id="tableBody"></tbody>
@@ -467,12 +459,16 @@
           const arrival = new Date(cols[6]);
           if (isNaN(arrival.getTime())) continue;
 
+          // 🟢 修改：檢查簽證日期是否為空
+          const visaStr = cols[8] ? cols[8].trim() : "";
+          const visaDate = visaStr ? new Date(visaStr) : null;
+
           allRecords.push({
             supplier: cols[0], name: cols[1], role: cols[2], duty: cols[3] || "-", 
             line: cols[4], visaType: cols[5] || "-", 
             arrivalDate: arrival,
             leaveDate: cols[7] ? new Date(cols[7]) : null, 
-            visaExpiry: new Date(cols[8]), 
+            visaExpiry: visaDate, // 使用處理過的日期
             year: arrival.getFullYear()
           });
       }
@@ -551,9 +547,10 @@
       const container = document.getElementById('kpiBar');
       container.innerHTML = "";
       
+      // 注意：這裡也需要防呆，如果 visaExpiry 為 null，不能參與比較
       const warningDate = new Date(); warningDate.setDate(TODAY.getDate() + 30);
-      const visaWarning = activeData.filter(d => d.visaExpiry > TODAY && d.visaExpiry <= warningDate).length;
-      const visaExpired = activeData.filter(d => d.visaExpiry < TODAY).length;
+      const visaWarning = activeData.filter(d => d.visaExpiry && d.visaExpiry > TODAY && d.visaExpiry <= warningDate).length;
+      const visaExpired = activeData.filter(d => d.visaExpiry && d.visaExpiry < TODAY).length;
 
       const kpis = [
         { title: `${prefix}目前在崗`, val: `${activeData.length} <span style='font-size:12px'>人</span>`, color: "var(--status-success)" },
@@ -660,7 +657,17 @@
             bar.className = `gantt-bar ${statusClass}`;
             bar.style.left = startPct + '%';
             bar.style.width = widthPct + '%';
-            bar.title = `${name} (${trip.role})\n職責: ${trip.duty}\n簽證: ${trip.visaType}\n日期: ${trip.arrivalDate.toLocaleDateString()} ~ ${trip.leaveDate ? trip.leaveDate.toLocaleDateString() : '尚未定'}`;
+            
+            // 🟢 新增：計算已工作天數
+            let workedDays = 0;
+            if (trip.arrivalDate <= TODAY) {
+                // 如果已經到崗，結束時間取「今天」或「離開日」較早者
+                const effectiveEnd = (trip.leaveDate && trip.leaveDate < TODAY) ? trip.leaveDate : TODAY;
+                workedDays = Math.floor((effectiveEnd - trip.arrivalDate) / (1000 * 60 * 60 * 24));
+                workedDays = Math.max(0, workedDays); // 確保不為負數
+            }
+
+            bar.title = `${name} (${trip.role})\n職責: ${trip.duty}\n簽證: ${trip.visaType}\n日期: ${trip.arrivalDate.toLocaleDateString()} ~ ${trip.leaveDate ? trip.leaveDate.toLocaleDateString() : '尚未定'}\n已工作: ${workedDays} 天`;
             barsArea.appendChild(bar);
           }
         });
@@ -675,12 +682,18 @@
 
       data.sort((a,b) => a.arrivalDate - b.arrivalDate).forEach(d => {
         const tr = document.createElement('tr');
-        const daysToVisa = Math.ceil((d.visaExpiry - TODAY) / 86400000);
-        let visaTag = daysToVisa < 0 ? `<span class="tag tag-expired">過期</span>` : 
+        
+        // 🟢 修改：簽證防呆顯示邏輯
+        let visaTag;
+        if (!d.visaExpiry || isNaN(d.visaExpiry.getTime())) {
+            visaTag = `<span class="tag tag-expired">未輸入</span>`;
+        } else {
+            const daysToVisa = Math.ceil((d.visaExpiry - TODAY) / 86400000);
+            visaTag = daysToVisa < 0 ? `<span class="tag tag-expired">過期</span>` : 
                       daysToVisa <= 30 ? `<span class="tag tag-warning">剩${daysToVisa}天</span>` : 
                       `<span class="tag tag-normal">正常</span>`;
+        }
         
-        // 🟢 新增：狀態判斷邏輯
         let statusHtml = '';
         if (d.leaveDate && d.leaveDate < TODAY) {
             statusHtml = '<span class="status-badge badge-past">已離崗</span>';
