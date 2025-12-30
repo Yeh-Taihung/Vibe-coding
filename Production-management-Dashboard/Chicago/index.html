@@ -2,7 +2,7 @@
 <html lang="zh-Hant">
 <head>
   <meta charset="UTF-8" />
-  <title>芝加哥項目現場人力看板 v28 | Visa Check & Work Days</title>
+  <title>芝加哥項目現場人力看板 v30 | KPI Restored</title>
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" />
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
@@ -110,8 +110,8 @@
         grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); 
         gap: 8px; align-items: center;
     }
-    @media (max-width: 600px) {
-        .controls-grid { grid-template-columns: 1fr 1fr; }
+    @media (max-width: 900px) {
+        .controls-grid { grid-template-columns: repeat(2, 1fr); }
         .controls-grid .search-group { grid-column: 1 / -1; }
     }
 
@@ -150,7 +150,7 @@
         padding: 20px; margin-bottom: 20px; box-shadow: var(--shadow-card); border: none;
     }
     .card-header-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; flex-wrap: wrap; gap:10px; }
-    .card-title { font-size: 16px; font-weight: 700; color: var(--text-main); transition: all 0.3s ease; } 
+    .card-title { font-size: 16px; font-weight: 700; color: var(--text-main); }
     
     .project-info-bar { 
         display: flex; flex-wrap: wrap; background: var(--bg-card);
@@ -253,7 +253,7 @@
               <img src="../../logo.png" alt="Mr.Yes Logo" class="logo-img">
               <div>
                   <div style="line-height:1.2">芝加哥項目現場人力看板</div>
-                  <div style="font-size:11px; font-weight:400; color:var(--text-muted)">Project Field Manpower Dashboard v28</div>
+                  <div style="font-size:11px; font-weight:400; color:var(--text-muted)">Project Field Manpower Dashboard v30</div>
               </div>
           </div>
       </div>
@@ -285,6 +285,16 @@
           <div class="filter-group">
               <select id="filterRole"><option value="">全部工種</option></select>
           </div>
+          
+          <div class="filter-group">
+              <select id="filterStatus">
+                  <option value="all">全部狀態</option>
+                  <option value="active">進行中</option>
+                  <option value="past">已離崗</option>
+                  <option value="plan">計畫中</option>
+              </select>
+          </div>
+
           <div class="filter-group search-group">
               <input type="text" id="searchInput" placeholder="🔍 搜尋姓名、工種、職責...">
           </div>
@@ -337,9 +347,7 @@
                 <div class="legend-item"><span class="legend-dot" style="background:var(--status-plan)"></span>計畫前往</div>
             </div>
             
-            <select id="ganttFilter" style="width: auto; height: 32px; font-size: 12px; border-radius:6px;">
-                <option value="all">顯示全部</option>
-                <option value="active">僅顯示在崗</option>
+            <select id="ganttFilter" style="width: auto; height: 32px; font-size: 12px; border-radius:6px; display:none;"> <option value="all">顯示全部</option>
             </select>
         </div>
       </div>
@@ -409,7 +417,10 @@
     let projectMeta = { start: null, end: null, location: "", lastUpdated: "" };
     let currentYear = new Date().getFullYear();
     let chartInstance = null;
+    
+    // 🟢 設置 TODAY 為今日的 00:00:00，確保日期比較精準
     const TODAY = new Date();
+    TODAY.setHours(0, 0, 0, 0);
 
     document.addEventListener("DOMContentLoaded", async () => {
       if(window.innerWidth > 768) {
@@ -459,7 +470,6 @@
           const arrival = new Date(cols[6]);
           if (isNaN(arrival.getTime())) continue;
 
-          // 🟢 修改：檢查簽證日期是否為空
           const visaStr = cols[8] ? cols[8].trim() : "";
           const visaDate = visaStr ? new Date(visaStr) : null;
 
@@ -468,7 +478,7 @@
             line: cols[4], visaType: cols[5] || "-", 
             arrivalDate: arrival,
             leaveDate: cols[7] ? new Date(cols[7]) : null, 
-            visaExpiry: visaDate, // 使用處理過的日期
+            visaExpiry: visaDate,
             year: arrival.getFullYear()
           });
       }
@@ -502,26 +512,10 @@
     function renderAll(year) {
       renderProjectInfo();
       const yearData = allRecords.filter(r => r.year == year);
-      const filtered = applyFilters(yearData);
-      const activePeople = filtered.filter(d => 
-        d.arrivalDate <= TODAY && (d.leaveDate === null || d.leaveDate >= TODAY)
-      );
-
-      // Dynamic Title Prefix
-      const s = document.getElementById('filterSupplier').value;
-      const l = document.getElementById('filterLine').value;
-      const r = document.getElementById('filterRole').value;
-      let titlePrefix = "";
-      if (s) titlePrefix += s + " ";
-      if (l) titlePrefix += l + " ";
-      if (r) titlePrefix += r + " ";
+      const filtered = applyFilters(yearData); 
       
-      document.getElementById('title-role').textContent = titlePrefix + "工種人力分布";
-      document.getElementById('title-gantt').textContent = titlePrefix + "工作甘特圖";
-      document.getElementById('title-list').textContent = titlePrefix + "詳細列表";
-
-      renderKpiBar(activePeople, titlePrefix);
-      renderChart(activePeople);   
+      renderKpiBar(filtered); 
+      renderChart(filtered);   
       renderTimeline(filtered, year); 
       renderTable(filtered); 
       renderBackgroundGrid(year);
@@ -543,19 +537,35 @@
       }
     }
 
-    function renderKpiBar(activeData, prefix = "") {
+    // 🟢 核心修改：KPI 邏輯 (Active, Warning, Expired/Missing)
+    function renderKpiBar(data) {
       const container = document.getElementById('kpiBar');
       container.innerHTML = "";
       
-      // 注意：這裡也需要防呆，如果 visaExpiry 為 null，不能參與比較
-      const warningDate = new Date(); warningDate.setDate(TODAY.getDate() + 30);
-      const visaWarning = activeData.filter(d => d.visaExpiry && d.visaExpiry > TODAY && d.visaExpiry <= warningDate).length;
-      const visaExpired = activeData.filter(d => d.visaExpiry && d.visaExpiry < TODAY).length;
+      // 1. 目前在崗 (Green)
+      const activeCount = data.filter(d => d.arrivalDate <= TODAY && (d.leaveDate === null || d.leaveDate >= TODAY)).length;
+      
+      // 2. 簽證即將到期 (Orange) - 剩餘 0~30 天
+      const warningDate = new Date(TODAY);
+      warningDate.setDate(TODAY.getDate() + 30);
+      
+      const visaWarningCount = data.filter(d => {
+          if (!d.visaExpiry || isNaN(d.visaExpiry.getTime())) return false; // 無日期不列入此區
+          return d.visaExpiry >= TODAY && d.visaExpiry <= warningDate;
+      }).length;
+
+      // 3. 簽證已過期或異常 (Red) - 過期 OR 未輸入
+      const visaExpiredCount = data.filter(d => {
+          // 未輸入日期 -> 異常
+          if (!d.visaExpiry || isNaN(d.visaExpiry.getTime())) return true;
+          // 小於今天 -> 過期
+          return d.visaExpiry < TODAY;
+      }).length;
 
       const kpis = [
-        { title: `${prefix}目前在崗`, val: `${activeData.length} <span style='font-size:12px'>人</span>`, color: "var(--status-success)" },
-        { title: `${prefix}簽證即將到期`, val: `${visaWarning} <span style='font-size:12px'>人</span>`, color: "var(--status-warning)" },
-        { title: `${prefix}簽證已過期`, val: `${visaExpired} <span style='font-size:12px'>人</span>`, color: "var(--status-danger)" }
+        { title: "目前在崗 (篩選後)", val: `${activeCount} <span style='font-size:12px'>人</span>`, color: "var(--status-success)" },
+        { title: "簽證即將到期", val: `${visaWarningCount} <span style='font-size:12px'>人</span>`, color: "var(--status-warning)" },
+        { title: "簽證已過期 / 異常", val: `${visaExpiredCount} <span style='font-size:12px'>人</span>`, color: "var(--status-danger)" }
       ];
 
       kpis.forEach(k => {
@@ -566,26 +576,20 @@
       });
     }
 
-    function renderChart(activeData) {
+    function renderChart(data) {
       const ctx = document.getElementById('roleChart').getContext('2d');
       const roleCounts = {};
-      activeData.forEach(d => roleCounts[d.role] = (roleCounts[d.role] || 0) + 1);
-
-      const labels = Object.keys(roleCounts);
-      const data = Object.values(roleCounts);
-      const bgColors = labels.map((role, idx) => {
-          return ROLE_COLOR_MAP[role] || FALLBACK_PALETTE[idx % FALLBACK_PALETTE.length];
-      });
+      data.forEach(d => roleCounts[d.role] = (roleCounts[d.role] || 0) + 1);
 
       if (chartInstance) chartInstance.destroy();
       chartInstance = new Chart(ctx, {
         type: 'bar',
         data: {
-          labels: labels,
+          labels: Object.keys(roleCounts),
           datasets: [{
             label: '人數',
-            data: data,
-            backgroundColor: bgColors, 
+            data: Object.values(roleCounts),
+            backgroundColor: Object.keys(roleCounts).map(r => ROLE_COLOR_MAP[r] || "#a0aec0"),
             borderRadius: 6,
             maxBarThickness: 40 
           }]
@@ -621,18 +625,12 @@
     function renderTimeline(data, year) {
       const body = document.getElementById('timelineBody');
       body.innerHTML = "";
-      const filterMode = document.getElementById('ganttFilter').value; 
       
       const groups = {};
       data.forEach(d => { if(!groups[d.name]) groups[d.name] = []; groups[d.name].push(d); });
 
       Object.keys(groups).sort().forEach(name => {
         const records = groups[name];
-        const lastRec = records[records.length-1]; 
-        const isActive = lastRec.arrivalDate <= TODAY && (lastRec.leaveDate === null || lastRec.leaveDate >= TODAY);
-
-        if (filterMode === 'active' && !isActive) return;
-
         const row = document.createElement('div');
         row.className = 'person-row';
         row.innerHTML = `<div class="person-name sticky-col-cell">${name}<div class="person-role">${records[0].role}</div></div>`;
@@ -658,13 +656,11 @@
             bar.style.left = startPct + '%';
             bar.style.width = widthPct + '%';
             
-            // 🟢 新增：計算已工作天數
             let workedDays = 0;
             if (trip.arrivalDate <= TODAY) {
-                // 如果已經到崗，結束時間取「今天」或「離開日」較早者
                 const effectiveEnd = (trip.leaveDate && trip.leaveDate < TODAY) ? trip.leaveDate : TODAY;
                 workedDays = Math.floor((effectiveEnd - trip.arrivalDate) / (1000 * 60 * 60 * 24));
-                workedDays = Math.max(0, workedDays); // 確保不為負數
+                workedDays = Math.max(0, workedDays);
             }
 
             bar.title = `${name} (${trip.role})\n職責: ${trip.duty}\n簽證: ${trip.visaType}\n日期: ${trip.arrivalDate.toLocaleDateString()} ~ ${trip.leaveDate ? trip.leaveDate.toLocaleDateString() : '尚未定'}\n已工作: ${workedDays} 天`;
@@ -683,7 +679,7 @@
       data.sort((a,b) => a.arrivalDate - b.arrivalDate).forEach(d => {
         const tr = document.createElement('tr');
         
-        // 🟢 修改：簽證防呆顯示邏輯
+        // 簽證防呆
         let visaTag;
         if (!d.visaExpiry || isNaN(d.visaExpiry.getTime())) {
             visaTag = `<span class="tag tag-expired">未輸入</span>`;
@@ -721,10 +717,20 @@
       const l = document.getElementById('filterLine').value;
       const r = document.getElementById('filterRole').value;
       const q = document.getElementById('searchInput').value.toLowerCase();
-      return data.filter(d => 
-        (s===""||d.supplier===s) && (l===""||d.line===l) && (r===""||d.role===r) &&
-        (q===""||d.name.toLowerCase().includes(q)||d.role.toLowerCase().includes(q)||d.duty.toLowerCase().includes(q))
-      );
+      const statusVal = document.getElementById('filterStatus').value;
+
+      return data.filter(d => {
+        const basicMatch = (s===""||d.supplier===s) && (l===""||d.line===l) && (r===""||d.role===r) &&
+                           (q===""||d.name.toLowerCase().includes(q)||d.role.toLowerCase().includes(q)||d.duty.toLowerCase().includes(q));
+        
+        let status = 'active'; // 預設
+        if (d.leaveDate && d.leaveDate < TODAY) status = 'past';
+        else if (d.arrivalDate > TODAY) status = 'plan';
+        
+        const statusMatch = (statusVal === 'all') || (status === statusVal);
+
+        return basicMatch && statusMatch;
+      });
     }
 
     function renderYearSelect() {
@@ -736,13 +742,12 @@
     }
 
     function setupEvents() {
-      ['yearSelect', 'filterSupplier', 'filterLine', 'filterRole', 'searchInput'].forEach(id => {
+      ['yearSelect', 'filterSupplier', 'filterLine', 'filterRole', 'filterStatus', 'searchInput'].forEach(id => {
           document.getElementById(id).addEventListener(id === 'searchInput' ? 'input' : 'change', (e) => {
               if (id === 'yearSelect') currentYear = e.target.value;
               renderAll(currentYear);
           });
       });
-      document.getElementById('ganttFilter').addEventListener('change', () => renderTimeline(applyFilters(allRecords.filter(r=>r.year==currentYear)), currentYear));
       document.getElementById('themeBtn').addEventListener('click', () => {
         const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
         document.documentElement.setAttribute('data-theme', isDark ? 'light' : 'dark');
