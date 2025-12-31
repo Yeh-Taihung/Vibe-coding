@@ -2,7 +2,7 @@
 <html lang="zh-Hant">
 <head>
   <meta charset="UTF-8" />
-  <title>芝加哥項目現場人力看板 v30 | KPI Restored</title>
+  <title>芝加哥項目現場人力看板 v31 | Plan vs Actual</title>
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" />
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
@@ -225,23 +225,30 @@
 
     /* Table */
     .table-responsive { overflow-x: auto; }
-    table { width: 100%; min-width: 800px; border-collapse: collapse; font-size: 13px; }
+    table { width: 100%; min-width: 1000px; border-collapse: collapse; font-size: 13px; }
     th { text-align: left; padding: 12px; color: var(--text-muted); background: #f7fafc; white-space: nowrap; }
-    td { padding: 12px; border-top: 1px solid var(--border-light); white-space: nowrap; }
+    td { padding: 12px; border-top: 1px solid var(--border-light); white-space: nowrap; vertical-align: middle; }
     [data-theme="dark"] th { background: #2d3748; }
 
-    .tag { padding: 2px 8px; border-radius: 10px; font-size: 11px; font-weight: 600; }
+    .tag { padding: 2px 8px; border-radius: 10px; font-size: 11px; font-weight: 600; display: inline-block; }
     .tag-normal { background: #e6fffa; color: #2c7a7b; }
     .tag-warning { background: #fffaf0; color: #dd6b20; } 
     .tag-expired { background: #ffebee; color: #c53030; } 
     
     .tag-visa { border: 1px solid var(--border-light); color: var(--text-muted); padding: 1px 6px; border-radius: 4px; font-size: 11px; }
 
-    /* Status Badges */
     .status-badge { padding: 2px 8px; border-radius: 12px; font-size: 11px; font-weight: 600; display: inline-block; min-width: 60px; text-align: center; color: #fff; }
     .badge-past { background: var(--status-neutral); color: #4a5568; }
     .badge-active { background: var(--status-success); }
     .badge-plan { background: var(--status-plan); }
+
+    /* New: Worked Days Tag */
+    .tag-worked { background: #ebf8ff; color: #2b6cb0; border: 1px solid #bee3f8; padding: 2px 6px; border-radius: 4px; font-weight: 600; }
+    
+    /* New: Countdown info */
+    .leave-info { display: flex; flex-direction: column; gap: 2px; }
+    .leave-date { font-weight: 600; }
+    .leave-countdown { font-size: 10px; color: var(--text-muted); }
 
   </style>
 </head>
@@ -253,7 +260,7 @@
               <img src="../../logo.png" alt="Mr.Yes Logo" class="logo-img">
               <div>
                   <div style="line-height:1.2">芝加哥項目現場人力看板</div>
-                  <div style="font-size:11px; font-weight:400; color:var(--text-muted)">Project Field Manpower Dashboard v30</div>
+                  <div style="font-size:11px; font-weight:400; color:var(--text-muted)">Project Field Manpower Dashboard v31</div>
               </div>
           </div>
       </div>
@@ -386,7 +393,9 @@
         <table>
           <thead>
             <tr>
-              <th>產線</th><th>姓名</th><th>狀態</th><th>供應商</th><th>工種</th><th>職責</th><th>簽證</th><th>到崗日</th><th>離開日</th><th>簽證狀態</th>
+              <th>產線</th><th>姓名</th><th>狀態</th><th>供應商</th><th>工種</th><th>職責</th><th>簽證</th>
+              <th>到崗日</th>
+              <th>預計離崗</th> <th>實際離崗</th> <th>已工作</th>   <th>簽證狀態</th>
             </tr>
           </thead>
           <tbody id="tableBody"></tbody>
@@ -418,7 +427,6 @@
     let currentYear = new Date().getFullYear();
     let chartInstance = null;
     
-    // 🟢 設置 TODAY 為今日的 00:00:00，確保日期比較精準
     const TODAY = new Date();
     TODAY.setHours(0, 0, 0, 0);
 
@@ -454,13 +462,16 @@
       for (let i = 1; i < lines.length; i++) {
           const cols = lines[i].split(',').map(c => c.replace(/^"|"$/g, '').trim());
           
-          if (!foundMeta && cols.length >= 10 && cols[9]) {
-              const potentialDate = new Date(cols[9]);
+          // Meta Data (因為插入了1欄，所以Meta索引+1)
+          // 0:Supplier, 1:Name, 2:Role, 3:Duty, 4:Line, 5:VisaType, 6:Arrival
+          // 7:PlannedLeave(新), 8:ActualLeave(原7), 9:VisaExp(原8), 10:ProjStart(原9)...
+          if (!foundMeta && cols.length >= 11 && cols[10]) {
+              const potentialDate = new Date(cols[10]);
               if (!isNaN(potentialDate.getTime())) {
                   projectMeta.start = potentialDate;
-                  if (cols[10]) projectMeta.end = new Date(cols[10]);
-                  if (cols[11]) projectMeta.location = cols[11];
-                  if (cols[12]) projectMeta.lastUpdated = cols[12];
+                  if (cols[11]) projectMeta.end = new Date(cols[11]);
+                  if (cols[12]) projectMeta.location = cols[12];
+                  if (cols[13]) projectMeta.lastUpdated = cols[13];
                   foundMeta = true; 
               }
           }
@@ -470,14 +481,22 @@
           const arrival = new Date(cols[6]);
           if (isNaN(arrival.getTime())) continue;
 
-          const visaStr = cols[8] ? cols[8].trim() : "";
+          const plannedLeaveStr = cols[7] ? cols[7].trim() : "";
+          const plannedLeave = plannedLeaveStr ? new Date(plannedLeaveStr) : null;
+
+          const actualLeaveStr = cols[8] ? cols[8].trim() : "";
+          const actualLeave = actualLeaveStr ? new Date(actualLeaveStr) : null;
+
+          const visaStr = cols[9] ? cols[9].trim() : "";
           const visaDate = visaStr ? new Date(visaStr) : null;
 
           allRecords.push({
             supplier: cols[0], name: cols[1], role: cols[2], duty: cols[3] || "-", 
             line: cols[4], visaType: cols[5] || "-", 
             arrivalDate: arrival,
-            leaveDate: cols[7] ? new Date(cols[7]) : null, 
+            plannedLeaveDate: plannedLeave, // 🟢 新增
+            actualLeaveDate: actualLeave,   // 🟢 修改名稱
+            leaveDate: actualLeave, // 為了相容舊邏輯，保留 leaveDate 指向實際離開日
             visaExpiry: visaDate,
             year: arrival.getFullYear()
           });
@@ -537,28 +556,22 @@
       }
     }
 
-    // 🟢 核心修改：KPI 邏輯 (Active, Warning, Expired/Missing)
     function renderKpiBar(data) {
       const container = document.getElementById('kpiBar');
       container.innerHTML = "";
       
-      // 1. 目前在崗 (Green)
-      const activeCount = data.filter(d => d.arrivalDate <= TODAY && (d.leaveDate === null || d.leaveDate >= TODAY)).length;
+      const activeCount = data.filter(d => d.arrivalDate <= TODAY && (d.actualLeaveDate === null || d.actualLeaveDate >= TODAY)).length;
       
-      // 2. 簽證即將到期 (Orange) - 剩餘 0~30 天
       const warningDate = new Date(TODAY);
       warningDate.setDate(TODAY.getDate() + 30);
       
       const visaWarningCount = data.filter(d => {
-          if (!d.visaExpiry || isNaN(d.visaExpiry.getTime())) return false; // 無日期不列入此區
+          if (!d.visaExpiry || isNaN(d.visaExpiry.getTime())) return false; 
           return d.visaExpiry >= TODAY && d.visaExpiry <= warningDate;
       }).length;
 
-      // 3. 簽證已過期或異常 (Red) - 過期 OR 未輸入
       const visaExpiredCount = data.filter(d => {
-          // 未輸入日期 -> 異常
           if (!d.visaExpiry || isNaN(d.visaExpiry.getTime())) return true;
-          // 小於今天 -> 過期
           return d.visaExpiry < TODAY;
       }).length;
 
@@ -640,10 +653,10 @@
 
         records.forEach(trip => {
           let statusClass = "status-active";
-          let endDate = trip.leaveDate;
+          let endDate = trip.actualLeaveDate;
           
           if (trip.arrivalDate > TODAY) statusClass = "status-plan";
-          else if (trip.leaveDate && trip.leaveDate < TODAY) statusClass = "status-past";
+          else if (trip.actualLeaveDate && trip.actualLeaveDate < TODAY) statusClass = "status-past";
           
           if (!endDate) endDate = (trip.arrivalDate > TODAY) ? new Date(year, 11, 31) : TODAY;
 
@@ -658,12 +671,12 @@
             
             let workedDays = 0;
             if (trip.arrivalDate <= TODAY) {
-                const effectiveEnd = (trip.leaveDate && trip.leaveDate < TODAY) ? trip.leaveDate : TODAY;
+                const effectiveEnd = (trip.actualLeaveDate && trip.actualLeaveDate < TODAY) ? trip.actualLeaveDate : TODAY;
                 workedDays = Math.floor((effectiveEnd - trip.arrivalDate) / (1000 * 60 * 60 * 24));
                 workedDays = Math.max(0, workedDays);
             }
 
-            bar.title = `${name} (${trip.role})\n職責: ${trip.duty}\n簽證: ${trip.visaType}\n日期: ${trip.arrivalDate.toLocaleDateString()} ~ ${trip.leaveDate ? trip.leaveDate.toLocaleDateString() : '尚未定'}\n已工作: ${workedDays} 天`;
+            bar.title = `${name} (${trip.role})\n職責: ${trip.duty}\n簽證: ${trip.visaType}\n日期: ${trip.arrivalDate.toLocaleDateString()} ~ ${trip.actualLeaveDate ? trip.actualLeaveDate.toLocaleDateString() : '尚未定'}\n已工作: ${workedDays} 天`;
             barsArea.appendChild(bar);
           }
         });
@@ -679,7 +692,7 @@
       data.sort((a,b) => a.arrivalDate - b.arrivalDate).forEach(d => {
         const tr = document.createElement('tr');
         
-        // 簽證防呆
+        // Visa Status
         let visaTag;
         if (!d.visaExpiry || isNaN(d.visaExpiry.getTime())) {
             visaTag = `<span class="tag tag-expired">未輸入</span>`;
@@ -690,8 +703,9 @@
                       `<span class="tag tag-normal">正常</span>`;
         }
         
+        // Status Badge
         let statusHtml = '';
-        if (d.leaveDate && d.leaveDate < TODAY) {
+        if (d.actualLeaveDate && d.actualLeaveDate < TODAY) {
             statusHtml = '<span class="status-badge badge-past">已離崗</span>';
         } else if (d.arrivalDate > TODAY) {
             statusHtml = '<span class="status-badge badge-plan">計畫中</span>';
@@ -699,13 +713,48 @@
             statusHtml = '<span class="status-badge badge-active">進行中</span>';
         }
 
+        // 🟢 Planned Leave Calculation (Countdown)
+        let plannedLeaveHtml = '-';
+        if (d.plannedLeaveDate) {
+            if (d.actualLeaveDate) {
+                plannedLeaveHtml = `<div class="leave-info"><span style="text-decoration:line-through; color:var(--text-muted)">${d.plannedLeaveDate.toLocaleDateString()}</span></div>`;
+            } else {
+                const diff = Math.ceil((d.plannedLeaveDate - TODAY) / (1000 * 60 * 60 * 24));
+                let tagClass = "tag-normal";
+                let diffText = `${diff} 天`;
+                if (diff < 0) { tagClass = "tag-expired"; diffText = `逾期 ${Math.abs(diff)} 天`; }
+                else if (diff <= 14) { tagClass = "tag-warning"; diffText = `剩 ${diff} 天`; }
+                
+                plannedLeaveHtml = `
+                    <div class="leave-info">
+                        <span class="leave-date">${d.plannedLeaveDate.toLocaleDateString()}</span>
+                        <span class="leave-countdown"><span class="tag ${tagClass}">${diffText}</span></span>
+                    </div>
+                `;
+            }
+        }
+
+        // 🟢 Actual Work Days Calculation
+        let workedDays = 0;
+        if (d.arrivalDate <= TODAY) {
+            const effectiveEnd = (d.actualLeaveDate && d.actualLeaveDate < TODAY) ? d.actualLeaveDate : TODAY;
+            workedDays = Math.floor((effectiveEnd - d.arrivalDate) / (1000 * 60 * 60 * 24));
+            workedDays = Math.max(0, workedDays);
+        }
+        let workedHtml = workedDays > 0 ? `<span class="tag-worked">${workedDays} 天</span>` : '-';
+
         tr.innerHTML = `
           <td><span style="font-weight:600;color:var(--text-muted)">${d.line}</span></td>
           <td><strong>${d.name}</strong></td>
-          <td>${statusHtml}</td> <td>${d.supplier}</td>
+          <td>${statusHtml}</td> 
+          <td>${d.supplier}</td>
           <td>${d.role}</td>
-          <td>${d.duty}</td> <td><span class="tag-visa">${d.visaType}</span></td> <td>${d.arrivalDate.toLocaleDateString()}</td>
-          <td>${d.leaveDate ? d.leaveDate.toLocaleDateString() : '在職'}</td>
+          <td>${d.duty}</td> 
+          <td><span class="tag-visa">${d.visaType}</span></td> 
+          <td>${d.arrivalDate.toLocaleDateString()}</td>
+          <td>${plannedLeaveHtml}</td>
+          <td>${d.actualLeaveDate ? d.actualLeaveDate.toLocaleDateString() : '-'}</td>
+          <td>${workedHtml}</td>
           <td>${visaTag}</td>
         `;
         tbody.appendChild(tr);
@@ -724,7 +773,7 @@
                            (q===""||d.name.toLowerCase().includes(q)||d.role.toLowerCase().includes(q)||d.duty.toLowerCase().includes(q));
         
         let status = 'active'; // 預設
-        if (d.leaveDate && d.leaveDate < TODAY) status = 'past';
+        if (d.actualLeaveDate && d.actualLeaveDate < TODAY) status = 'past';
         else if (d.arrivalDate > TODAY) status = 'plan';
         
         const statusMatch = (statusVal === 'all') || (status === statusVal);
