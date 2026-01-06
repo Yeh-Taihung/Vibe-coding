@@ -2,7 +2,7 @@
 <html lang="zh-Hant">
 <head>
   <meta charset="UTF-8" />
-  <title>芝加哥-電芯產線總控看板 v2 | Dynamic Progress & Today Line</title>
+  <title>芝加哥-電芯產線總控看板 v3 | Cleaner UI</title>
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" />
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
@@ -173,10 +173,28 @@
         position: absolute; top: 0; bottom: 0; width: 0px; 
         border-left: 2px dashed var(--color-accent); z-index: 15; pointer-events: none; 
     }
+    /* 🔴 標籤預設隱藏 */
     .today-line::after {
-        content: 'Today'; position: absolute; top: 0; left: 50%; transform: translateX(-50%);
-        background-color: var(--color-accent); color: white; padding: 2px 6px;
-        border-radius: 0 0 4px 4px; font-size: 10px; font-weight: bold; white-space: nowrap;
+        content: 'Today'; 
+        position: absolute; 
+        left: 50%; 
+        transform: translateX(-50%);
+        background-color: var(--color-accent); 
+        color: white; 
+        padding: 2px 6px;
+        border-radius: 4px; 
+        font-size: 10px; 
+        font-weight: bold; 
+        white-space: nowrap;
+        display: none; /* 預設不顯示 */
+    }
+
+    /* 🔴 僅在每個表格的最後一行顯示標籤 */
+    #taskBody .task-row:last-child .today-line::after,
+    #timelineBody .timeline-row:last-child .today-line::after {
+        display: block;
+        top: auto;
+        bottom: 0; /* 顯示在底部 */
     }
 
     /* --------- Manpower Common Styles --------- */
@@ -230,7 +248,7 @@
           <i class="fa-solid fa-industry"></i> 
           <div class="brand-title-group">
               <div style="line-height:1.2">芝加哥-電芯產線總控看板</div>
-              <div style="font-size:11px; font-weight:400; color:var(--text-muted)">Chicago Battery Cell Master Schedule v2</div>
+              <div style="font-size:11px; font-weight:400; color:var(--text-muted)">Chicago Battery Cell Master Schedule v3</div>
           </div>
         </div>
       </div>
@@ -338,7 +356,6 @@
     let manpowerRecords = [];
     let taskRecords = [];
     let currentYear = new Date().getFullYear();
-    // 🟢 Today set to 00:00:00 for accurate day diff
     const TODAY = new Date(); TODAY.setHours(0,0,0,0);
 
     const ROLE_COLOR_MAP = { "PLC": "#00a99d", "鉗工": "#e53e3e", "電工": "#f6ad55", "機械": "#3182ce" };
@@ -458,7 +475,6 @@
         renderKpi(mpData);
     }
 
-    // 🟢 總控甘特圖
     function renderTaskGantt(data, year) {
         const container = document.getElementById('taskBody');
         container.innerHTML = "";
@@ -494,13 +510,13 @@
                 grid.appendChild(line);
             }
             
-            // 🟢 Add Today Line
+            // Today Line
             if(year == TODAY.getFullYear()) {
                 const todayLine = document.createElement('div');
                 todayLine.className = 'today-line';
                 const pct = (Math.floor((TODAY - new Date(year,0,1))/86400000) / 365) * 100;
                 todayLine.style.left = `${pct}%`;
-                grid.appendChild(todayLine); // Add inside grid
+                grid.appendChild(todayLine); 
             }
             
             timeline.appendChild(grid);
@@ -512,9 +528,8 @@
                 timeline.appendChild(bar);
             }
 
-            // 🟢 Actual Bar with Dynamic End Date
+            // Actual Bar
             if(task.forecastStart) {
-                // 如果沒有結束日，預設延伸到今天 (表示還在進行)
                 const endDate = task.forecastEnd || TODAY;
                 
                 let statusClass = 'status-future-bar';
@@ -524,7 +539,6 @@
 
                 const bar = createBar(task.forecastStart, endDate, year, `bar-actual ${statusClass}`);
                 
-                // 🟢 Calculate Duration
                 const duration = Math.floor((endDate - task.forecastStart) / 86400000);
                 
                 let desc = task.statusDesc ? `\n說明: ${task.statusDesc}` : "";
