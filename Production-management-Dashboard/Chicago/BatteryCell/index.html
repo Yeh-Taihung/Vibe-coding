@@ -490,7 +490,7 @@
                 const bar = createBar(task.forecastStart, task.forecastEnd, year, `bar-actual ${statusClass}`);
                 // 狀態描述顯示在 Tooltip 中
                 let desc = task.statusDesc ? `\n說明: ${task.statusDesc}` : "";
-                bar.title = `[實際/預估]\n狀態: ${task.status}${desc}\n日期: ${task.forecastStart.toLocaleDateString()} ~ ${task.forecastEnd.toLocaleDateString()}`;
+                bar.title = `[實際]\n狀態: ${task.status}${desc}\n日期: ${task.forecastStart.toLocaleDateString()} ~ ${task.forecastEnd.toLocaleDateString()}`;
                 timeline.appendChild(bar);
             }
 
