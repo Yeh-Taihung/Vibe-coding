@@ -1,0 +1,632 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="UTF-8" />
+  <title>芝加哥-電芯產線總控看板 v1 | Dual Data Sources</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" />
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700&family=Roboto:wght@400;500;700&display=swap" rel="stylesheet">
+
+  <style>
+    /* --------- Theme Variables --------- */
+    :root {
+      --color-primary: #00a99d;      
+      --color-primary-light: #e0f2f1;
+      --color-secondary: #f4d35e;    
+      --color-accent: #e53e3e;    
+      
+      --bg-body: #f4f8f8;            
+      --bg-card: #ffffff;
+      
+      --text-main: #2d3748;          
+      --text-muted: #718096;         
+      --border-light: #e2e8f0;
+      
+      --status-success: #00a99d;     
+      --status-warning: #f6ad55;     
+      --status-danger: #e53e3e;      
+      --status-neutral: #cbd5e0;     
+      --status-plan: #63b3ed;
+
+      --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+      --shadow-card: 0 4px 15px -2px rgba(0, 0, 0, 0.05);
+      --radius-card: 16px;
+      --radius-input: 10px;
+    }
+
+    [data-theme="dark"] {
+      --bg-body: #171923;
+      --bg-card: #2d3748;
+      --text-main: #f7fafc;
+      --text-muted: #a0aec0;
+      --border-light: #4a5568;
+      --shadow-card: 0 4px 6px -1px rgba(0, 0, 0, 0.5);
+    }
+
+    * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+    body { 
+      margin: 0; 
+      font-family: 'Roboto', 'Noto Sans TC', sans-serif; 
+      background: var(--bg-body); 
+      color: var(--text-main); 
+      -webkit-font-smoothing: antialiased;
+      padding-bottom: 40px;
+    }
+
+    /* --------- Header --------- */
+    .brand-bar {
+        padding: 12px 16px; display: flex; justify-content: space-between; align-items: center;
+        max-width: 1380px; margin: 0 auto; background: var(--bg-body);
+    }
+    .brand-left { display: flex; align-items: center; gap: 12px; }
+    .logo-area { font-size: 18px; font-weight: 700; color: var(--color-primary); display: flex; align-items: center; gap: 10px; }
+    .logo-img { height: 40px; width: auto; }
+    .brand-actions { display: flex; align-items: center; gap: 12px; }
+    .action-btn { display: flex; align-items: center; gap: 6px; font-size: 13px; font-weight: 500; padding: 6px 12px; border-radius: 20px; text-decoration: none; border: 1px solid transparent; transition: 0.2s; }
+    .btn-sheet { background-color: #e6f4ea; color: #1e8e3e; border: 1px solid #ceead6; }
+    .btn-back { color: var(--text-muted); background: transparent; }
+    .theme-toggle { background: transparent; border: 1px solid var(--border-light); padding: 6px 12px; border-radius: 20px; cursor: pointer; }
+
+    /* --------- Controls --------- */
+    .sticky-controls-wrapper {
+        position: sticky; top: 0; z-index: 1000;
+        background: rgba(255, 255, 255, 0.95); backdrop-filter: blur(10px);
+        border-bottom: 1px solid var(--border-light); box-shadow: var(--shadow-sm); padding: 10px 16px;
+    }
+    [data-theme="dark"] .sticky-controls-wrapper { background: rgba(45, 55, 72, 0.95); }
+
+    .controls-grid { 
+        max-width: 1380px; margin: 0 auto; display: flex; align-items: center; gap: 16px; flex-wrap: wrap;
+    }
+    .filter-wrapper {
+        display: flex; align-items: center; gap: 8px; background: var(--bg-card);
+        padding: 4px 12px; border: 1px solid var(--border-light); border-radius: var(--radius-input);
+        min-width: 120px;
+    }
+    .filter-wrapper select { border: none; background: transparent; outline: none; width: 100%; font-weight: 600; color: var(--text-main); }
+    .nav-pills { display: flex; gap: 8px; margin-left: auto; overflow-x: auto; }
+    .nav-btn { padding: 6px 14px; border-radius: 20px; border: 1px solid var(--border-light); background: var(--bg-card); cursor: pointer; color: var(--text-muted); white-space: nowrap; }
+    .nav-btn.active { background: var(--color-primary); color: white; border-color: var(--color-primary); }
+
+    /* --------- Content --------- */
+    .container { max-width: 1380px; margin: 20px auto 60px; padding: 0 16px; }
+    
+    .card { 
+        background: var(--bg-card); border-radius: var(--radius-card); 
+        padding: 20px; margin-bottom: 20px; box-shadow: var(--shadow-card); border: 1px solid var(--border-light);
+    }
+    .card-header-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; flex-wrap: wrap; gap:10px; }
+    .card-title { font-size: 18px; font-weight: 700; color: var(--text-main); display: flex; align-items: center; gap: 8px; }
+    .card-title::before { content: ''; display: block; width: 4px; height: 18px; background: var(--color-primary); border-radius: 2px; }
+
+    .project-info-bar { 
+        display: flex; flex-wrap: wrap; background: var(--bg-card);
+        border: 1px solid var(--border-light); border-radius: var(--radius-card); 
+        margin-bottom: 20px; overflow: hidden; box-shadow: var(--shadow-card);
+    }
+    .p-item { flex: 1; min-width: 140px; padding: 16px; border-right: 1px solid var(--border-light); }
+    .p-item:last-child { border-right: none; }
+    .p-label { font-size: 10px; color: var(--text-muted); font-weight: 600; margin-bottom: 4px; }
+    .p-value { font-size: 15px; font-weight: 700; color: var(--text-main); }
+
+    /* --------- Task Gantt Specific --------- */
+    .task-gantt-wrapper { overflow-x: auto; border: 1px solid var(--border-light); border-radius: 12px; }
+    .task-gantt-table { width: 100%; min-width: 1000px; border-collapse: collapse; }
+    .task-row { border-bottom: 1px solid var(--border-light); height: 50px; position: relative; }
+    .task-meta-col { 
+        position: sticky; left: 0; width: 250px; background: var(--bg-card); z-index: 10; 
+        border-right: 2px solid var(--border-light); padding: 0 12px; display: flex; flex-direction: column; justify-content: center;
+    }
+    .task-meta-title { font-weight: 600; font-size: 13px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .task-meta-sub { font-size: 11px; color: var(--text-muted); display: flex; gap: 8px; }
+    
+    .task-timeline-col { position: relative; flex-grow: 1; }
+    .task-bar-container { position: absolute; top: 8px; bottom: 8px; left: 0; right: 0; }
+    
+    /* 任務進度條樣式 */
+    .bar-plan {
+        position: absolute; height: 60%; top: 20%; 
+        border: 1px dashed var(--text-muted); background: transparent; opacity: 0.4; border-radius: 4px; z-index: 1;
+    }
+    .bar-actual {
+        position: absolute; height: 40%; top: 30%; 
+        border-radius: 4px; z-index: 2; box-shadow: 0 2px 4px rgba(0,0,0,0.15);
+        display: flex; align-items: center; justify-content: flex-end; padding-right: 5px; font-size: 10px; color: #fff;
+    }
+    
+    /* 任務狀態顏色 */
+    .status-done-bar { background: #8ba47c; } /* 完成-綠 */
+    .status-active-bar { background: #f4d35e; } /* 進行中-黃 */
+    .status-blocked-bar { background: #e53e3e; } /* 卡關-紅 */
+    .status-future-bar { background: #a0aec0; } /* 未開始-灰 */
+
+    .gantt-months { display: grid; grid-template-columns: repeat(12, 1fr); background: #f7fafc; border-bottom: 1px solid var(--border-light); height: 36px; }
+    .gantt-month { display: flex; align-items: center; justify-content: center; font-size: 12px; color: var(--text-muted); border-right: 1px solid var(--border-light); }
+
+    /* --------- Manpower Common Styles --------- */
+    .timeline-wrapper { width: 100%; overflow-x: auto; border: 1px solid var(--border-light); border-radius: 12px; background: var(--bg-card); }
+    .timeline-grid-layout { display: grid; grid-template-columns: 100px repeat(12, 1fr); min-width: 800px; }
+    .timeline-header { border-bottom: 1px solid var(--border-light); background: var(--color-primary-light); font-size: 12px; font-weight: 600; }
+    .timeline-header-cell { padding: 10px 4px; text-align: center; border-right: 1px dashed var(--border-light); }
+    .timeline-row { border-bottom: 1px solid var(--border-light); position: relative; height: 44px; display: grid; grid-template-columns: 100px repeat(12, 1fr); }
+    .timeline-name-col { padding: 0 10px; display: flex; align-items: center; justify-content: flex-end; font-size: 13px; font-weight: 500; border-right: 1px solid var(--border-light); background: var(--bg-card); z-index: 2; }
+    .timeline-bars-container { grid-column: 2 / span 12; position: relative; height: 100%; }
+    .timeline-item { position: absolute; top: 10px; bottom: 10px; border-radius: 4px; z-index: 5; opacity: 0.9; cursor: help; }
+    .grid-lines { position: absolute; inset: 0; display: grid; grid-template-columns: repeat(12, 1fr); pointer-events: none; z-index: 0; }
+    .grid-line { border-right: 1px dashed var(--border-light); height: 100%; }
+    
+    .status-badge { padding: 2px 8px; border-radius: 12px; font-size: 11px; display: inline-block; min-width: 60px; text-align: center; color: #fff; }
+    .badge-past { background: var(--status-neutral); color: #4a5568; }
+    .badge-active { background: var(--status-success); }
+    .badge-plan { background: var(--status-plan); }
+    
+    .kpi-bar { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin-bottom: 20px; }
+    .kpi-card { background: var(--bg-card); border-radius: 12px; padding: 12px 16px; border: 1px solid var(--border-light); position: relative; overflow: hidden; }
+    .kpi-card::before { content: ''; position: absolute; left: 0; top: 0; bottom: 0; width: 4px; background: var(--kpi-color); }
+    .kpi-val { font-size: 20px; font-weight: 700; color: var(--text-main); }
+
+    .tag-visa { border: 1px solid var(--border-light); padding: 1px 6px; border-radius: 4px; font-size: 11px; }
+    .tag-expired { background: #ffebee; color: #c53030; font-weight:600; }
+    .tag-warning { background: #fffaf0; color: #dd6b20; }
+    .tag-normal { background: #e6fffa; color: #2c7a7b; }
+    
+    .tag-worked { background: #ebf8ff; color: #2b6cb0; border: 1px solid #bee3f8; padding: 2px 6px; border-radius: 4px; font-weight: 600; }
+    .leave-info { display: flex; flex-direction: column; gap: 2px; }
+    .leave-date { font-weight: 600; }
+    .leave-countdown { font-size: 10px; color: var(--text-muted); }
+
+    /* RWD */
+    @media (max-width: 768px) {
+        .kpi-bar { grid-template-columns: 1fr; }
+        .controls-grid { gap: 10px; }
+        .task-meta-col { width: 120px; }
+    }
+  </style>
+</head>
+<body>
+
+  <div class="brand-bar">
+      <div class="brand-left">
+        <div class="logo-area">
+          <img src="../../logo.png" alt="Logo" class="logo-img">
+          <div class="brand-title-group">
+              <div style="line-height:1.2">芝加哥-電芯產線總控看板</div>
+              <div style="font-size:11px; font-weight:400; color:var(--text-muted)">Chicago Battery Cell Master Schedule</div>
+          </div>
+        </div>
+      </div>
+      
+      <div class="brand-actions">
+           <a href="https://docs.google.com/spreadsheets/d/YOUR_SHEET_ID/edit" target="_blank" class="action-btn btn-sheet">
+            <i class="fa-solid fa-file-pen"></i> 編輯資料
+           </a>
+           <a href="../index.html" class="action-btn btn-back">
+             <i class="fa-solid fa-arrow-left"></i> 回芝加哥選單
+           </a>
+           <button class="theme-toggle" id="themeBtn">◐</button>
+      </div>
+  </div>
+
+  <div class="sticky-controls-wrapper">
+    <div class="controls-grid">
+        <div class="filter-wrapper"><i class="fa-regular fa-calendar"></i><select id="yearSelect"></select></div>
+        <div class="filter-wrapper"><i class="fa-solid fa-user"></i><select id="filterNameGlobal"><option value="">全部人員</option></select></div>
+        <div class="filter-wrapper"><i class="fa-solid fa-layer-group"></i><select id="filterProcess"><option value="">全部工序</option></select></div>
+
+        <div class="nav-pills">
+            <button class="nav-btn" onclick="scrollToId('section-master-gantt')"><i class="fa-solid fa-tasks"></i> 總控甘特圖</button>
+            <button class="nav-btn" onclick="scrollToId('section-manpower-gantt')"><i class="fa-solid fa-users"></i> 人力甘特圖</button>
+            <button class="nav-btn" onclick="scrollToId('section-list')"><i class="fa-solid fa-table"></i> 詳細列表</button>
+        </div>
+    </div>
+  </div>
+
+  <main class="container">
+    <div class="project-info-bar">
+      <div class="p-item"><div class="p-label">📅 資料更新</div><div class="p-value" id="dataUpdated">-</div></div>
+      <div class="p-item"><div class="p-label">📍 地點</div><div class="p-value">芝加哥 (Battery Cell)</div></div>
+      <div class="p-item"><div class="p-label">🏁 啟動日</div><div class="p-value" id="projStart">-</div></div>
+      <div class="p-item"><div class="p-label">⏳ 剩餘天數</div><div class="p-value" id="projCountdown">-</div></div>
+    </div>
+
+    <section id="section-master-gantt" class="card">
+        <div class="card-header-row">
+            <div class="card-title">安裝總控甘特圖 (Master Schedule)</div>
+            <div style="font-size:12px; color:var(--text-muted);">
+                <span style="color:#a0aec0">▢ 原定計畫</span> &nbsp;
+                <span style="color:#00a99d">■ 進行中</span> &nbsp;
+                <span style="color:#e53e3e">■ 卡關 (Blocked)</span>
+            </div>
+        </div>
+        
+        <div class="task-gantt-wrapper">
+            <div style="display:flex; min-width:1000px;">
+                <div style="width:250px; background:#f7fafc; border-right:2px solid var(--border-light); flex-shrink:0;"></div>
+                <div style="flex-grow:1;" class="gantt-months">
+                    <div class="gantt-month">1月</div><div class="gantt-month">2月</div><div class="gantt-month">3月</div>
+                    <div class="gantt-month">4月</div><div class="gantt-month">5月</div><div class="gantt-month">6月</div>
+                    <div class="gantt-month">7月</div><div class="gantt-month">8月</div><div class="gantt-month">9月</div>
+                    <div class="gantt-month">10月</div><div class="gantt-month">11月</div><div class="gantt-month">12月</div>
+                </div>
+            </div>
+            <div id="taskBody"></div>
+        </div>
+    </section>
+
+    <div class="kpi-bar" id="kpiBar"></div>
+
+    <section id="section-manpower-gantt" class="card">
+      <div class="card-header-row">
+        <div class="card-title">人力工作甘特圖</div>
+      </div>
+      <div class="timeline-wrapper">
+        <div class="timeline-grid-layout timeline-header">
+          <div class="timeline-header-cell">人員</div>
+          <div class="timeline-header-cell">1月</div><div class="timeline-header-cell">2月</div>
+          <div class="timeline-header-cell">3月</div><div class="timeline-header-cell">4月</div>
+          <div class="timeline-header-cell">5月</div><div class="timeline-header-cell">6月</div>
+          <div class="timeline-header-cell">7月</div><div class="timeline-header-cell">8月</div>
+          <div class="timeline-header-cell">9月</div><div class="timeline-header-cell">10月</div>
+          <div class="timeline-header-cell">11月</div><div class="timeline-header-cell">12月</div>
+        </div>
+        <div id="timelineBody"></div>
+      </div>
+    </section>
+
+    <section id="section-list" class="card">
+      <div class="card-title" style="margin-bottom: 20px;">人力詳細列表</div>
+      <div class="table-responsive">
+        <table style="width:100%;">
+          <thead>
+            <tr>
+              <th>產線</th><th>姓名</th><th>狀態</th><th>供應商</th><th>工種</th><th>職責</th><th>到崗日</th><th>預計離崗</th><th>實際離崗</th><th>已工作</th><th>簽證狀態</th>
+            </tr>
+          </thead>
+          <tbody id="tableBody"></tbody>
+        </table>
+      </div>
+    </section>
+
+  </main>
+
+  <script>
+    /* =========================================
+       CONFIGURATION (請在此填入 gid)
+       ========================================= */
+    const BASE_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vSrKQd6NZRtyoDpbIgwFo_fU4Erzd4oTPNlKKlk7oNhsOXRUOSJbm8km2HY76349TypTw_ME98ZLV_J/pub?output=csv";
+    
+    // 🔴 請填入你的人力表 gid (通常是 0)
+    const MANPOWER_GID = "0"; 
+    
+    // 🔴 請填入你的任務表 gid (請去試算表網址看 &gid=xxxx)
+    const TASK_GID = "389207647"; 
+
+    // Data Stores
+    let manpowerRecords = [];
+    let taskRecords = [];
+    let currentYear = new Date().getFullYear();
+    const TODAY = new Date(); TODAY.setHours(0,0,0,0);
+
+    const ROLE_COLOR_MAP = { "PLC": "#00a99d", "鉗工": "#e53e3e", "電工": "#f6ad55", "機械": "#3182ce" };
+    const FALLBACK_COLORS = ["#e53e3e", "#dd6b20", "#38a169", "#3182ce", "#805ad5"];
+
+    document.addEventListener("DOMContentLoaded", async () => {
+      await fetchAllData();
+      setupEvents();
+    });
+
+    // 🟢 同時讀取兩份 CSV
+    async function fetchAllData() {
+      try {
+        const [resManpower, resTask] = await Promise.all([
+            fetch(`${BASE_URL}&gid=${MANPOWER_GID}`),
+            fetch(`${BASE_URL}&gid=${TASK_GID}`)
+        ]);
+
+        const textManpower = await resManpower.text();
+        const textTask = await resTask.text();
+
+        manpowerRecords = parseManpowerCsv(textManpower);
+        taskRecords = parseTaskCsv(textTask);
+
+        initFilters();
+        renderAll();
+
+      } catch (err) {
+        console.error(err);
+        alert("讀取資料失敗，請檢查 Google Sheet 發布設定與 GID 是否正確。");
+      }
+    }
+
+    // 解析人力表 (邏輯同之前)
+    function parseManpowerCsv(text) {
+        const lines = text.trim().split(/\r?\n/);
+        const data = [];
+        for(let i=1; i<lines.length; i++) {
+            const cols = lines[i].split(',').map(c => c.replace(/^"|"$/g, '').trim());
+            if(cols.length < 7) continue;
+            
+            // Meta Data from Row 1 if needed (Project Start etc.)
+            if (cols[10]) { 
+                const d = new Date(cols[10]); 
+                if(!isNaN(d)) {
+                    document.getElementById('projStart').textContent = d.toLocaleDateString();
+                    document.getElementById('dataUpdated').textContent = cols[13] || '-';
+                }
+            }
+
+            const arrival = new Date(cols[6]);
+            if (isNaN(arrival)) continue;
+            
+            data.push({
+                supplier: cols[0], name: cols[1], role: cols[2], duty: cols[3], line: cols[4], visaType: cols[5],
+                arrivalDate: arrival,
+                plannedLeaveDate: cols[7] ? new Date(cols[7]) : null,
+                actualLeaveDate: cols[8] ? new Date(cols[8]) : null,
+                visaExpiry: cols[9] ? new Date(cols[9]) : null,
+                year: arrival.getFullYear()
+            });
+        }
+        return data;
+    }
+
+    // 🟢 解析任務表 (Task Schedule)
+    function parseTaskCsv(text) {
+        const lines = text.trim().split(/\r?\n/);
+        const data = [];
+        // 假設 CSV 順序: Process, Zone, Task, PlanStart, PlanEnd, ForecastStart, ForecastEnd, Owner, Status
+        for(let i=1; i<lines.length; i++) {
+            const cols = lines[i].split(',').map(c => c.replace(/^"|"$/g, '').trim());
+            if(cols.length < 3) continue;
+
+            const planStart = new Date(cols[3]);
+            
+            data.push({
+                process: cols[0], // 工序
+                zone: cols[1],    // 區域
+                task: cols[2],    // 任務名稱
+                planStart: isNaN(planStart) ? null : planStart,
+                planEnd: cols[4] ? new Date(cols[4]) : null,
+                forecastStart: cols[5] ? new Date(cols[5]) : null,
+                forecastEnd: cols[6] ? new Date(cols[6]) : null,
+                owner: cols[7],
+                status: cols[8],  // 未開始, 進行中, 卡關, 完成
+                year: planStart.getFullYear() || currentYear
+            });
+        }
+        return data;
+    }
+
+    function initFilters() {
+        // 年份
+        const yearSel = document.getElementById('yearSelect');
+        const years = [...new Set([...manpowerRecords.map(r=>r.year), ...taskRecords.map(r=>r.year)])].sort((a,b)=>b-a);
+        if(years.length === 0) years.push(currentYear);
+        yearSel.innerHTML = years.map(y => `<option value="${y}">${y}年</option>`).join('');
+        
+        // 人名 (全域)
+        const nameSel = document.getElementById('filterNameGlobal');
+        [...new Set(manpowerRecords.map(d=>d.name))].sort().forEach(n => {
+            nameSel.innerHTML += `<option value="${n}">${n}</option>`;
+        });
+
+        // 工序 (任務專用)
+        const procSel = document.getElementById('filterProcess');
+        [...new Set(taskRecords.map(d=>d.process))].sort().forEach(p => {
+            procSel.innerHTML += `<option value="${p}">${p}</option>`;
+        });
+    }
+
+    function renderAll() {
+        const year = document.getElementById('yearSelect').value;
+        const filterName = document.getElementById('filterNameGlobal').value;
+        const filterProc = document.getElementById('filterProcess').value;
+
+        // 1. Filter Data
+        const mpData = manpowerRecords.filter(d => d.year == year && (filterName === "" || d.name === filterName));
+        const tkData = taskRecords.filter(d => d.year == year && (filterProc === "" || d.process === filterProc));
+
+        renderTaskGantt(tkData, year);
+        renderManpowerGantt(mpData, year);
+        renderManpowerTable(mpData);
+        renderKpi(mpData);
+    }
+
+    // 🟢 渲染總控甘特圖
+    function renderTaskGantt(data, year) {
+        const container = document.getElementById('taskBody');
+        container.innerHTML = "";
+        
+        // Group by Process -> Zone
+        data.forEach(task => {
+            const row = document.createElement('div');
+            row.style.display = 'flex';
+            row.style.minWidth = '1000px';
+            row.style.borderBottom = '1px solid var(--border-light)';
+            row.style.height = '50px';
+
+            // Left Meta Info
+            const meta = document.createElement('div');
+            meta.className = 'task-meta-col';
+            meta.innerHTML = `
+                <div class="task-meta-title" title="${task.task}">${task.task}</div>
+                <div class="task-meta-sub">
+                    <span style="background:#edf2f7; padding:1px 4px; border-radius:4px;">${task.process}</span>
+                    <span>${task.zone}</span>
+                    <span style="color:var(--color-primary)">${task.owner}</span>
+                </div>
+            `;
+            row.appendChild(meta);
+
+            // Right Timeline
+            const timeline = document.createElement('div');
+            timeline.className = 'task-timeline-col';
+            
+            // Add Grid Lines
+            const grid = document.createElement('div');
+            grid.className = 'grid-lines';
+            for(let i=0; i<12; i++) {
+                const line = document.createElement('div');
+                line.className = 'grid-line';
+                grid.appendChild(line);
+            }
+            timeline.appendChild(grid);
+
+            // Draw Plan Bar (Hollow/Gray)
+            if(task.planStart && task.planEnd) {
+                const bar = createBar(task.planStart, task.planEnd, year, 'bar-plan');
+                timeline.appendChild(bar);
+            }
+
+            // Draw Forecast/Actual Bar (Colored)
+            if(task.forecastStart && task.forecastEnd) {
+                let statusClass = 'status-future-bar';
+                if(task.status === '進行中') statusClass = 'status-active-bar';
+                else if(task.status === '完成') statusClass = 'status-done-bar';
+                else if(task.status === '卡關') statusClass = 'status-blocked-bar'; // 🔴 紅色卡關
+
+                const bar = createBar(task.forecastStart, task.forecastEnd, year, `bar-actual ${statusClass}`);
+                bar.title = `${task.task}\n狀態: ${task.status}\n預估: ${task.forecastStart.toLocaleDateString()} - ${task.forecastEnd.toLocaleDateString()}`;
+                timeline.appendChild(bar);
+            }
+
+            row.appendChild(timeline);
+            container.appendChild(row);
+        });
+    }
+
+    function createBar(start, end, year, className) {
+        const div = document.createElement('div');
+        div.className = className;
+        
+        const yearStart = new Date(year, 0, 1);
+        const totalDays = 365; // Simplify
+        const startDay = Math.floor((start - yearStart) / 86400000);
+        const duration = Math.floor((end - start) / 86400000);
+
+        const left = Math.max(0, (startDay / totalDays) * 100);
+        const width = Math.min(100 - left, (duration / totalDays) * 100);
+
+        div.style.left = `${left}%`;
+        div.style.width = `${Math.max(width, 0.5)}%`;
+        return div;
+    }
+
+    // 渲染人力甘特圖 (簡化版)
+    function renderManpowerGantt(data, year) {
+        const container = document.getElementById('timelineBody');
+        container.innerHTML = "";
+        
+        // Group by Name
+        const groups = {};
+        data.forEach(d => { if(!groups[d.name]) groups[d.name] = []; groups[d.name].push(d); });
+
+        Object.keys(groups).sort().forEach(name => {
+            const records = groups[name];
+            const row = document.createElement('div');
+            row.className = 'timeline-row';
+            row.innerHTML = `<div class="timeline-name-col">${name} <br><span style="font-size:10px; color:#aaa">${records[0].role}</span></div>`;
+            
+            const bars = document.createElement('div');
+            bars.className = 'timeline-bars-container';
+            // Grid
+            for(let i=0; i<12; i++) {
+                const line = document.createElement('div');
+                line.className = 'grid-line';
+                bars.appendChild(line);
+            }
+            // Today Line
+            if(year == TODAY.getFullYear()) {
+                const line = document.createElement('div');
+                line.className = 'today-line';
+                const pct = (Math.floor((TODAY - new Date(year,0,1))/86400000) / 365) * 100;
+                line.style.left = `${pct}%`;
+                bars.appendChild(line);
+            }
+
+            records.forEach(r => {
+                const bar = document.createElement('div');
+                bar.className = 'timeline-item';
+                bar.style.backgroundColor = r.actualLeaveDate ? '#cbd5e0' : '#00a99d'; // 灰 or 綠
+                
+                const end = r.actualLeaveDate || (r.arrivalDate > TODAY ? new Date(year,11,31) : TODAY);
+                const startDay = Math.floor((r.arrivalDate - new Date(year,0,1))/86400000);
+                const dur = Math.floor((end - r.arrivalDate)/86400000);
+                
+                bar.style.left = `${(startDay/365)*100}%`;
+                bar.style.width = `${(dur/365)*100}%`;
+                bars.appendChild(bar);
+            });
+            row.appendChild(bars);
+            container.appendChild(row);
+        });
+    }
+
+    function renderManpowerTable(data) {
+        const tbody = document.getElementById('tableBody');
+        tbody.innerHTML = "";
+        data.sort((a,b) => a.arrivalDate - b.arrivalDate).forEach(d => {
+            let statusBadge = d.actualLeaveDate ? '<span class="status-badge badge-past">已離崗</span>' : '<span class="status-badge badge-active">進行中</span>';
+            
+            // Visa Check
+            let visaHtml = '<span class="tag-expired">未輸入</span>';
+            if(d.visaExpiry && !isNaN(d.visaExpiry)) {
+                const days = Math.ceil((d.visaExpiry - TODAY)/86400000);
+                if(days < 0) visaHtml = '<span class="tag-expired">過期</span>';
+                else if(days < 30) visaHtml = `<span class="tag-warning">剩${days}天</span>`;
+                else visaHtml = '<span class="tag-normal">正常</span>';
+            }
+
+            // Plan Leave Countdown
+            let planHtml = '-';
+            if(d.plannedLeaveDate) {
+                const diff = Math.ceil((d.plannedLeaveDate - TODAY)/86400000);
+                planHtml = `<div class="leave-info"><span class="leave-date">${d.plannedLeaveDate.toLocaleDateString()}</span><span class="leave-countdown">剩 ${diff} 天</span></div>`;
+            }
+
+            // Actual Work Days
+            let worked = 0;
+            if(d.arrivalDate <= TODAY) {
+                const end = d.actualLeaveDate || TODAY;
+                worked = Math.floor((end - d.arrivalDate)/86400000);
+            }
+
+            const tr = document.createElement('tr');
+            tr.innerHTML = `
+                <td>${d.line}</td><td><strong>${d.name}</strong></td><td>${statusBadge}</td>
+                <td>${d.supplier}</td><td>${d.role}</td><td>${d.duty}</td>
+                <td>${d.arrivalDate.toLocaleDateString()}</td>
+                <td>${planHtml}</td>
+                <td>${d.actualLeaveDate ? d.actualLeaveDate.toLocaleDateString() : '-'}</td>
+                <td><span class="tag-worked">${worked} 天</span></td>
+                <td>${visaHtml}</td>
+            `;
+            tbody.appendChild(tr);
+        });
+    }
+
+    function renderKpi(data) {
+        const active = data.filter(d => !d.actualLeaveDate && d.arrivalDate <= TODAY).length;
+        const expired = data.filter(d => !d.visaExpiry || d.visaExpiry < TODAY).length;
+        
+        document.getElementById('kpiBar').innerHTML = `
+            <div class="kpi-card" style="--kpi-color:#00a99d"><div class="kpi-title">目前在崗</div><div class="kpi-val">${active} 人</div></div>
+            <div class="kpi-card" style="--kpi-color:#f6ad55"><div class="kpi-title">列表總人數</div><div class="kpi-val">${data.length} 人</div></div>
+            <div class="kpi-card" style="--kpi-color:#e53e3e"><div class="kpi-title">簽證異常</div><div class="kpi-val">${expired} 人</div></div>
+        `;
+    }
+
+    function scrollToId(id) { document.getElementById(id).scrollIntoView({behavior:'smooth', block:'start'}); }
+    function setupEvents() {
+        ['yearSelect', 'filterNameGlobal', 'filterProcess'].forEach(id => {
+            document.getElementById(id).addEventListener('change', renderAll);
+        });
+        document.getElementById('themeBtn').addEventListener('click', () => {
+            const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
+            document.documentElement.setAttribute('data-theme', isDark ? 'light' : 'dark');
+        });
+    }
+  </script>
+</body>
+</html>
