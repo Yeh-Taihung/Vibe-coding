@@ -2,7 +2,7 @@
 <html lang="zh-Hant">
 <head>
   <meta charset="UTF-8" />
-  <title>芝加哥-電芯產線總控看板 v1 | Dual Data Sources</title>
+  <title>芝加哥-電芯產線總控看板 v1 | Owner Column Added</title>
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" />
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
@@ -57,10 +57,10 @@
     /* --------- Header --------- */
     .brand-bar {
         padding: 12px 16px; display: flex; justify-content: space-between; align-items: center;
-        max-width: 1380px; margin: 0 auto; background: var(--bg-body);
+        max-width: 1400px; margin: 0 auto; background: var(--bg-body);
     }
     .brand-left { display: flex; align-items: center; gap: 12px; }
-    /* Logo 移除圖片，只留文字 */
+    /* Logo: Removed Image, kept Icon/Text */
     .logo-area { font-size: 20px; font-weight: 800; color: var(--color-primary); display: flex; align-items: center; gap: 10px; }
     
     .brand-actions { display: flex; align-items: center; gap: 12px; }
@@ -78,7 +78,7 @@
     [data-theme="dark"] .sticky-controls-wrapper { background: rgba(45, 55, 72, 0.95); }
 
     .controls-grid { 
-        max-width: 1380px; margin: 0 auto; display: flex; align-items: center; gap: 16px; flex-wrap: wrap;
+        max-width: 1400px; margin: 0 auto; display: flex; align-items: center; gap: 16px; flex-wrap: wrap;
     }
     .filter-wrapper {
         display: flex; align-items: center; gap: 8px; background: var(--bg-card);
@@ -91,7 +91,7 @@
     .nav-btn.active { background: var(--color-primary); color: white; border-color: var(--color-primary); }
 
     /* --------- Content --------- */
-    .container { max-width: 1380px; margin: 20px auto 60px; padding: 0 16px; }
+    .container { max-width: 1400px; margin: 20px auto 60px; padding: 0 16px; }
     
     .card { 
         background: var(--bg-card); border-radius: var(--radius-card); 
@@ -111,34 +111,52 @@
     .p-label { font-size: 10px; color: var(--text-muted); font-weight: 600; margin-bottom: 4px; }
     .p-value { font-size: 15px; font-weight: 700; color: var(--text-main); }
 
-    /* --------- Task Gantt Specific --------- */
+    /* --------- Task Gantt Specific (New Layout) --------- */
     .task-gantt-wrapper { overflow-x: auto; border: 1px solid var(--border-light); border-radius: 12px; }
     .task-gantt-table { width: 100%; min-width: 1000px; border-collapse: collapse; }
-    .task-row { border-bottom: 1px solid var(--border-light); height: 50px; position: relative; }
-    .task-meta-col { 
-        position: sticky; left: 0; width: 250px; background: var(--bg-card); z-index: 10; 
-        border-right: 2px solid var(--border-light); padding: 0 12px; display: flex; flex-direction: column; justify-content: center;
+    
+    /* Gantt Header Structure */
+    .gantt-header-row { display: flex; background: #f7fafc; border-bottom: 1px solid var(--border-light); height: 36px; min-width: 1000px; }
+    .gh-info { width: 220px; border-right: 1px solid var(--border-light); display: flex; align-items: center; justify-content: center; font-size: 12px; color: var(--text-muted); flex-shrink: 0; position: sticky; left: 0; background: #f7fafc; z-index: 11; font-weight: 600;}
+    .gh-owner { width: 80px; border-right: 2px solid var(--border-light); display: flex; align-items: center; justify-content: center; font-size: 12px; color: var(--text-muted); flex-shrink: 0; position: sticky; left: 220px; background: #f7fafc; z-index: 11; font-weight: 600;}
+    
+    .gantt-months { flex-grow: 1; display: grid; grid-template-columns: repeat(12, 1fr); }
+    .gantt-month { display: flex; align-items: center; justify-content: center; font-size: 12px; color: var(--text-muted); border-right: 1px solid var(--border-light); }
+
+    /* Gantt Body Row Structure */
+    .task-row { display: flex; border-bottom: 1px solid var(--border-light); height: 50px; position: relative; min-width: 1000px; }
+    
+    .task-info-col { 
+        width: 220px; position: sticky; left: 0; background: var(--bg-card); z-index: 10; 
+        border-right: 1px solid var(--border-light); padding: 0 12px; display: flex; flex-direction: column; justify-content: center; flex-shrink: 0;
     }
-    .task-meta-title { font-weight: 600; font-size: 13px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-    .task-meta-sub { font-size: 11px; color: var(--text-muted); display: flex; gap: 8px; }
     
+    /* New Owner Column */
+    .task-owner-col {
+        width: 80px; position: sticky; left: 220px; background: var(--bg-card); z-index: 10;
+        border-right: 2px solid var(--border-light); display: flex; align-items: center; justify-content: center; font-weight: 700; color: var(--color-primary); font-size: 13px; flex-shrink: 0;
+    }
+
     .task-timeline-col { position: relative; flex-grow: 1; }
-    .task-bar-container { position: absolute; top: 8px; bottom: 8px; left: 0; right: 0; }
     
-    /* 任務進度條樣式優化：計畫 vs 實際 */
+    .task-meta-title { font-weight: 600; font-size: 13px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .task-meta-sub { font-size: 11px; color: var(--text-muted); display: flex; gap: 8px; margin-top: 2px; }
+    .task-badge { background: #edf2f7; padding: 1px 6px; border-radius: 4px; font-size: 10px; }
+
+    /* 任務進度條樣式 */
     .bar-plan {
         position: absolute; 
-        height: 70%; /* 較高，作為背景框 */
+        height: 70%; /* Plan 是背景框 */
         top: 15%; 
         border: 2px dashed #cbd5e0; /* 虛線框 */
-        background: rgba(203, 213, 224, 0.15); /* 極淡的背景 */
+        background: rgba(203, 213, 224, 0.15); 
         border-radius: 4px; 
         z-index: 1;
-        cursor: help; /* 滑鼠移上去變成問號 */
+        cursor: help; 
     }
     .bar-actual {
         position: absolute; 
-        height: 40%; /* 較細，作為實際進度 */
+        height: 40%; /* Actual 是實心條 */
         top: 30%; 
         border-radius: 3px; 
         z-index: 2; 
@@ -151,9 +169,6 @@
     .status-active-bar { background: #f4d35e; } /* 進行中-黃 */
     .status-blocked-bar { background: #e53e3e; } /* 卡關-紅 */
     .status-future-bar { background: #a0aec0; } /* 未開始-灰 */
-
-    .gantt-months { display: grid; grid-template-columns: repeat(12, 1fr); background: #f7fafc; border-bottom: 1px solid var(--border-light); height: 36px; }
-    .gantt-month { display: flex; align-items: center; justify-content: center; font-size: 12px; color: var(--text-muted); border-right: 1px solid var(--border-light); }
 
     /* --------- Manpower Common Styles --------- */
     .timeline-wrapper { width: 100%; overflow-x: auto; border: 1px solid var(--border-light); border-radius: 12px; background: var(--bg-card); }
@@ -191,7 +206,10 @@
     @media (max-width: 768px) {
         .kpi-bar { grid-template-columns: 1fr; }
         .controls-grid { gap: 10px; }
-        .task-meta-col { width: 120px; }
+        .task-info-col { width: 150px; } /* Mobile adjustments */
+        .gh-info { width: 150px; }
+        .task-owner-col { left: 150px; }
+        .gh-owner { left: 150px; }
     }
   </style>
 </head>
@@ -200,7 +218,8 @@
   <div class="brand-bar">
       <div class="brand-left">
         <div class="logo-area">
-          <i class="fa-solid fa-industry"></i> <div class="brand-title-group">
+          <i class="fa-solid fa-industry"></i> 
+          <div class="brand-title-group">
               <div style="line-height:1.2">芝加哥-電芯產線總控看板</div>
               <div style="font-size:11px; font-weight:400; color:var(--text-muted)">Chicago Battery Cell Master Schedule v1</div>
           </div>
@@ -244,7 +263,7 @@
         <div class="card-header-row">
             <div class="card-title">安裝總控甘特圖 (Master Schedule)</div>
             <div style="font-size:12px; color:var(--text-muted);">
-                <span style="border:1px dashed #aaa; padding:0 4px; border-radius:2px;">▢ 原定計畫</span> &nbsp;
+                <span style="border:2px dashed #cbd5e0; background:rgba(203,213,224,0.15); padding:0 6px; border-radius:2px;">▢ 原定計畫</span> &nbsp;
                 <span style="color:#f4d35e">■ 進行中</span> &nbsp;
                 <span style="color:#e53e3e">■ 卡關 (Blocked)</span> &nbsp;
                 <span style="color:#8ba47c">■ 完成</span>
@@ -252,9 +271,9 @@
         </div>
         
         <div class="task-gantt-wrapper">
-            <div style="display:flex; min-width:1000px;">
-                <div style="width:250px; background:#f7fafc; border-right:2px solid var(--border-light); flex-shrink:0;"></div>
-                <div style="flex-grow:1;" class="gantt-months">
+            <div class="gantt-header-row">
+                <div class="gh-info">任務 / 區域</div>
+                <div class="gh-owner">責任方</div> <div class="gantt-months">
                     <div class="gantt-month">1月</div><div class="gantt-month">2月</div><div class="gantt-month">3月</div>
                     <div class="gantt-month">4月</div><div class="gantt-month">5月</div><div class="gantt-month">6月</div>
                     <div class="gantt-month">7月</div><div class="gantt-month">8月</div><div class="gantt-month">9月</div>
@@ -308,8 +327,6 @@
     const BASE_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vSrKQd6NZRtyoDpbIgwFo_fU4Erzd4oTPNlKKlk7oNhsOXRUOSJbm8km2HY76349TypTw_ME98ZLV_J/pub?output=csv";
     
     const MANPOWER_GID = "0"; 
-    
-    // 🔴 TaskSchedule GID (你提供的)
     const TASK_GID = "389207647"; 
 
     // Data Stores
@@ -319,8 +336,7 @@
     const TODAY = new Date(); TODAY.setHours(0,0,0,0);
 
     const ROLE_COLOR_MAP = { "PLC": "#00a99d", "鉗工": "#e53e3e", "電工": "#f6ad55", "機械": "#3182ce" };
-    const FALLBACK_COLORS = ["#e53e3e", "#dd6b20", "#38a169", "#3182ce", "#805ad5"];
-
+    
     document.addEventListener("DOMContentLoaded", async () => {
       await fetchAllData();
       setupEvents();
@@ -378,27 +394,31 @@
         return data;
     }
 
+    // 🟢 修正：Task CSV 解析邏輯 (修正 Plan/Forecast 欄位對應)
     function parseTaskCsv(text) {
         const lines = text.trim().split(/\r?\n/);
         const data = [];
-        // A:Process, B:Zone, C:Task, D:PlanStart, E:PlanEnd, F:ForecastStart, G:ForecastEnd, H:Owner, I:Status, J:StatusDesc
+        // Google Sheet 欄位對應:
+        // D(3)=Plan Start, E(4)=Plan End
+        // F(5)=Forecast Start, G(6)=Forecast End
+        // H(7)=Owner, I(8)=Status, J(9)=StatusDesc
         for(let i=1; i<lines.length; i++) {
             const cols = lines[i].split(',').map(c => c.replace(/^"|"$/g, '').trim());
             if(cols.length < 3) continue;
 
-            const planStart = new Date(cols[3]);
+            const planStart = new Date(cols[3]); // D欄 (虛線框開始)
             
             data.push({
                 process: cols[0], 
                 zone: cols[1],    
                 task: cols[2],    
                 planStart: isNaN(planStart) ? null : planStart,
-                planEnd: cols[4] ? new Date(cols[4]) : null,
-                forecastStart: cols[5] ? new Date(cols[5]) : null,
-                forecastEnd: cols[6] ? new Date(cols[6]) : null,
+                planEnd: cols[4] ? new Date(cols[4]) : null, // E欄 (虛線框結束)
+                forecastStart: cols[5] ? new Date(cols[5]) : null, // F欄 (實心條開始)
+                forecastEnd: cols[6] ? new Date(cols[6]) : null,   // G欄 (實心條結束)
                 owner: cols[7],
                 status: cols[8],  
-                statusDesc: cols[9] || "", // 新增：狀態描述
+                statusDesc: cols[9] || "",
                 year: planStart.getFullYear() || currentYear
             });
         }
@@ -436,30 +456,34 @@
         renderKpi(mpData);
     }
 
-    // 🟢 總控甘特圖渲染邏輯 (Plan vs Actual)
+    // 🟢 總控甘特圖渲染 (包含責任方欄位)
     function renderTaskGantt(data, year) {
         const container = document.getElementById('taskBody');
         container.innerHTML = "";
         
         data.forEach(task => {
             const row = document.createElement('div');
-            row.style.display = 'flex';
-            row.style.minWidth = '1000px';
-            row.style.borderBottom = '1px solid var(--border-light)';
-            row.style.height = '50px';
+            row.className = 'task-row';
 
-            const meta = document.createElement('div');
-            meta.className = 'task-meta-col';
-            meta.innerHTML = `
+            // 1. Task Info Column (Left)
+            const infoCol = document.createElement('div');
+            infoCol.className = 'task-info-col';
+            infoCol.innerHTML = `
                 <div class="task-meta-title" title="${task.task}">${task.task}</div>
                 <div class="task-meta-sub">
-                    <span style="background:#edf2f7; padding:1px 4px; border-radius:4px;">${task.process}</span>
+                    <span class="task-badge">${task.process}</span>
                     <span>${task.zone}</span>
-                    <span style="color:var(--color-primary)">${task.owner}</span>
                 </div>
             `;
-            row.appendChild(meta);
+            row.appendChild(infoCol);
 
+            // 2. Owner Column (New)
+            const ownerCol = document.createElement('div');
+            ownerCol.className = 'task-owner-col';
+            ownerCol.innerText = task.owner || "-";
+            row.appendChild(ownerCol);
+
+            // 3. Timeline Column
             const timeline = document.createElement('div');
             timeline.className = 'task-timeline-col';
             
@@ -472,15 +496,14 @@
             }
             timeline.appendChild(grid);
 
-            // 1. Plan Bar (虛線框，當背景)
+            // Plan Bar (Dashed Box - Background)
             if(task.planStart && task.planEnd) {
                 const bar = createBar(task.planStart, task.planEnd, year, 'bar-plan');
-                // 加入 Tooltip 讓滑鼠移上去有反應
                 bar.title = `[原定計畫]\n日期: ${task.planStart.toLocaleDateString()} ~ ${task.planEnd.toLocaleDateString()}`;
                 timeline.appendChild(bar);
             }
 
-            // 2. Forecast/Actual Bar (實心條，疊在上面)
+            // Actual Bar (Solid - Foreground)
             if(task.forecastStart && task.forecastEnd) {
                 let statusClass = 'status-future-bar';
                 if(task.status === '進行中') statusClass = 'status-active-bar';
@@ -488,9 +511,8 @@
                 else if(task.status === '卡關') statusClass = 'status-blocked-bar'; 
 
                 const bar = createBar(task.forecastStart, task.forecastEnd, year, `bar-actual ${statusClass}`);
-                // 狀態描述顯示在 Tooltip 中
                 let desc = task.statusDesc ? `\n說明: ${task.statusDesc}` : "";
-                bar.title = `[實際]\n狀態: ${task.status}${desc}\n日期: ${task.forecastStart.toLocaleDateString()} ~ ${task.forecastEnd.toLocaleDateString()}`;
+                bar.title = `[實際/預估]\n狀態: ${task.status}${desc}\n日期: ${task.forecastStart.toLocaleDateString()} ~ ${task.forecastEnd.toLocaleDateString()}`;
                 timeline.appendChild(bar);
             }
 
