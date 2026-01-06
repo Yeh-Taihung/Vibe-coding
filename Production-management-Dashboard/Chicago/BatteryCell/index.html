@@ -60,8 +60,9 @@
         max-width: 1380px; margin: 0 auto; background: var(--bg-body);
     }
     .brand-left { display: flex; align-items: center; gap: 12px; }
-    .logo-area { font-size: 18px; font-weight: 700; color: var(--color-primary); display: flex; align-items: center; gap: 10px; }
-    .logo-img { height: 40px; width: auto; }
+    /* Logo 移除圖片，只留文字 */
+    .logo-area { font-size: 20px; font-weight: 800; color: var(--color-primary); display: flex; align-items: center; gap: 10px; }
+    
     .brand-actions { display: flex; align-items: center; gap: 12px; }
     .action-btn { display: flex; align-items: center; gap: 6px; font-size: 13px; font-weight: 500; padding: 6px 12px; border-radius: 20px; text-decoration: none; border: 1px solid transparent; transition: 0.2s; }
     .btn-sheet { background-color: #e6f4ea; color: #1e8e3e; border: 1px solid #ceead6; }
@@ -124,15 +125,25 @@
     .task-timeline-col { position: relative; flex-grow: 1; }
     .task-bar-container { position: absolute; top: 8px; bottom: 8px; left: 0; right: 0; }
     
-    /* 任務進度條樣式 */
+    /* 任務進度條樣式優化：計畫 vs 實際 */
     .bar-plan {
-        position: absolute; height: 60%; top: 20%; 
-        border: 1px dashed var(--text-muted); background: transparent; opacity: 0.4; border-radius: 4px; z-index: 1;
+        position: absolute; 
+        height: 70%; /* 較高，作為背景框 */
+        top: 15%; 
+        border: 2px dashed #cbd5e0; /* 虛線框 */
+        background: rgba(203, 213, 224, 0.15); /* 極淡的背景 */
+        border-radius: 4px; 
+        z-index: 1;
+        cursor: help; /* 滑鼠移上去變成問號 */
     }
     .bar-actual {
-        position: absolute; height: 40%; top: 30%; 
-        border-radius: 4px; z-index: 2; box-shadow: 0 2px 4px rgba(0,0,0,0.15);
-        display: flex; align-items: center; justify-content: flex-end; padding-right: 5px; font-size: 10px; color: #fff;
+        position: absolute; 
+        height: 40%; /* 較細，作為實際進度 */
+        top: 30%; 
+        border-radius: 3px; 
+        z-index: 2; 
+        box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+        cursor: pointer;
     }
     
     /* 任務狀態顏色 */
@@ -189,16 +200,15 @@
   <div class="brand-bar">
       <div class="brand-left">
         <div class="logo-area">
-          <img src="../../logo.png" alt="Logo" class="logo-img">
-          <div class="brand-title-group">
+          <i class="fa-solid fa-industry"></i> <div class="brand-title-group">
               <div style="line-height:1.2">芝加哥-電芯產線總控看板</div>
-              <div style="font-size:11px; font-weight:400; color:var(--text-muted)">Chicago Battery Cell Master Schedule</div>
+              <div style="font-size:11px; font-weight:400; color:var(--text-muted)">Chicago Battery Cell Master Schedule v1</div>
           </div>
         </div>
       </div>
       
       <div class="brand-actions">
-           <a href="https://docs.google.com/spreadsheets/d/YOUR_SHEET_ID/edit" target="_blank" class="action-btn btn-sheet">
+           <a href="https://docs.google.com/spreadsheets/d/1FJEwp02CBL8A_9WH455RsA1YsuakMCFdtakyesh9i2s/edit" target="_blank" class="action-btn btn-sheet">
             <i class="fa-solid fa-file-pen"></i> 編輯資料
            </a>
            <a href="../index.html" class="action-btn btn-back">
@@ -234,9 +244,10 @@
         <div class="card-header-row">
             <div class="card-title">安裝總控甘特圖 (Master Schedule)</div>
             <div style="font-size:12px; color:var(--text-muted);">
-                <span style="color:#a0aec0">▢ 原定計畫</span> &nbsp;
-                <span style="color:#00a99d">■ 進行中</span> &nbsp;
-                <span style="color:#e53e3e">■ 卡關 (Blocked)</span>
+                <span style="border:1px dashed #aaa; padding:0 4px; border-radius:2px;">▢ 原定計畫</span> &nbsp;
+                <span style="color:#f4d35e">■ 進行中</span> &nbsp;
+                <span style="color:#e53e3e">■ 卡關 (Blocked)</span> &nbsp;
+                <span style="color:#8ba47c">■ 完成</span>
             </div>
         </div>
         
@@ -292,14 +303,13 @@
 
   <script>
     /* =========================================
-       CONFIGURATION (請在此填入 gid)
+       CONFIGURATION 
        ========================================= */
     const BASE_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vSrKQd6NZRtyoDpbIgwFo_fU4Erzd4oTPNlKKlk7oNhsOXRUOSJbm8km2HY76349TypTw_ME98ZLV_J/pub?output=csv";
     
-    // 🔴 請填入你的人力表 gid (通常是 0)
     const MANPOWER_GID = "0"; 
     
-    // 🔴 請填入你的任務表 gid (請去試算表網址看 &gid=xxxx)
+    // 🔴 TaskSchedule GID (你提供的)
     const TASK_GID = "389207647"; 
 
     // Data Stores
@@ -316,7 +326,6 @@
       setupEvents();
     });
 
-    // 🟢 同時讀取兩份 CSV
     async function fetchAllData() {
       try {
         const [resManpower, resTask] = await Promise.all([
@@ -339,7 +348,6 @@
       }
     }
 
-    // 解析人力表 (邏輯同之前)
     function parseManpowerCsv(text) {
         const lines = text.trim().split(/\r?\n/);
         const data = [];
@@ -347,7 +355,6 @@
             const cols = lines[i].split(',').map(c => c.replace(/^"|"$/g, '').trim());
             if(cols.length < 7) continue;
             
-            // Meta Data from Row 1 if needed (Project Start etc.)
             if (cols[10]) { 
                 const d = new Date(cols[10]); 
                 if(!isNaN(d)) {
@@ -371,11 +378,10 @@
         return data;
     }
 
-    // 🟢 解析任務表 (Task Schedule)
     function parseTaskCsv(text) {
         const lines = text.trim().split(/\r?\n/);
         const data = [];
-        // 假設 CSV 順序: Process, Zone, Task, PlanStart, PlanEnd, ForecastStart, ForecastEnd, Owner, Status
+        // A:Process, B:Zone, C:Task, D:PlanStart, E:PlanEnd, F:ForecastStart, G:ForecastEnd, H:Owner, I:Status, J:StatusDesc
         for(let i=1; i<lines.length; i++) {
             const cols = lines[i].split(',').map(c => c.replace(/^"|"$/g, '').trim());
             if(cols.length < 3) continue;
@@ -383,15 +389,16 @@
             const planStart = new Date(cols[3]);
             
             data.push({
-                process: cols[0], // 工序
-                zone: cols[1],    // 區域
-                task: cols[2],    // 任務名稱
+                process: cols[0], 
+                zone: cols[1],    
+                task: cols[2],    
                 planStart: isNaN(planStart) ? null : planStart,
                 planEnd: cols[4] ? new Date(cols[4]) : null,
                 forecastStart: cols[5] ? new Date(cols[5]) : null,
                 forecastEnd: cols[6] ? new Date(cols[6]) : null,
                 owner: cols[7],
-                status: cols[8],  // 未開始, 進行中, 卡關, 完成
+                status: cols[8],  
+                statusDesc: cols[9] || "", // 新增：狀態描述
                 year: planStart.getFullYear() || currentYear
             });
         }
@@ -399,19 +406,16 @@
     }
 
     function initFilters() {
-        // 年份
         const yearSel = document.getElementById('yearSelect');
         const years = [...new Set([...manpowerRecords.map(r=>r.year), ...taskRecords.map(r=>r.year)])].sort((a,b)=>b-a);
         if(years.length === 0) years.push(currentYear);
         yearSel.innerHTML = years.map(y => `<option value="${y}">${y}年</option>`).join('');
         
-        // 人名 (全域)
         const nameSel = document.getElementById('filterNameGlobal');
         [...new Set(manpowerRecords.map(d=>d.name))].sort().forEach(n => {
             nameSel.innerHTML += `<option value="${n}">${n}</option>`;
         });
 
-        // 工序 (任務專用)
         const procSel = document.getElementById('filterProcess');
         [...new Set(taskRecords.map(d=>d.process))].sort().forEach(p => {
             procSel.innerHTML += `<option value="${p}">${p}</option>`;
@@ -423,7 +427,6 @@
         const filterName = document.getElementById('filterNameGlobal').value;
         const filterProc = document.getElementById('filterProcess').value;
 
-        // 1. Filter Data
         const mpData = manpowerRecords.filter(d => d.year == year && (filterName === "" || d.name === filterName));
         const tkData = taskRecords.filter(d => d.year == year && (filterProc === "" || d.process === filterProc));
 
@@ -433,12 +436,11 @@
         renderKpi(mpData);
     }
 
-    // 🟢 渲染總控甘特圖
+    // 🟢 總控甘特圖渲染邏輯 (Plan vs Actual)
     function renderTaskGantt(data, year) {
         const container = document.getElementById('taskBody');
         container.innerHTML = "";
         
-        // Group by Process -> Zone
         data.forEach(task => {
             const row = document.createElement('div');
             row.style.display = 'flex';
@@ -446,7 +448,6 @@
             row.style.borderBottom = '1px solid var(--border-light)';
             row.style.height = '50px';
 
-            // Left Meta Info
             const meta = document.createElement('div');
             meta.className = 'task-meta-col';
             meta.innerHTML = `
@@ -459,11 +460,9 @@
             `;
             row.appendChild(meta);
 
-            // Right Timeline
             const timeline = document.createElement('div');
             timeline.className = 'task-timeline-col';
             
-            // Add Grid Lines
             const grid = document.createElement('div');
             grid.className = 'grid-lines';
             for(let i=0; i<12; i++) {
@@ -473,21 +472,25 @@
             }
             timeline.appendChild(grid);
 
-            // Draw Plan Bar (Hollow/Gray)
+            // 1. Plan Bar (虛線框，當背景)
             if(task.planStart && task.planEnd) {
                 const bar = createBar(task.planStart, task.planEnd, year, 'bar-plan');
+                // 加入 Tooltip 讓滑鼠移上去有反應
+                bar.title = `[原定計畫]\n日期: ${task.planStart.toLocaleDateString()} ~ ${task.planEnd.toLocaleDateString()}`;
                 timeline.appendChild(bar);
             }
 
-            // Draw Forecast/Actual Bar (Colored)
+            // 2. Forecast/Actual Bar (實心條，疊在上面)
             if(task.forecastStart && task.forecastEnd) {
                 let statusClass = 'status-future-bar';
                 if(task.status === '進行中') statusClass = 'status-active-bar';
                 else if(task.status === '完成') statusClass = 'status-done-bar';
-                else if(task.status === '卡關') statusClass = 'status-blocked-bar'; // 🔴 紅色卡關
+                else if(task.status === '卡關') statusClass = 'status-blocked-bar'; 
 
                 const bar = createBar(task.forecastStart, task.forecastEnd, year, `bar-actual ${statusClass}`);
-                bar.title = `${task.task}\n狀態: ${task.status}\n預估: ${task.forecastStart.toLocaleDateString()} - ${task.forecastEnd.toLocaleDateString()}`;
+                // 狀態描述顯示在 Tooltip 中
+                let desc = task.statusDesc ? `\n說明: ${task.statusDesc}` : "";
+                bar.title = `[實際/預估]\n狀態: ${task.status}${desc}\n日期: ${task.forecastStart.toLocaleDateString()} ~ ${task.forecastEnd.toLocaleDateString()}`;
                 timeline.appendChild(bar);
             }
 
@@ -501,7 +504,7 @@
         div.className = className;
         
         const yearStart = new Date(year, 0, 1);
-        const totalDays = 365; // Simplify
+        const totalDays = 365; 
         const startDay = Math.floor((start - yearStart) / 86400000);
         const duration = Math.floor((end - start) / 86400000);
 
@@ -513,12 +516,10 @@
         return div;
     }
 
-    // 渲染人力甘特圖 (簡化版)
     function renderManpowerGantt(data, year) {
         const container = document.getElementById('timelineBody');
         container.innerHTML = "";
         
-        // Group by Name
         const groups = {};
         data.forEach(d => { if(!groups[d.name]) groups[d.name] = []; groups[d.name].push(d); });
 
@@ -530,13 +531,11 @@
             
             const bars = document.createElement('div');
             bars.className = 'timeline-bars-container';
-            // Grid
             for(let i=0; i<12; i++) {
                 const line = document.createElement('div');
                 line.className = 'grid-line';
                 bars.appendChild(line);
             }
-            // Today Line
             if(year == TODAY.getFullYear()) {
                 const line = document.createElement('div');
                 line.className = 'today-line';
@@ -548,7 +547,7 @@
             records.forEach(r => {
                 const bar = document.createElement('div');
                 bar.className = 'timeline-item';
-                bar.style.backgroundColor = r.actualLeaveDate ? '#cbd5e0' : '#00a99d'; // 灰 or 綠
+                bar.style.backgroundColor = r.actualLeaveDate ? '#cbd5e0' : '#00a99d'; 
                 
                 const end = r.actualLeaveDate || (r.arrivalDate > TODAY ? new Date(year,11,31) : TODAY);
                 const startDay = Math.floor((r.arrivalDate - new Date(year,0,1))/86400000);
@@ -569,7 +568,6 @@
         data.sort((a,b) => a.arrivalDate - b.arrivalDate).forEach(d => {
             let statusBadge = d.actualLeaveDate ? '<span class="status-badge badge-past">已離崗</span>' : '<span class="status-badge badge-active">進行中</span>';
             
-            // Visa Check
             let visaHtml = '<span class="tag-expired">未輸入</span>';
             if(d.visaExpiry && !isNaN(d.visaExpiry)) {
                 const days = Math.ceil((d.visaExpiry - TODAY)/86400000);
@@ -578,14 +576,12 @@
                 else visaHtml = '<span class="tag-normal">正常</span>';
             }
 
-            // Plan Leave Countdown
             let planHtml = '-';
             if(d.plannedLeaveDate) {
                 const diff = Math.ceil((d.plannedLeaveDate - TODAY)/86400000);
                 planHtml = `<div class="leave-info"><span class="leave-date">${d.plannedLeaveDate.toLocaleDateString()}</span><span class="leave-countdown">剩 ${diff} 天</span></div>`;
             }
 
-            // Actual Work Days
             let worked = 0;
             if(d.arrivalDate <= TODAY) {
                 const end = d.actualLeaveDate || TODAY;
