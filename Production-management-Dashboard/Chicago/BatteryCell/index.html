@@ -2,7 +2,7 @@
 <html lang="zh-Hant">
 <head>
   <meta charset="UTF-8" />
-  <title>芝加哥-電芯產線總控看板 v3 | Cleaner UI</title>
+  <title>芝加哥-電芯產線總控看板 v33 | Timeline Fixed</title>
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" />
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
@@ -114,96 +114,90 @@
     .task-gantt-wrapper { overflow-x: auto; border: 1px solid var(--border-light); border-radius: 12px; }
     .task-gantt-table { width: 100%; min-width: 1000px; border-collapse: collapse; }
     
-    /* Gantt Header Structure */
+    :root {
+        --w-process: 80px;
+        --w-task: 160px;
+        --w-owner: 80px;
+    }
+
     .gantt-header-row { display: flex; background: #f7fafc; border-bottom: 1px solid var(--border-light); height: 36px; min-width: 1000px; }
-    .gh-info { width: 220px; border-right: 1px solid var(--border-light); display: flex; align-items: center; justify-content: center; font-size: 12px; color: var(--text-muted); flex-shrink: 0; position: sticky; left: 0; background: #f7fafc; z-index: 11; font-weight: 600;}
-    .gh-owner { width: 80px; border-right: 2px solid var(--border-light); display: flex; align-items: center; justify-content: center; font-size: 12px; color: var(--text-muted); flex-shrink: 0; position: sticky; left: 220px; background: #f7fafc; z-index: 11; font-weight: 600;}
+    
+    .sticky-col {
+        position: sticky; background: #f7fafc; z-index: 11; 
+        display: flex; align-items: center; justify-content: center; 
+        font-size: 12px; color: var(--text-muted); font-weight: 600;
+        border-right: 1px solid var(--border-light); flex-shrink: 0;
+    }
+    
+    .gh-process { width: var(--w-process); left: 0; }
+    .gh-task    { width: var(--w-task); left: var(--w-process); justify-content: flex-start; padding-left: 12px;}
+    .gh-owner   { width: var(--w-owner); left: calc(var(--w-process) + var(--w-task)); border-right: 2px solid var(--border-light); }
     
     .gantt-months { flex-grow: 1; display: grid; grid-template-columns: repeat(12, 1fr); position: relative;}
     .gantt-month { display: flex; align-items: center; justify-content: center; font-size: 12px; color: var(--text-muted); border-right: 1px solid var(--border-light); }
 
-    /* Gantt Body Row Structure */
     .task-row { display: flex; border-bottom: 1px solid var(--border-light); height: 50px; position: relative; min-width: 1000px; }
     
-    .task-info-col { 
-        width: 220px; position: sticky; left: 0; background: var(--bg-card); z-index: 10; 
-        border-right: 1px solid var(--border-light); padding: 0 12px; display: flex; flex-direction: column; justify-content: center; flex-shrink: 0;
-    }
-    
-    .task-owner-col {
-        width: 80px; position: sticky; left: 220px; background: var(--bg-card); z-index: 10;
-        border-right: 2px solid var(--border-light); display: flex; align-items: center; justify-content: center; font-weight: 700; color: var(--color-primary); font-size: 13px; flex-shrink: 0;
+    .task-col {
+        position: sticky; background: var(--bg-card); z-index: 10;
+        border-right: 1px solid var(--border-light); display: flex;
+        flex-direction: column; justify-content: center; flex-shrink: 0; font-size: 13px;
     }
 
+    .col-process { width: var(--w-process); left: 0; align-items: center; font-weight: 700; color: var(--text-main); }
+    .col-task { width: var(--w-task); left: var(--w-process); align-items: flex-start; padding-left: 12px; font-weight: 600; overflow: hidden; white-space: nowrap; text-overflow: ellipsis;}
+    .col-owner { width: var(--w-owner); left: calc(var(--w-process) + var(--w-task)); align-items: center; font-weight: 700; color: var(--color-primary); border-right: 2px solid var(--border-light);}
+
+    .task-meta-sub { font-size: 11px; color: var(--text-muted); font-weight: 400; margin-top: 2px;}
     .task-timeline-col { position: relative; flex-grow: 1; }
     
-    .task-meta-title { font-weight: 600; font-size: 13px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-    .task-meta-sub { font-size: 11px; color: var(--text-muted); display: flex; gap: 8px; margin-top: 2px; }
-    .task-badge { background: #edf2f7; padding: 1px 6px; border-radius: 4px; font-size: 10px; }
-
-    /* 任務進度條樣式 */
-    .bar-plan {
-        position: absolute; 
-        height: 70%; 
-        top: 15%; 
-        border: 2px dashed #cbd5e0; 
-        background: rgba(203, 213, 224, 0.15); 
-        border-radius: 4px; 
-        z-index: 1;
-        cursor: help; 
-    }
-    .bar-actual {
-        position: absolute; 
-        height: 40%; 
-        top: 30%; 
-        border-radius: 3px; 
-        z-index: 2; 
-        box-shadow: 0 2px 4px rgba(0,0,0,0.2);
-        cursor: pointer;
-    }
+    .bar-plan { position: absolute; height: 70%; top: 15%; border: 2px dashed #cbd5e0; background: rgba(203, 213, 224, 0.15); border-radius: 4px; z-index: 1; cursor: help; }
+    .bar-actual { position: absolute; height: 40%; top: 30%; border-radius: 3px; z-index: 2; box-shadow: 0 2px 4px rgba(0,0,0,0.2); cursor: pointer; }
     
-    /* 任務狀態顏色 */
-    .status-done-bar { background: #8ba47c; } /* 完成-綠 */
-    .status-active-bar { background: #f4d35e; } /* 進行中-黃 */
-    .status-blocked-bar { background: #e53e3e; } /* 卡關-紅 */
-    .status-future-bar { background: #a0aec0; } /* 未開始-灰 */
+    .status-done-bar { background: #8ba47c; } 
+    .status-active-bar { background: #f4d35e; } 
+    .status-blocked-bar { background: #e53e3e; } 
+    .status-future-bar { background: #a0aec0; } 
 
-    /* 🟢 Today Line (Vertical) */
-    .today-line { 
-        position: absolute; top: 0; bottom: 0; width: 0px; 
-        border-left: 2px dashed var(--color-accent); z-index: 15; pointer-events: none; 
-    }
-    /* 🔴 標籤預設隱藏 */
+    .today-line { position: absolute; top: 0; bottom: 0; width: 0px; border-left: 2px dashed var(--color-accent); z-index: 15; pointer-events: none; }
     .today-line::after {
-        content: 'Today'; 
-        position: absolute; 
-        left: 50%; 
-        transform: translateX(-50%);
-        background-color: var(--color-accent); 
-        color: white; 
-        padding: 2px 6px;
-        border-radius: 4px; 
-        font-size: 10px; 
-        font-weight: bold; 
-        white-space: nowrap;
-        display: none; /* 預設不顯示 */
+        content: 'Today'; position: absolute; left: 50%; transform: translateX(-50%);
+        background-color: var(--color-accent); color: white; padding: 2px 6px;
+        border-radius: 4px; font-size: 10px; font-weight: bold; white-space: nowrap; display: none;
     }
-
-    /* 🔴 僅在每個表格的最後一行顯示標籤 */
     #taskBody .task-row:last-child .today-line::after,
-    #timelineBody .timeline-row:last-child .today-line::after {
-        display: block;
-        top: auto;
-        bottom: 0; /* 顯示在底部 */
-    }
+    #timelineBody .timeline-row:last-child .today-line::after { display: block; top: auto; bottom: 0; }
 
     /* --------- Manpower Common Styles --------- */
     .timeline-wrapper { width: 100%; overflow-x: auto; border: 1px solid var(--border-light); border-radius: 12px; background: var(--bg-card); }
-    .timeline-grid-layout { display: grid; grid-template-columns: 100px repeat(12, 1fr); min-width: 800px; }
+    .timeline-grid-layout { display: grid; grid-template-columns: 140px repeat(12, 1fr); min-width: 800px; } /* 🟢 左側寬度改為 140px */
     .timeline-header { border-bottom: 1px solid var(--border-light); background: var(--color-primary-light); font-size: 12px; font-weight: 600; }
     .timeline-header-cell { padding: 10px 4px; text-align: center; border-right: 1px dashed var(--border-light); }
-    .timeline-row { border-bottom: 1px solid var(--border-light); position: relative; height: 44px; display: grid; grid-template-columns: 100px repeat(12, 1fr); }
-    .timeline-name-col { padding: 0 10px; display: flex; align-items: center; justify-content: flex-end; font-size: 13px; font-weight: 500; border-right: 1px solid var(--border-light); background: var(--bg-card); z-index: 2; }
+    
+    .timeline-row { border-bottom: 1px solid var(--border-light); position: relative; height: 44px; display: grid; grid-template-columns: 140px repeat(12, 1fr); }
+    
+    /* 🟢 修正：排版優化 (名字左，工種右) */
+    .timeline-name-col { 
+        padding: 0 12px; 
+        display: flex; 
+        align-items: center; 
+        justify-content: space-between; /* 左右對齊 */
+        font-size: 13px; 
+        font-weight: 600; 
+        color: var(--text-main);
+        border-right: 1px solid var(--border-light); 
+        background: var(--bg-card); 
+        z-index: 2; 
+    }
+    .timeline-role-tag {
+        font-size: 11px;
+        color: var(--text-muted);
+        font-weight: 400;
+        background: #f7fafc;
+        padding: 1px 6px;
+        border-radius: 4px;
+    }
+
     .timeline-bars-container { grid-column: 2 / span 12; position: relative; height: 100%; }
     .timeline-item { position: absolute; top: 10px; bottom: 10px; border-radius: 4px; z-index: 5; opacity: 0.9; cursor: help; }
     .grid-lines { position: absolute; inset: 0; display: grid; grid-template-columns: repeat(12, 1fr); pointer-events: none; z-index: 0; }
@@ -233,10 +227,6 @@
     @media (max-width: 768px) {
         .kpi-bar { grid-template-columns: 1fr; }
         .controls-grid { gap: 10px; }
-        .task-info-col { width: 150px; }
-        .gh-info { width: 150px; }
-        .task-owner-col { left: 150px; }
-        .gh-owner { left: 150px; }
     }
   </style>
 </head>
@@ -248,17 +238,17 @@
           <i class="fa-solid fa-industry"></i> 
           <div class="brand-title-group">
               <div style="line-height:1.2">芝加哥-電芯產線總控看板</div>
-              <div style="font-size:11px; font-weight:400; color:var(--text-muted)">Chicago Battery Cell Master Schedule v3</div>
+              <div style="font-size:11px; font-weight:400; color:var(--text-muted)">Chicago Battery Cell Master Schedule v33</div>
           </div>
         </div>
       </div>
-       
+      
       <div class="brand-actions">
-           <a href="https://docs.google.com/spreadsheets/d/1HFUFC8GZd08h4dcmKPJTp-q5ogtr-bmF4hovGTnAHmo/edit?gid=0#gid=0" target="_blank" class="action-btn btn-sheet">
+           <a href="https://docs.google.com/spreadsheets/d/1FJEwp02CBL8A_9WH455RsA1YsuakMCFdtakyesh9i2s/edit" target="_blank" class="action-btn btn-sheet">
             <i class="fa-solid fa-file-pen"></i> 編輯資料
            </a>
            <a href="../index.html" class="action-btn btn-back">
-             <i class="fa-solid fa-house"></i> 回芝加哥生產基地
+             <i class="fa-solid fa-arrow-left"></i> 回芝加哥選單
            </a>
            <button class="theme-toggle" id="themeBtn">◐</button>
       </div>
@@ -299,8 +289,10 @@
         
         <div class="task-gantt-wrapper">
             <div class="gantt-header-row">
-                <div class="gh-info">任務 / 區域</div>
-                <div class="gh-owner">責任方</div> <div class="gantt-months">
+                <div class="sticky-col gh-process">工序</div>
+                <div class="sticky-col gh-task">任務名稱</div>
+                <div class="sticky-col gh-owner">責任方</div>
+                <div class="gantt-months">
                     <div class="gantt-month">1月</div><div class="gantt-month">2月</div><div class="gantt-month">3月</div>
                     <div class="gantt-month">4月</div><div class="gantt-month">5月</div><div class="gantt-month">6月</div>
                     <div class="gantt-month">7月</div><div class="gantt-month">8月</div><div class="gantt-month">9月</div>
@@ -510,7 +502,6 @@
                 grid.appendChild(line);
             }
             
-            // Today Line
             if(year == TODAY.getFullYear()) {
                 const todayLine = document.createElement('div');
                 todayLine.className = 'today-line';
@@ -521,14 +512,12 @@
             
             timeline.appendChild(grid);
 
-            // Plan Bar
             if(task.planStart && task.planEnd) {
                 const bar = createBar(task.planStart, task.planEnd, year, 'bar-plan');
                 bar.title = `[原定計畫]\n日期: ${task.planStart.toLocaleDateString()} ~ ${task.planEnd.toLocaleDateString()}`;
                 timeline.appendChild(bar);
             }
 
-            // Actual Bar
             if(task.forecastStart) {
                 const endDate = task.forecastEnd || TODAY;
                 
@@ -569,6 +558,7 @@
         return div;
     }
 
+    // 🟢 修正：人力甘特圖渲染 (時間軸邏輯 + 排版)
     function renderManpowerGantt(data, year) {
         const container = document.getElementById('timelineBody');
         container.innerHTML = "";
@@ -580,7 +570,13 @@
             const records = groups[name];
             const row = document.createElement('div');
             row.className = 'timeline-row';
-            row.innerHTML = `<div class="timeline-name-col">${name} <br><span style="font-size:10px; color:#aaa">${records[0].role}</span></div>`;
+            
+            // 🟢 優化：名字左，工種右
+            row.innerHTML = `
+                <div class="timeline-name-col">
+                    <span>${name}</span>
+                    <span class="timeline-role-tag">${records[0].role}</span>
+                </div>`;
             
             const bars = document.createElement('div');
             bars.className = 'timeline-bars-container';
@@ -598,16 +594,31 @@
             }
 
             records.forEach(r => {
+                // 🟢 邏輯修正：只渲染當前年份的區間
+                const yearStart = new Date(year, 0, 1);
+                const yearEnd = new Date(year, 11, 31);
+                
+                const actualEnd = r.actualLeaveDate || (r.arrivalDate > TODAY ? yearEnd : TODAY);
+                
+                // 如果任務完全不在這一年，跳過
+                if (r.arrivalDate > yearEnd || actualEnd < yearStart) return;
+
+                const start = r.arrivalDate < yearStart ? yearStart : r.arrivalDate;
+                const end = actualEnd > yearEnd ? yearEnd : actualEnd;
+
+                const startDay = Math.floor((start - yearStart) / 86400000);
+                const dur = Math.floor((end - start) / 86400000);
+                
                 const bar = document.createElement('div');
                 bar.className = 'timeline-item';
                 bar.style.backgroundColor = r.actualLeaveDate ? '#cbd5e0' : '#00a99d'; 
                 
-                const end = r.actualLeaveDate || (r.arrivalDate > TODAY ? new Date(year,11,31) : TODAY);
-                const startDay = Math.floor((r.arrivalDate - new Date(year,0,1))/86400000);
-                const dur = Math.floor((end - r.arrivalDate)/86400000);
-                
                 bar.style.left = `${(startDay/365)*100}%`;
-                bar.style.width = `${(dur/365)*100}%`;
+                bar.style.width = `${Math.max((dur/365)*100, 0.5)}%`;
+                
+                // Tooltip
+                bar.title = `${name}\n日期: ${r.arrivalDate.toLocaleDateString()} ~ ${actualEnd.toLocaleDateString()}`;
+                
                 bars.appendChild(bar);
             });
             row.appendChild(bars);
