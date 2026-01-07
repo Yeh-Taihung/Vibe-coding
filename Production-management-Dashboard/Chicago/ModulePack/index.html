@@ -139,7 +139,8 @@
         content: ''; position: absolute; left: 0; top: 0; bottom: 0; width: 4px;
         background: var(--kpi-color);
     }
-    .kpi-title { font-size: 12px; color: var(--text-muted); font-weight: 500; margin-bottom: 2px; }
+    .kpi-title { font-size: 12px; color: var(--text-muted); font-weight: 500; margin-bottom: 2px; display: flex; align-items: center; }
+    .kpi-title i { margin-right: 6px; font-size: 14px; }
     .kpi-val { font-size: 18px; font-weight: 700; color: var(--text-main); }
 
     /* --------- Content --------- */
@@ -150,7 +151,8 @@
         padding: 20px; margin-bottom: 20px; box-shadow: var(--shadow-card); border: none;
     }
     .card-header-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; flex-wrap: wrap; gap:10px; }
-    .card-title { font-size: 16px; font-weight: 700; color: var(--text-main); }
+    .card-title { font-size: 16px; font-weight: 700; color: var(--text-main); display: flex; align-items: center; }
+    .card-title i { margin-right: 10px; color: var(--color-primary); }
     
     .project-info-bar { 
         display: flex; flex-wrap: wrap; background: var(--bg-card);
@@ -257,9 +259,9 @@
   <div class="brand-bar">
       <div class="brand-left">
           <div class="logo-area">
-            <i class="fa-solid fa-industry"></i>
-              <div class="brand-title-group"></div>
-                  <div style="line-height:1.2">芝加哥-Module Pack看板</div>
+              <img src="../../logo.png" alt="Mr.Yes Logo" class="logo-img">
+              <div>
+                  <div style="line-height:1.2">芝加哥項目現場人力看板</div>
                   <div style="font-size:11px; font-weight:400; color:var(--text-muted)">Project Field Manpower Dashboard v31</div>
               </div>
           </div>
@@ -337,7 +339,7 @@
 
     <section class="card">
       <div class="card-header-row">
-        <div class="card-title" id="title-role">工種人力分布</div>
+        <div class="card-title" id="title-role"><i class="fa-solid fa-chart-pie"></i> 工種人力分布</div>
       </div>
       <div class="chart-wrapper">
         <canvas id="roleChart"></canvas>
@@ -346,7 +348,7 @@
 
     <section class="card">
       <div class="card-header-row">
-        <div class="card-title" id="title-gantt">工作甘特圖</div>
+        <div class="card-title" id="title-gantt"><i class="fa-solid fa-stream"></i> 工作甘特圖</div>
         <div style="display:flex; align-items:center; gap:10px;">
             <div class="gantt-legend" style="display:none;" id="desktopLegend">
                 <div class="legend-item"><span class="legend-dot" style="background:var(--status-neutral)"></span>已離崗</div>
@@ -388,14 +390,17 @@
     </section>
 
     <section class="card">
-      <div class="card-title" id="title-list" style="margin-bottom: 20px;">詳細列表</div>
+      <div class="card-title" id="title-list" style="margin-bottom: 20px;"><i class="fa-solid fa-list-ul"></i> 詳細列表</div>
       <div class="table-responsive">
         <table>
           <thead>
             <tr>
               <th>產線</th><th>姓名</th><th>狀態</th><th>供應商</th><th>工種</th><th>職責</th><th>簽證</th>
               <th>到崗日</th>
-              <th>預計離崗</th> <th>實際離崗</th> <th>已工作</th>   <th>簽證狀態</th>
+              <th>預計離崗</th>
+              <th>實際離崗</th>
+              <th>已工作</th>
+              <th>簽證狀態</th>
             </tr>
           </thead>
           <tbody id="tableBody"></tbody>
@@ -462,9 +467,6 @@
       for (let i = 1; i < lines.length; i++) {
           const cols = lines[i].split(',').map(c => c.replace(/^"|"$/g, '').trim());
           
-          // Meta Data (因為插入了1欄，所以Meta索引+1)
-          // 0:Supplier, 1:Name, 2:Role, 3:Duty, 4:Line, 5:VisaType, 6:Arrival
-          // 7:PlannedLeave(新), 8:ActualLeave(原7), 9:VisaExp(原8), 10:ProjStart(原9)...
           if (!foundMeta && cols.length >= 11 && cols[10]) {
               const potentialDate = new Date(cols[10]);
               if (!isNaN(potentialDate.getTime())) {
@@ -494,9 +496,9 @@
             supplier: cols[0], name: cols[1], role: cols[2], duty: cols[3] || "-", 
             line: cols[4], visaType: cols[5] || "-", 
             arrivalDate: arrival,
-            plannedLeaveDate: plannedLeave, // 🟢 新增
-            actualLeaveDate: actualLeave,   // 🟢 修改名稱
-            leaveDate: actualLeave, // 為了相容舊邏輯，保留 leaveDate 指向實際離開日
+            plannedLeaveDate: plannedLeave,
+            actualLeaveDate: actualLeave,
+            leaveDate: actualLeave,
             visaExpiry: visaDate,
             year: arrival.getFullYear()
           });
@@ -575,16 +577,17 @@
           return d.visaExpiry < TODAY;
       }).length;
 
+      // Added icons to KPI titles
       const kpis = [
-        { title: "目前在崗 (篩選後)", val: `${activeCount} <span style='font-size:12px'>人</span>`, color: "var(--status-success)" },
-        { title: "簽證即將到期", val: `${visaWarningCount} <span style='font-size:12px'>人</span>`, color: "var(--status-warning)" },
-        { title: "簽證已過期 / 異常", val: `${visaExpiredCount} <span style='font-size:12px'>人</span>`, color: "var(--status-danger)" }
+        { title: "<i class='fa-solid fa-user-check'></i> 目前在崗 (篩選後)", val: `${activeCount} <span style='font-size:12px'>人</span>`, color: "var(--status-success)" },
+        { title: "<i class='fa-solid fa-triangle-exclamation'></i> 簽證即將到期", val: `${visaWarningCount} <span style='font-size:12px'>人</span>`, color: "var(--status-warning)" },
+        { title: "<i class='fa-solid fa-circle-exclamation'></i> 簽證已過期 / 異常", val: `${visaExpiredCount} <span style='font-size:12px'>人</span>`, color: "var(--status-danger)" }
       ];
 
       kpis.forEach(k => {
         container.innerHTML += `
           <div class="kpi-card" style="--kpi-color: ${k.color}">
-            <div class="kpi-info"><div class="kpi-title">${k.title}</div><div class="kpi-val" style="color:${k.color}">${k.val}</div></div>
+            <div class="kpi-info"><div class="kpi-title" style="color:${k.color}">${k.title}</div><div class="kpi-val" style="color:${k.color}">${k.val}</div></div>
           </div>`;
       });
     }
@@ -713,7 +716,7 @@
             statusHtml = '<span class="status-badge badge-active">進行中</span>';
         }
 
-        // 🟢 Planned Leave Calculation (Countdown)
+        // Planned Leave Calculation (Countdown)
         let plannedLeaveHtml = '-';
         if (d.plannedLeaveDate) {
             if (d.actualLeaveDate) {
@@ -734,7 +737,7 @@
             }
         }
 
-        // 🟢 Actual Work Days Calculation
+        // Actual Work Days Calculation
         let workedDays = 0;
         if (d.arrivalDate <= TODAY) {
             const effectiveEnd = (d.actualLeaveDate && d.actualLeaveDate < TODAY) ? d.actualLeaveDate : TODAY;
