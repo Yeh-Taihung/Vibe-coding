@@ -2,7 +2,7 @@
 <html lang="zh-Hant">
 <head>
   <meta charset="UTF-8" />
-  <title>芝加哥-Module Pack看板 v55 | Final Link Fix</title>
+  <title>芝加哥-Module Pack C&D線 看板 v32 | UI Fixed</title>
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" />
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
@@ -58,19 +58,41 @@
     .brand-bar {
         padding: 12px 16px;
         display: flex;
-        justify-content: space-between;
+        justify-content: space-between; /* 左右推開 */
         align-items: center;
         max-width: 1280px;
         margin: 0 auto;
         background: var(--bg-body);
-        flex-wrap: nowrap; white-space: nowrap;
+        flex-wrap: nowrap; /* 🔴 關鍵修正：強制不換行 */
+        white-space: nowrap; /* 🔴 關鍵修正：防止文字擠壓換行 */
     }
 
-    .brand-left { display: flex; align-items: center; gap: 12px; flex-grow: 1; overflow: hidden; }
-    .logo-area { font-size: 18px; font-weight: 700; color: var(--color-primary); display: flex; align-items: center; gap: 10px; }
-    .logo-img { height: 40px; width: auto; object-fit: contain; }
+    .brand-left { 
+        display: flex; 
+        align-items: center; 
+        gap: 12px; 
+        flex-grow: 1; /* 讓左側佔據剩餘空間 */
+        overflow: hidden; /* 防止左側內容過長撐壞版面 */
+    }
+
+    .logo-area { 
+        font-size: 18px; 
+        font-weight: 700; 
+        color: var(--color-primary); 
+        display: flex; 
+        align-items: center; 
+        gap: 10px;
+    }
     
-    .brand-actions { display: flex; align-items: center; gap: 12px; flex-shrink: 0; }
+    .logo-img { height: 40px; width: auto; object-fit: contain; }
+
+    .brand-actions { 
+        display: flex; 
+        align-items: center; 
+        gap: 12px; 
+        flex-shrink: 0; /* 🔴 關鍵修正：確保右側按鈕區塊不會被壓縮 */
+    }
+
     .action-btn {
         display: flex; align-items: center; gap: 6px;
         font-size: 13px; font-weight: 500; padding: 6px 12px;
@@ -89,7 +111,7 @@
         cursor: pointer; font-size: 12px; font-weight: 600;
     }
 
-    /* --------- Controls --------- */
+    /* --------- Controls (Sticky) --------- */
     .sticky-controls-wrapper {
         position: sticky; top: 0; z-index: 1000;
         background: rgba(255, 255, 255, 0.95);
@@ -105,6 +127,11 @@
         grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); 
         gap: 8px; align-items: center;
     }
+    @media (max-width: 900px) {
+        .controls-grid { grid-template-columns: repeat(2, 1fr); }
+        .controls-grid .search-group { grid-column: 1 / -1; }
+    }
+
     .filter-group select, .filter-group input { 
         padding: 0 12px; border-radius: var(--radius-input); 
         border: 1px solid var(--border-light); background: var(--bg-card); 
@@ -125,40 +152,52 @@
         box-shadow: 0 2px 4px rgba(0,0,0,0.02); border: 1px solid var(--border-light);
         position: relative; overflow: hidden;
     }
-    .kpi-card::before { content: ''; position: absolute; left: 0; top: 0; bottom: 0; width: 4px; background: var(--kpi-color); }
-    .kpi-title { font-size: 12px; color: var(--text-muted); font-weight: 500; margin-bottom: 2px; display: flex; align-items: center; gap: 6px; }
+    .kpi-card::before {
+        content: ''; position: absolute; left: 0; top: 0; bottom: 0; width: 4px;
+        background: var(--kpi-color);
+    }
+    .kpi-title { font-size: 12px; color: var(--text-muted); font-weight: 500; margin-bottom: 2px; display: flex; align-items: center; }
+    .kpi-title i { margin-right: 6px; font-size: 14px; }
     .kpi-val { font-size: 18px; font-weight: 700; color: var(--text-main); }
 
     /* --------- Content --------- */
     .container { max-width: 1280px; margin: 16px auto 60px; padding: 0 16px; }
-    .card { background: var(--bg-card); border-radius: var(--radius-card); padding: 20px; margin-bottom: 20px; box-shadow: var(--shadow-card); border: 1px solid var(--border-light); }
+    
+    .card { 
+        background: var(--bg-card); border-radius: var(--radius-card); 
+        padding: 20px; margin-bottom: 20px; box-shadow: var(--shadow-card); border: none;
+    }
     .card-header-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; flex-wrap: wrap; gap:10px; }
-    .card-title { font-size: 16px; font-weight: 700; color: var(--text-main); display: flex; align-items: center; gap: 8px; }
-    .card-title::before { content: ''; display: block; width: 4px; height: 18px; background: var(--color-primary); border-radius: 2px; }
+    .card-title { font-size: 16px; font-weight: 700; color: var(--text-main); display: flex; align-items: center; }
+    .card-title i { margin-right: 10px; color: var(--color-primary); }
     
     .project-info-bar { 
         display: flex; flex-wrap: wrap; background: var(--bg-card);
         border: 1px solid var(--border-light); border-radius: var(--radius-card); 
         margin-bottom: 20px; overflow: hidden; box-shadow: var(--shadow-card);
     }
-    .p-item { flex: 1; min-width: 140px; padding: 16px; border-right: 1px solid var(--border-light); }
+    .p-item { 
+        flex: 1; min-width: 140px; padding: 16px; 
+        display: flex; flex-direction: column; justify-content: center;
+        border-right: 1px solid var(--border-light);
+    }
     .p-item:last-child { border-right: none; }
     .p-label { font-size: 10px; color: var(--text-muted); font-weight: 600; text-transform: uppercase; margin-bottom: 4px; }
     .p-value { font-size: 15px; font-weight: 700; color: var(--text-main); }
 
     .chart-wrapper { position: relative; height: 300px; width: 100%; }
 
-    /* --------- Gantt --------- */
+    /* Gantt */
     .gantt-scroll-wrapper {
         width: 100%; overflow-x: auto; border: 1px solid var(--border-light);
         border-radius: 12px; background: var(--bg-card); position: relative;
     }
-    .gantt-min-width-container { min-width: 800px; position: relative; padding-bottom: 20px; }
+    .gantt-min-width-container { min-width: 800px; position: relative; }
     
     .sticky-col-header, .sticky-col-cell {
         position: sticky; left: 0; z-index: 20; background: var(--bg-card);
         border-right: 2px solid var(--border-light); box-shadow: 2px 0 5px rgba(0,0,0,0.05);
-        width: 140px; flex-shrink: 0;
+        width: 120px; flex-shrink: 0;
     }
     [data-theme="dark"] .sticky-col-header, [data-theme="dark"] .sticky-col-cell { background: #2d3748; }
 
@@ -172,7 +211,7 @@
     .person-role { font-size: 10px; color: var(--text-muted); }
     .person-bars-area { flex-grow: 1; position: relative; }
 
-    .grid-bg-layer { position: absolute; top: 0; left: 140px; right: 0; bottom: 0; display: grid; grid-template-columns: repeat(12, 1fr); pointer-events: none; z-index: 1; }
+    .grid-bg-layer { position: absolute; top: 0; left: 120px; right: 0; bottom: 0; display: grid; grid-template-columns: repeat(12, 1fr); pointer-events: none; z-index: 1; }
     .grid-line { border-right: 1px dashed var(--border-light); height: 100%; }
     
     /* Today Line */
@@ -181,12 +220,10 @@
         border-left: 2px dashed var(--color-accent); z-index: 15; pointer-events: none; 
     }
     .today-line::after {
-        content: 'Today'; position: absolute; top: 100%; left: 50%; transform: translateX(-50%);
+        content: 'Today'; position: absolute; top: 0; left: 50%; transform: translateX(-50%);
         background-color: var(--color-accent); color: white; padding: 2px 6px;
-        border-radius: 4px; font-size: 10px; font-weight: bold; white-space: nowrap;
-        z-index: 20; display: none;
+        border-radius: 0 0 4px 4px; font-size: 10px; font-weight: bold; white-space: nowrap;
     }
-    #timelineBody .person-row:last-child .today-line::after { display: block; }
     
     .gantt-bar { 
         position: absolute; top: 12px; bottom: 12px; border-radius: 4px; 
@@ -224,8 +261,10 @@
     .badge-active { background: var(--status-success); }
     .badge-plan { background: var(--status-plan); }
 
+    /* New: Worked Days Tag */
     .tag-worked { background: #ebf8ff; color: #2b6cb0; border: 1px solid #bee3f8; padding: 2px 6px; border-radius: 4px; font-weight: 600; }
     
+    /* New: Countdown info */
     .leave-info { display: flex; flex-direction: column; gap: 2px; }
     .leave-date { font-weight: 600; }
     .leave-countdown { font-size: 10px; color: var(--text-muted); }
@@ -237,10 +276,9 @@
   <div class="brand-bar">
       <div class="brand-left">
           <div class="logo-area">
-              <i class="fa-solid fa-industry"></i>
-              <div>
-                  <div style="line-height:1.2">芝加哥-Module Pack看板</div>
-                  <div style="font-size:11px; font-weight:400; color:var(--text-muted)">Project Field Manpower Dashboard v55</div>
+              <i class="fa-solid fa-industry"></i> <div>
+                  <div style="line-height:1.2">芝加哥-Module Pack C&D產線看板</div>
+                  <div style="font-size:11px; font-weight:400; color:var(--text-muted)">Project Field Manpower Dashboard v32</div>
               </div>
           </div>
       </div>
@@ -248,8 +286,10 @@
       <div class="brand-actions">
           <a href="https://docs.google.com/spreadsheets/d/18ABTFrdN-Npyt90FdOmx4cV1d_G8uOuTooIAuZN_hrs/edit?gid=0#gid=0" target="_blank" class="action-btn btn-sheet">
             <i class="fa-solid fa-file-pen"></i> 編輯資料 </a>
+          
           <a href="../index.html" class="action-btn btn-back">
-            <i class="fa-solid fa-house"></i> 回芝加哥選單 </a>
+            <i class="fa-solid fa-house"></i> 回芝加哥生產基地 </a>
+
           <button class="theme-toggle" id="themeBtn">◐</button>
       </div>
   </div>
@@ -268,6 +308,7 @@
           <div class="filter-group">
               <select id="filterRole"><option value="">全部工種</option></select>
           </div>
+          
           <div class="filter-group">
               <select id="filterStatus">
                   <option value="all">全部狀態</option>
@@ -276,6 +317,7 @@
                   <option value="plan">計畫中</option>
               </select>
           </div>
+
           <div class="filter-group search-group">
               <input type="text" id="searchInput" placeholder="🔍 搜尋姓名、工種、職責...">
           </div>
@@ -285,12 +327,28 @@
   <div class="kpi-bar" id="kpiBar"></div>
 
   <main class="container">
+
     <div class="project-info-bar">
-      <div class="p-item"><div class="p-label">📅 資料更新</div><div class="p-value" id="dataUpdated">-</div></div>
-      <div class="p-item"><div class="p-label">📍 地點</div><div class="p-value" id="projLoc">-</div></div>
-      <div class="p-item"><div class="p-label">🏁 啟動日</div><div class="p-value" id="projStart">-</div></div>
-      <div class="p-item"><div class="p-label">🎯 完成日</div><div class="p-value" id="projEnd">-</div></div>
-      <div class="p-item"><div class="p-label">⏳ 剩餘天數</div><div class="p-value" id="projCountdown">-</div></div>
+      <div class="p-item">
+        <div class="p-label" style="color:#3182ce;">📅 資料更新</div>
+        <div class="p-value" id="dataUpdated">-</div>
+      </div>
+      <div class="p-item">
+        <div class="p-label" style="color:#f4d35e;">📍 地點</div>
+        <div class="p-value" id="projLoc">-</div>
+      </div>
+      <div class="p-item">
+        <div class="p-label">🏁 啟動日</div>
+        <div class="p-value" id="projStart">-</div>
+      </div>
+      <div class="p-item">
+        <div class="p-label">🎯 完成日</div>
+        <div class="p-value" id="projEnd">-</div>
+      </div>
+      <div class="p-item">
+        <div class="p-label">⏳ 剩餘天數</div>
+        <div class="p-value" id="projCountdown">-</div>
+      </div>
     </div>
 
     <section class="card">
@@ -306,12 +364,14 @@
       <div class="card-header-row">
         <div class="card-title" id="title-gantt"><i class="fa-solid fa-stream"></i> 工作甘特圖</div>
         <div style="display:flex; align-items:center; gap:10px;">
-            <div class="gantt-legend" id="desktopLegend">
+            <div class="gantt-legend" style="display:none;" id="desktopLegend">
                 <div class="legend-item"><span class="legend-dot" style="background:var(--status-neutral)"></span>已離崗</div>
                 <div class="legend-item"><span class="legend-dot" style="background:var(--status-success)"></span>目前在崗</div>
                 <div class="legend-item"><span class="legend-dot" style="background:var(--status-plan)"></span>計畫前往</div>
             </div>
-            <select id="ganttFilter" style="display:none;"><option value="all">顯示全部</option></select>
+            
+            <select id="ganttFilter" style="width: auto; height: 32px; font-size: 12px; border-radius:6px; display:none;"> <option value="all">顯示全部</option>
+            </select>
         </div>
       </div>
       
@@ -324,6 +384,7 @@
       <div class="gantt-scroll-wrapper">
         <div class="gantt-min-width-container">
             <div class="grid-bg-layer" id="gridBgLayer"></div>
+            
             <div class="timeline-header-row">
                 <div class="th-name sticky-col-header">人員 / 產線</div>
                 <div class="th-months">
@@ -333,8 +394,12 @@
                     <div class="th-month">10月</div><div class="th-month">11月</div><div class="th-month">12月</div>
                 </div>
             </div>
+
             <div id="timelineBody"></div>
         </div>
+      </div>
+      <div style="text-align:center; font-size:11px; color:var(--text-muted); margin-top:8px;">
+          (左右滑動可查看完整時間軸)
       </div>
     </section>
 
@@ -345,7 +410,11 @@
           <thead>
             <tr>
               <th>產線</th><th>姓名</th><th>狀態</th><th>供應商</th><th>工種</th><th>職責</th><th>簽證</th>
-              <th>到崗日</th><th>預計離崗</th><th>實際離崗</th><th>已工作</th><th>簽證狀態</th>
+              <th>到崗日</th>
+              <th>預計離崗</th>
+              <th>實際離崗</th>
+              <th>已工作</th>
+              <th>簽證狀態</th>
             </tr>
           </thead>
           <tbody id="tableBody"></tbody>
@@ -355,21 +424,36 @@
   </main>
 
   <script>
-    // 🟢 修正：使用正確的 Module Pack CSV 連結 (TM開頭)
     const CSV_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vTMpYtnj16wQP-OeZcdw62yofr9JI-sdwElid5nEjbXT4KQoJaVfHU-Aj4jGwCyNn0E8KEiJKL7U5GL/pub?output=csv";
 
     const ROLE_COLOR_MAP = {
-        "PLC": "#00a99d", "PLC工程師": "#00a99d", "機器人": "#3182ce", "電工": "#f6ad55", "鉗工": "#e53e3e",
-        "現場項目經理": "#805ad5", "AGV": "#38b2ac", "視覺工程師": "#d53f8c", "MES軟件工程師": "#dd6b20", "機械設計": "#718096"
+        "PLC": "#00a99d", "PLC工程師": "#00a99d",
+        "機器人": "#3182ce", "機器人工程師": "#3182ce",
+        "電工": "#f6ad55",
+        "鉗工": "#e53e3e",
+        "現場項目經理": "#805ad5", "項目經理": "#805ad5",
+        "AGV": "#38b2ac",
+        "視覺工程師": "#d53f8c",
+        "MES軟件工程師": "#dd6b20",
+        "機械設計": "#718096", "機械工程師": "#718096",
+        "其他": "#cbd5e0"
     };
     
+    const FALLBACK_PALETTE = ["#e53e3e", "#dd6b20", "#d69e2e", "#38a169", "#319795", "#3182ce", "#00b5d8", "#805ad5", "#d53f8c"];
+
     let allRecords = [];
     let projectMeta = { start: null, end: null, location: "", lastUpdated: "" };
     let currentYear = new Date().getFullYear();
     let chartInstance = null;
-    const TODAY = new Date(); TODAY.setHours(0, 0, 0, 0);
+    
+    const TODAY = new Date();
+    TODAY.setHours(0, 0, 0, 0);
 
     document.addEventListener("DOMContentLoaded", async () => {
+      if(window.innerWidth > 768) {
+          document.getElementById('desktopLegend').style.display = 'flex';
+          document.getElementById('mobileLegend').style.display = 'none';
+      }
       await fetchData();
       setupEvents();
     });
@@ -377,7 +461,6 @@
     async function fetchData() {
       try {
         const res = await fetch(CSV_URL);
-        if (!res.ok) throw new Error(`HTTP Error: ${res.status}`);
         const text = await res.text();
         parseCsv(text);
         renderYearSelect();
@@ -385,20 +468,8 @@
         renderAll(currentYear);
       } catch (err) {
         console.error(err);
-        alert("讀取資料失敗: " + err.message);
+        alert("讀取資料失敗，請檢查 CSV 連結");
       }
-    }
-
-    // 🟢 簡單分割 (CSV 防呆)
-    function splitCsvLine(line) {
-        return line.split(',').map(c => c.replace(/^"|"$/g, '').trim());
-    }
-
-    // 🟢 寬鬆的日期解析
-    function parseDate(str) {
-        if (!str || !str.trim()) return null;
-        const d = new Date(str.trim());
-        return isNaN(d.getTime()) ? null : d;
     }
 
     function parseCsv(text) {
@@ -408,15 +479,13 @@
 
       let foundMeta = false;
       for (let i = 1; i < lines.length; i++) {
-          if(!lines[i].trim()) continue;
+          const cols = lines[i].split(',').map(c => c.replace(/^"|"$/g, '').trim());
           
-          const cols = splitCsvLine(lines[i]);
-          
-          if (!foundMeta && cols.length >= 14 && cols[10]) {
-              const potentialDate = parseDate(cols[10]);
-              if (potentialDate) {
+          if (!foundMeta && cols.length >= 11 && cols[10]) {
+              const potentialDate = new Date(cols[10]);
+              if (!isNaN(potentialDate.getTime())) {
                   projectMeta.start = potentialDate;
-                  if (cols[11]) projectMeta.end = parseDate(cols[11]);
+                  if (cols[11]) projectMeta.end = new Date(cols[11]);
                   if (cols[12]) projectMeta.location = cols[12];
                   if (cols[13]) projectMeta.lastUpdated = cols[13];
                   foundMeta = true; 
@@ -425,16 +494,26 @@
 
           if (cols.length < 7) continue; 
           
-          const arrival = parseDate(cols[6]);
-          if (!arrival) continue;
+          const arrival = new Date(cols[6]);
+          if (isNaN(arrival.getTime())) continue;
+
+          const plannedLeaveStr = cols[7] ? cols[7].trim() : "";
+          const plannedLeave = plannedLeaveStr ? new Date(plannedLeaveStr) : null;
+
+          const actualLeaveStr = cols[8] ? cols[8].trim() : "";
+          const actualLeave = actualLeaveStr ? new Date(actualLeaveStr) : null;
+
+          const visaStr = cols[9] ? cols[9].trim() : "";
+          const visaDate = visaStr ? new Date(visaStr) : null;
 
           allRecords.push({
             supplier: cols[0], name: cols[1], role: cols[2], duty: cols[3] || "-", 
             line: cols[4], visaType: cols[5] || "-", 
             arrivalDate: arrival,
-            plannedLeaveDate: parseDate(cols[7]),
-            actualLeaveDate: parseDate(cols[8]),
-            visaExpiry: parseDate(cols[9]),
+            plannedLeaveDate: plannedLeave,
+            actualLeaveDate: actualLeave,
+            leaveDate: actualLeave,
+            visaExpiry: visaDate,
             year: arrival.getFullYear()
           });
       }
@@ -455,8 +534,7 @@
     function populateSelect(id, set) {
         const sel = document.getElementById(id);
         const currentVal = sel.value;
-        const firstOpt = sel.options.length > 0 ? sel.options[0].outerHTML : '<option value="">全部</option>';
-        sel.innerHTML = firstOpt; 
+        sel.innerHTML = sel.options[0].outerHTML; 
         [...set].sort().forEach(val => {
             const opt = document.createElement('option');
             opt.value = val;
@@ -466,46 +544,16 @@
         sel.value = currentVal;
     }
 
-    function applyFilters(data) {
-      const s = document.getElementById('filterSupplier').value;
-      const l = document.getElementById('filterLine').value;
-      const r = document.getElementById('filterRole').value;
-      const q = document.getElementById('searchInput').value.toLowerCase();
-      const statusVal = document.getElementById('filterStatus').value;
-
-      return data.filter(d => {
-        const basicMatch = (s===""||d.supplier===s) && (l===""||d.line===l) && (r===""||d.role===r) &&
-                           (q===""||d.name.toLowerCase().includes(q)||d.role.toLowerCase().includes(q)||d.duty.toLowerCase().includes(q));
-        
-        let status = 'active'; 
-        if (d.actualLeaveDate && d.actualLeaveDate < TODAY) status = 'past';
-        else if (d.arrivalDate > TODAY) status = 'plan';
-        
-        const statusMatch = (statusVal === 'all') || (status === statusVal);
-
-        return basicMatch && statusMatch;
-      });
-    }
-
-    function renderAll(selectedYear) {
-        const yearVal = parseInt(selectedYear) || currentYear; 
-        renderProjectInfo();
-        
-        // 🟢 跨年度篩選邏輯：只要工作期間包含該年，就顯示
-        const yearData = allRecords.filter(r => {
-            const y = yearVal;
-            const startY = r.arrivalDate.getFullYear();
-            let endY = r.actualLeaveDate ? r.actualLeaveDate.getFullYear() : 9999;
-            return startY <= y && endY >= y;
-        });
-
-        const filtered = applyFilters(yearData); 
-        
-        renderKpiBar(filtered); 
-        renderChart(filtered);   
-        renderTimeline(filtered, yearVal); 
-        renderBackgroundGrid(yearVal);
-        renderTable(filtered); 
+    function renderAll(year) {
+      renderProjectInfo();
+      const yearData = allRecords.filter(r => r.year == year);
+      const filtered = applyFilters(yearData); 
+      
+      renderKpiBar(filtered); 
+      renderChart(filtered);   
+      renderTimeline(filtered, year); 
+      renderTable(filtered); 
+      renderBackgroundGrid(year);
     }
 
     function renderProjectInfo() {
@@ -529,17 +577,21 @@
       container.innerHTML = "";
       
       const activeCount = data.filter(d => d.arrivalDate <= TODAY && (d.actualLeaveDate === null || d.actualLeaveDate >= TODAY)).length;
+      
       const warningDate = new Date(TODAY);
       warningDate.setDate(TODAY.getDate() + 30);
+      
       const visaWarningCount = data.filter(d => {
           if (!d.visaExpiry || isNaN(d.visaExpiry.getTime())) return false; 
           return d.visaExpiry >= TODAY && d.visaExpiry <= warningDate;
       }).length;
+
       const visaExpiredCount = data.filter(d => {
           if (!d.visaExpiry || isNaN(d.visaExpiry.getTime())) return true;
           return d.visaExpiry < TODAY;
       }).length;
 
+      // Added icons to KPI titles
       const kpis = [
         { title: "<i class='fa-solid fa-user-check'></i> 目前在崗 (篩選後)", val: `${activeCount} <span style='font-size:12px'>人</span>`, color: "var(--status-success)" },
         { title: "<i class='fa-solid fa-triangle-exclamation'></i> 簽證即將到期", val: `${visaWarningCount} <span style='font-size:12px'>人</span>`, color: "var(--status-warning)" },
@@ -623,19 +675,10 @@
           if (trip.arrivalDate > TODAY) statusClass = "status-plan";
           else if (trip.actualLeaveDate && trip.actualLeaveDate < TODAY) statusClass = "status-past";
           
-          // 🟢 甘特圖視覺修正：顯示到今年結束或今天
-          const yearStart = new Date(year, 0, 1);
-          const yearEnd = new Date(year, 11, 31);
-          
-          if (!endDate) endDate = (trip.arrivalDate > TODAY) ? yearEnd : TODAY;
-          
-          if (trip.arrivalDate > yearEnd || endDate < yearStart) return;
+          if (!endDate) endDate = (trip.arrivalDate > TODAY) ? new Date(year, 11, 31) : TODAY;
 
-          const drawStart = trip.arrivalDate < yearStart ? yearStart : trip.arrivalDate;
-          const drawEnd = endDate > yearEnd ? yearEnd : endDate;
-
-          const startPct = Math.max(0, ((drawStart - yearStart) / (365 * 86400000)) * 100);
-          const widthPct = Math.min(100 - startPct, ((drawEnd - drawStart) / (365 * 86400000)) * 100);
+          const startPct = Math.max(0, ((trip.arrivalDate - new Date(year, 0, 1)) / (365 * 86400000)) * 100);
+          const widthPct = Math.min(100 - startPct, ((endDate - trip.arrivalDate) / (365 * 86400000)) * 100);
           
           if (widthPct > 0) {
             const bar = document.createElement('div');
@@ -650,7 +693,7 @@
                 workedDays = Math.max(0, workedDays);
             }
 
-            bar.title = `${name} (${trip.role})\n職責: ${trip.duty}\n簽證: ${trip.visaType}\n日期: ${trip.arrivalDate.toLocaleDateString()} ~ ${trip.actualLeaveDate ? trip.actualLeaveDate.toLocaleDateString() : '在職'}\n已工作: ${workedDays} 天`;
+            bar.title = `${name} (${trip.role})\n職責: ${trip.duty}\n簽證: ${trip.visaType}\n日期: ${trip.arrivalDate.toLocaleDateString()} ~ ${trip.actualLeaveDate ? trip.actualLeaveDate.toLocaleDateString() : '尚未定'}\n已工作: ${workedDays} 天`;
             barsArea.appendChild(bar);
           }
         });
@@ -666,6 +709,7 @@
       data.sort((a,b) => a.arrivalDate - b.arrivalDate).forEach(d => {
         const tr = document.createElement('tr');
         
+        // Visa Status
         let visaTag;
         if (!d.visaExpiry || isNaN(d.visaExpiry.getTime())) {
             visaTag = `<span class="tag tag-expired">未輸入</span>`;
@@ -676,6 +720,7 @@
                       `<span class="tag tag-normal">正常</span>`;
         }
         
+        // Status Badge
         let statusHtml = '';
         if (d.actualLeaveDate && d.actualLeaveDate < TODAY) {
             statusHtml = '<span class="status-badge badge-past">已離崗</span>';
@@ -685,6 +730,7 @@
             statusHtml = '<span class="status-badge badge-active">進行中</span>';
         }
 
+        // Planned Leave Calculation (Countdown)
         let plannedLeaveHtml = '-';
         if (d.plannedLeaveDate) {
             if (d.actualLeaveDate) {
@@ -705,6 +751,7 @@
             }
         }
 
+        // Actual Work Days Calculation
         let workedDays = 0;
         if (d.arrivalDate <= TODAY) {
             const effectiveEnd = (d.actualLeaveDate && d.actualLeaveDate < TODAY) ? d.actualLeaveDate : TODAY;
@@ -731,12 +778,31 @@
       });
     }
 
+    function applyFilters(data) {
+      const s = document.getElementById('filterSupplier').value;
+      const l = document.getElementById('filterLine').value;
+      const r = document.getElementById('filterRole').value;
+      const q = document.getElementById('searchInput').value.toLowerCase();
+      const statusVal = document.getElementById('filterStatus').value;
+
+      return data.filter(d => {
+        const basicMatch = (s===""||d.supplier===s) && (l===""||d.line===l) && (r===""||d.role===r) &&
+                           (q===""||d.name.toLowerCase().includes(q)||d.role.toLowerCase().includes(q)||d.duty.toLowerCase().includes(q));
+        
+        let status = 'active'; // 預設
+        if (d.actualLeaveDate && d.actualLeaveDate < TODAY) status = 'past';
+        else if (d.arrivalDate > TODAY) status = 'plan';
+        
+        const statusMatch = (statusVal === 'all') || (status === statusVal);
+
+        return basicMatch && statusMatch;
+      });
+    }
+
     function renderYearSelect() {
       const sel = document.getElementById('yearSelect');
       const years = [...new Set(allRecords.map(r=>r.year))].sort((a,b)=>b-a);
       if(years.length === 0) years.push(currentYear);
-      
-      // 🟢 移除 All Years，只顯示年份
       sel.innerHTML = years.map(y => `<option value="${y}">${y}年</option>`).join('');
       sel.value = currentYear;
     }
