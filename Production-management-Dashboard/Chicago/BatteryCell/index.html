@@ -2,7 +2,7 @@
 <html lang="zh-Hant" data-theme="light">
 <head>
   <meta charset="UTF-8" />
-  <title>芝加哥-電芯產線總控看板 v55 | Master Gantt Rich Tooltip</title>
+  <title>芝加哥-電芯產線總控看板 v56 | Visa Alert & List Upgrade</title>
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" />
   
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
@@ -189,7 +189,7 @@
     .mp-left { background-color: #CBD5E0; }   /* Gray */
     .mp-planned { background-color: #63B3ED; } /* Blue */
 
-    /* Custom Tooltip Style */
+    /* Custom Tooltip Style - FIXED POSITIONING FIXES SCROLL BUG */
     #gantt-tooltip {
         position: fixed; 
         display: none;
@@ -237,7 +237,7 @@
       <i class="fa-solid fa-industry logo-icon"></i>
       <div class="logo-titles">
           <div class="logo-main">芝加哥-電芯產線總控看板</div>
-          <div class="logo-sub">Chicago Battery Cell Master Schedule v55</div>
+          <div class="logo-sub">Chicago Battery Cell Master Schedule v56</div>
       </div>
     </div>
     <div class="brand-actions">
@@ -357,7 +357,19 @@
         <div class="card-title" style="margin-bottom: 16px;">詳細人員清單</div>
         <div class="overflow-x-auto">
             <table>
-                <thead><tr><th>姓名</th><th>工種</th><th>供應商</th><th>計畫到崗</th><th>實際到崗</th><th>預計離崗</th><th>簽證到期</th><th>狀態</th></tr></thead>
+                <thead>
+                    <tr>
+                        <th>姓名</th>
+                        <th>工種</th>
+                        <th>供應商</th>
+                        <th style="color:#2B6CB0">計畫到崗</th>
+                        <th style="color:#2B6CB0">預計離崗</th>
+                        <th style="color:#319795">實際到崗</th>
+                        <th style="color:#718096">實際離崗</th>
+                        <th>簽證到期</th>
+                        <th>狀態</th>
+                    </tr>
+                </thead>
                 <tbody id="listBody"></tbody>
             </table>
         </div>
@@ -466,7 +478,7 @@
                 <b>Manpower Loaded:</b> ${manpowerData.length} rows<br/>
                 <b>Tasks Loaded:</b> ${taskData.length} rows<br/>
                 <b>Detected Year:</b> ${selectedYear}<br/>
-                <span style="color:#48BB78">資料解析成功 (V55 Rich Master Tooltip)</span>
+                <span style="color:#48BB78">資料解析成功 (V56 Visa & List Updated)</span>
             `;
 
             populateFilters();
@@ -494,7 +506,6 @@
                 actualEnd: findColIndex(headers, ['實際結束', 'plan end', 'planend']),
                 owner: findColIndex(headers, ['單位', 'owner']),
                 status: findColIndex(headers, ['狀態', 'status']),
-                // Added status description (Column K)
                 statusDesc: findColIndex(headers, ['狀態描述', 'status description', 'note'])
             };
         } else {
@@ -508,7 +519,8 @@
                 plannedArrival: findColIndex(headers, ['計畫到崗', 'planned arrival']), 
                 planLeave: findColIndex(headers, ['預計離崗', 'planned leave']),
                 actualLeave: findColIndex(headers, ['實際離崗', 'actual leave']),
-                visaExp: findColIndex(headers, ['簽證', 'visaexpiry', 'visa'])
+                // Fix: Specifically look for "VisaExpiry" as per user screenshot (Column K)
+                visaExp: findColIndex(headers, ['簽證到期', 'visaexpiry', 'visa']) 
             };
         }
 
@@ -533,7 +545,6 @@
                     actualEnd: safeDate(cols[map.actualEnd]),
                     owner: map.owner>-1 ? cols[map.owner] : '',
                     status: map.status>-1 ? cols[map.status] : '',
-                    // Capture status description
                     statusDesc: map.statusDesc>-1 ? cols[map.statusDesc] : '',
                     year: pStart ? pStart.getFullYear() : 2026 
                 });
@@ -578,7 +589,6 @@
         return 'stage-default';
     }
 
-    // --- Updated Master Gantt Render with Tooltips ---
     function renderMasterGantt(data) {
         const container = document.getElementById('masterGanttBody');
         container.innerHTML = "";
@@ -629,7 +639,6 @@
             tasks.forEach(task => {
                 const colorClass = getStageClass(task.task);
                 
-                // 1. Forecast (Gray Bar)
                 if(task.planStart && task.planEnd) {
                     const startPct = getYearPercentage(task.planStart);
                     const widthPct = getYearPercentage(task.planEnd) - startPct;
@@ -640,9 +649,7 @@
                         planBar.className = 'bar-plan'; 
                         planBar.style.left = `${startPct}%`;
                         planBar.style.width = `${Math.max(widthPct, 0.5)}%`;
-                        // Remove simple title
                         
-                        // Add Rich Tooltip for Plan Bar
                         planBar.addEventListener('mouseenter', (e) => {
                             tooltip.style.display = 'block';
                             tooltip.innerHTML = `
@@ -660,14 +667,10 @@
                     }
                 }
                 
-                // 2. Actual (Colored Bar)
                 if (task.actualStart) {
                     const actEnd = task.actualEnd || TODAY;
                     const actStartPct = getYearPercentage(task.actualStart);
                     const actWidthPct = getYearPercentage(actEnd) - actStartPct;
-                    const actDays = calculateDaysWorked(task.actualStart, task.actualEnd); // If no end, it calcs to today in helper? No, need to be careful.
-                    
-                    // Specific logic for days worked display
                     let daysDisplay = 0;
                     if(task.actualEnd) daysDisplay = calculateDaysWorked(task.actualStart, task.actualEnd);
                     else daysDisplay = calculateDaysWorked(task.actualStart, TODAY);
@@ -678,7 +681,6 @@
                         actBar.style.left = `${actStartPct}%`;
                         actBar.style.width = `${Math.max(actWidthPct, 0.5)}%`;
                         
-                        // Add Rich Tooltip for Actual Bar
                         actBar.addEventListener('mouseenter', (e) => {
                             tooltip.style.display = 'block';
                             let statusColor = task.status === '完成' ? '#48BB78' : (task.status === '卡關' ? '#F56565' : '#3182CE');
@@ -705,11 +707,10 @@
         });
     }
 
-    // Helper for tooltip positioning
     function positionTooltip(e, tooltip) {
         const x = e.clientX + 15;
         const y = e.clientY + 15;
-        tooltip.style.left = Math.min(x, window.innerWidth - 240) + 'px'; // Prevent overflow right
+        tooltip.style.left = Math.min(x, window.innerWidth - 240) + 'px'; 
         tooltip.style.top = y + 'px';
     }
 
@@ -754,10 +755,8 @@
             
             records.forEach(r => {
                 const status = getPersonStatus(r);
-                
                 let startDate, endDate;
                 let colorClass = 'mp-active';
-                let typeText = "在崗";
                 let dayLabel = "已工作";
                 let days = 0;
 
@@ -765,17 +764,15 @@
                     colorClass = 'mp-planned';
                     startDate = r.plannedArrival;
                     endDate = r.planLeave || new Date(selectedYear, 11, 31); 
-                    typeText = "計畫行程";
                     dayLabel = "計畫天數";
                     days = calculateDaysWorked(startDate, endDate);
                 } else if (status === 'left') {
                     colorClass = 'mp-left';
                     startDate = r.arrival;
                     endDate = r.actualLeave;
-                    typeText = "已離崗";
+                    dayLabel = "在崗天數";
                     days = calculateDaysWorked(startDate, endDate);
                 } else {
-                    // Active
                     startDate = r.arrival;
                     endDate = TODAY;
                     days = calculateDaysWorked(startDate, TODAY);
@@ -793,7 +790,6 @@
                 bar.style.left = startPct + '%';
                 bar.style.width = widthPct + '%';
                 
-                // --- Tooltip Event Listeners ---
                 bar.addEventListener('mouseenter', (e) => {
                     tooltip.style.display = 'block';
                     tooltip.innerHTML = `
@@ -846,14 +842,22 @@
             const s = getPersonStatus(d);
             const badge = s==='active'?'<span class="tag tag-green">在崗</span>':(s==='left'?'<span class="tag tag-gray">已離崗</span>':'<span class="tag tag-blue">計畫中</span>');
             
+            // Visa Warning Logic
+            let visaStyle = "";
+            if (d.visaExp) {
+                if (d.visaExp < TODAY) visaStyle = "color:#E53E3E; font-weight:700;"; // Red
+                else if (d.visaExp < new Date(TODAY.getTime() + 30*86400000)) visaStyle = "color:#DD6B20; font-weight:700;"; // Orange
+            }
+
             return `<tr>
                 <td><strong>${d.name}</strong></td>
                 <td>${d.role}</td>
                 <td>${d.supplier}</td>
                 <td style="color:#2B6CB0">${formatDate(d.plannedArrival)}</td>
-                <td style="font-weight:600">${formatDate(d.arrival)}</td>
-                <td>${formatDate(d.planLeave)}</td>
-                <td style="${d.visaExp<TODAY?'color:red':''}">${formatDate(d.visaExp)}</td>
+                <td style="color:#718096">${formatDate(d.planLeave)}</td>
+                <td style="font-weight:600; color:#319795">${formatDate(d.arrival)}</td>
+                <td style="color:#718096">${formatDate(d.actualLeave)}</td>
+                <td style="${visaStyle}">${formatDate(d.visaExp)}</td>
                 <td>${badge}</td>
             </tr>`;
         }).join('');
@@ -869,7 +873,7 @@
     function calculateDaysWorked(start, end) {
         if (!start) return 0;
         let endDate = end || TODAY;
-        // Simple logic: difference in days
+        if (start > endDate) return 0; 
         const diffTime = Math.abs(endDate - start);
         return Math.ceil(diffTime / (1000 * 60 * 60 * 24)) + 1;
     }
