@@ -1,0 +1,240 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="UTF-8" />
+  <title>產品工程部-出差看板 v36 | 視覺細節全修復版</title>
+  <link rel="icon" href="./BS LOGO.png" type="image/png">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700&family=Roboto:wght@400;500;700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --color-primary: #8ba47c; --color-primary-light: #e8f5e9; --color-secondary: #f4d35e;
+      --color-warning: #e39b99; --color-future: #ffb88a; --bg-body: #f4f8f8;
+      --bg-card: #ffffff; --text-main: #2d3748; --text-muted: #718096;
+      --border-light: #e2e8f0; --radius-card: 16px; --radius-input: 10px;
+    }
+    body { margin: 0; font-family: 'Roboto', 'Noto Sans TC', sans-serif; background: var(--bg-body); color: var(--text-main); padding-bottom: 40px; }
+    .card { background: var(--bg-card); border-radius: var(--radius-card); padding: 20px; margin: 20px auto; max-width: 1280px; box-shadow: 0 4px 15px -2px rgba(0,0,0,0.05); border: 1px solid var(--border-light); }
+    .card-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 15px; }
+    .card-title { font-size: 16px; font-weight: 700; display: flex; align-items: center; gap: 8px; }
+    .card-title::before { content: ''; width: 4px; height: 16px; background: var(--color-primary); border-radius: 2px; }
+    
+    /* 顏色標籤註解 */
+    .legend-info { font-size: 11px; color: var(--text-muted); margin-top: 5px; }
+    .legend-dot { display: inline-block; width: 8px; height: 8px; border-radius: 50%; margin-right: 4px; }
+    .benchmark-tag { font-size: 11px; color: var(--text-muted); background: var(--bg-body); padding: 4px 10px; border-radius: 6px; border: 1px solid var(--border-light); }
+
+    .util-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 10px; }
+    .util-card { border: 1px solid var(--border-light); border-radius: 12px; padding: 12px; background: var(--bg-card); position: relative; }
+    .level-badge { position: absolute; top: 10px; right: 10px; font-size: 9px; padding: 1px 5px; border-radius: 4px; background: var(--bg-body); border: 1px solid var(--border-light); }
+    
+    /* 時間軸與月份間隔線 */
+    .timeline-wrapper { width: 100%; overflow-x: auto; border: 1px solid var(--border-light); border-radius: 12px; background: #fff; }
+    .timeline-grid-layout { display: grid; grid-template-columns: 80px repeat(12, 1fr); min-width: 900px; }
+    .timeline-header { background: var(--color-primary-light); font-size: 11px; text-align: center; font-weight: 600; padding: 8px 0; border-bottom: 1px solid var(--border-light); }
+    .timeline-row { border-bottom: 1px solid var(--border-light); position: relative; height: 32px; display: grid; grid-template-columns: 80px 1fr; }
+    .timeline-name-col { display: flex; align-items: center; justify-content: flex-end; padding-right: 8px; font-size: 12px; background: var(--bg-card); z-index: 5; border-right: 1px solid var(--border-light); }
+    .timeline-bars-container { position: relative; width: 100%; height: 100%; background: #fff; }
+    
+    /* 月份格線核心修復 */
+    .grid-lines { position: absolute; inset: 0; display: grid; grid-template-columns: repeat(12, 1fr); pointer-events: none; }
+    .grid-line { border-right: 1px dashed var(--border-light); height: 100%; }
+
+    .timeline-item { position: absolute; top: 8px; bottom: 8px; border-radius: 3px; opacity: 0.85; transition: 0.2s; cursor: pointer; z-index: 2; }
+    .timeline-item:hover { transform: scaleY(1.2); opacity: 1; z-index: 10; }
+    .status-done { background: var(--color-primary); }
+    .status-active { background: var(--color-secondary); }
+    .status-future { background: var(--color-future); }
+    .today-line { position: absolute; top: 0; bottom: 0; width: 0; border-left: 1.5px dashed #e53e3e; z-index: 10; pointer-events: none; }
+
+    table { width: 100%; border-collapse: collapse; font-size: 13px; }
+    th { text-align: left; padding: 12px; color: var(--text-muted); background: #fafafa; border-bottom: 1px solid var(--border-light); }
+    td { padding: 10px 12px; border-top: 1px solid var(--border-light); }
+    .visa-badge { padding: 2px 8px; border-radius: 4px; font-size: 11px; font-weight: 700; }
+    .visa-danger { background: #fff5f5; color: #e53e3e; border: 1px solid #feb2b2; }
+    .sticky-nav { position: sticky; top: 0; z-index: 1000; background: rgba(255,255,255,0.95); backdrop-filter: blur(10px); padding: 10px; border-bottom: 1px solid var(--border-light); box-shadow: 0 2px 4px rgba(0,0,0,0.02); }
+  </style>
+</head>
+<body>
+
+  <nav class="sticky-nav">
+    <div style="max-width:1280px; margin:0 auto; display:flex; gap:12px; align-items:center;">
+      <img src="../logo.png" style="height:30px;">
+      <select id="yearSelect" style="padding:6px 12px; border-radius:8px; border:1px solid var(--border-light); font-weight:600;"></select>
+      <select id="filterLocation" style="padding:6px 12px; border-radius:8px; border:1px solid var(--border-light); font-weight:600;"><option value="">全部地點</option></select>
+      <div class="benchmark-tag" style="margin-left:auto;">基準：240天/年</div>
+    </div>
+  </nav>
+
+  <main class="container">
+    <section class="card">
+      <div class="card-header">
+        <div>
+          <div class="card-title">出差利用率 (人力負載)</div>
+          <div class="legend-info">
+             <span style="color:var(--color-primary)"><span class="legend-dot" style="background:var(--color-primary)"></span>A級 ≥80%</span> | 
+             <span style="color:var(--color-secondary); filter:brightness(0.9);"><span class="legend-dot" style="background:var(--color-secondary)"></span>B級 60-80%</span> | 
+             <span style="color:var(--color-future)"><span class="legend-dot" style="background:var(--color-future)"></span>C級 40-60%</span> | 
+             <span style="color:var(--color-warning)"><span class="legend-dot" style="background:var(--color-warning)"></span>D級 <40%</span>
+          </div>
+        </div>
+      </div>
+      <div id="utilGrid" class="util-grid"></div>
+    </section>
+
+    <section class="card">
+      <div class="card-header">
+        <div>
+          <div class="card-title">年度出差時間軸</div>
+          <div class="legend-info">
+            <span class="legend-dot status-done"></span>已完成 &nbsp; 
+            <span class="legend-dot status-active"></span>進行中 &nbsp; 
+            <span class="legend-dot status-future"></span>未來計畫 &nbsp; 
+            <span style="color:var(--text-muted); margin-left:10px;">(滑鼠懸停於區塊可查看詳細資訊)</span>
+          </div>
+        </div>
+      </div>
+      <div class="timeline-wrapper">
+        <div class="timeline-grid-layout timeline-header">
+          <div style="border-right:1px dashed var(--border-light)">人員</div>
+          <div>1月</div><div>2月</div><div>3月</div><div>4月</div><div>5月</div><div>6月</div><div>7月</div><div>8月</div><div>9月</div><div>10月</div><div>11月</div><div>12月</div>
+        </div>
+        <div id="timelineBody"></div>
+      </div>
+    </section>
+
+    <section class="card">
+      <div class="card-header"><div class="card-title">詳細資料與簽證預警 (美、印採用滾動 365d 計算)</div></div>
+      <div style="overflow-x:auto;">
+        <table>
+          <thead>
+            <tr><th>姓名</th><th>地點</th><th>日期區間</th><th>當年度天數</th><th>專案內容</th><th>簽證狀態</th></tr>
+          </thead>
+          <tbody id="tableBody"></tbody>
+        </table>
+      </div>
+    </section>
+  </main>
+
+  <script>
+    const CSV_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vQI-ac_9JPcK5zQSCPT6xS1YYWUAv7n8-isJ_TrHuFSHGAK4I7d0EG8ZofBK36dvd9e4HM5FZCbVCr1/pub?output=csv";
+    const ROLLING_LOCS = ["美國", "芝加哥", "印度", "新德里", "孟買"];
+    const VISA_LIMIT = 180;
+
+    let allRecords = [];
+
+    document.addEventListener("DOMContentLoaded", async () => {
+      await fetchData();
+      document.getElementById('yearSelect').addEventListener('change', renderAll);
+      document.getElementById('filterLocation').addEventListener('change', renderAll);
+    });
+
+    async function fetchData() {
+      const res = await fetch(CSV_URL);
+      const text = await res.text();
+      const lines = text.trim().split(/\r?\n/).slice(1);
+      allRecords = lines.map(line => {
+        const cols = line.split(',');
+        return { name: cols[1], location: cols[2], start: new Date(cols[3]), end: new Date(cols[4]), project: cols[5] };
+      }).filter(r => !isNaN(r.start));
+
+      const years = [...new Set(allRecords.map(r => r.start.getFullYear()))].sort((a,b)=>b-a);
+      const ySel = document.getElementById("yearSelect");
+      years.forEach(y => ySel.add(new Option(`${y}年度`, y)));
+      if(!ySel.value) ySel.value = 2026;
+
+      const locs = [...new Set(allRecords.map(r => r.location))].sort();
+      locs.forEach(l => document.getElementById('filterLocation').add(new Option(l, l)));
+      renderAll();
+    }
+
+    function renderAll() {
+      const targetYear = parseInt(document.getElementById('yearSelect').value);
+      const filterLoc = document.getElementById('filterLocation').value;
+      const yearStart = new Date(targetYear, 0, 1);
+      const yearEnd = new Date(targetYear, 11, 31);
+      const today = new Date();
+
+      let yearData = allRecords.filter(r => (r.start <= yearEnd && r.end >= yearStart)).map(r => {
+        const actS = r.start < yearStart ? yearStart : r.start;
+        const actE = r.end > yearEnd ? yearEnd : r.end;
+        const yearDays = Math.floor((actE - actS) / 86400000) + 1;
+        
+        const base = r.end > today ? today : r.end;
+        const ago = new Date(base); ago.setDate(base.getDate() - 365);
+        const rollSum = allRecords
+          .filter(ref => ref.name === r.name && ref.location === r.location && ref.end >= ago && ref.start <= base)
+          .reduce((sum, ref) => {
+             const s = ref.start < ago ? ago : ref.start;
+             const e = ref.end > base ? base : ref.end;
+             return sum + (Math.floor((e - s) / 86400000) + 1);
+          }, 0);
+
+        return { ...r, actS, actE, yearDays, rollSum };
+      });
+
+      if (filterLoc) yearData = yearData.filter(d => d.location === filterLoc);
+      renderUtil(yearData);
+      renderTimeline(yearData, targetYear);
+      renderTable(yearData);
+    }
+
+    function renderUtil(data) {
+      const container = document.getElementById('utilGrid'); container.innerHTML = "";
+      const map = {}; data.forEach(d => map[d.name] = (map[d.name] || 0) + d.yearDays);
+      Object.entries(map).sort((a,b)=>b[1]-a[1]).forEach(([name, days]) => {
+        const rate = Math.round((days/240)*100);
+        const level = rate >= 80 ? "A級" : (rate >= 60 ? "B級" : (rate >= 40 ? "C級" : "D級"));
+        const color = rate >= 80 ? "#8ba47c" : (rate >= 60 ? "#f4d35e" : (rate >= 40 ? "#ffb88a" : "#e39b99"));
+        container.innerHTML += `<div class="util-card">
+          <span class="level-badge">${level}</span>
+          <div style="font-size:12px; font-weight:600; color:var(--text-muted)">${name}</div>
+          <div style="font-size:22px; font-weight:700; color:${color}">${rate}%</div>
+          <div style="font-size:10px; color:var(--text-muted)">年度累計 ${days} 天</div>
+          <div class="util-bar"><div style="height:100%; width:${Math.min(rate,100)}%; background:${color}"></div></div>
+        </div>`;
+      });
+    }
+
+    function renderTimeline(data, year) {
+      const body = document.getElementById('timelineBody'); body.innerHTML = "";
+      const groups = {}; data.forEach(d => { if(!groups[d.name]) groups[d.name] = []; groups[d.name].push(d); });
+      const today = new Date();
+      
+      Object.keys(groups).sort().forEach(name => {
+        const row = document.createElement('div'); row.className = "timeline-row";
+        row.innerHTML = `<div class="timeline-name-col">${name}</div>
+                         <div class="timeline-bars-container">
+                            <div class="grid-lines">${Array(12).fill('<div class="grid-line"></div>').join('')}</div>
+                         </div>`;
+        const container = row.querySelector('.timeline-bars-container');
+        if (year === today.getFullYear()) {
+          const pct = ((today - new Date(year, 0, 1)) / (365 * 86400000)) * 100;
+          container.innerHTML += `<div class="today-line" style="left:${pct}%"></div>`;
+        }
+        groups[name].forEach(trip => {
+          const left = ((trip.actS - new Date(year, 0, 1)) / (365 * 86400000)) * 100;
+          const width = (trip.yearDays / 365) * 100;
+          const status = trip.end < today ? "status-done" : (trip.start <= today ? "status-active" : "status-future");
+          const info = `${trip.project}\n地點: ${trip.location}\n天數: ${trip.yearDays}天`;
+          container.innerHTML += `<div class="timeline-item ${status}" style="left:${left}%; width:${Math.max(width, 1.2)}%" title="${info}"></div>`;
+        });
+        body.appendChild(row);
+      });
+    }
+
+    function renderTable(data) {
+      const tbody = document.getElementById('tableBody'); tbody.innerHTML = "";
+      data.sort((a,b)=>b.start - a.start).forEach(d => {
+        let visa = `<span style="color:#ccc; font-size:11px;">無需預警</span>`;
+        if (ROLLING_LOCS.some(l => d.location.includes(l))) {
+           const warn = d.rollSum >= (VISA_LIMIT * 0.9);
+           visa = `<span class="visa-badge ${warn ? 'visa-danger' : 'visa-rolling'}" style="background:#ebf8ff; color:#2b6cb0; border:1px solid #bee3f8; ${warn ? 'background:#fff5f5; color:#e53e3e; border-color:#feb2b2;' : ''}">滾動累計: ${d.rollSum}d</span>`;
+        }
+        tbody.innerHTML += `<tr><td><b>${d.name}</b></td><td>${d.location}</td><td style="font-size:11px; color:#777;">${d.start.toISOString().slice(0,10)} ~ ${d.end.toISOString().slice(0,10)}</td><td style="font-weight:700; color:var(--color-primary);">${d.yearDays}</td><td>${d.project}</td><td>${visa}</td></tr>`;
+      });
+    }
+  </script>
+</body>
+</html>
