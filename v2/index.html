@@ -794,6 +794,10 @@ const fbar = (inner, qid, qv, ph, key, on, tail="") => `<div class="toolbar pf-b
   <input id="${qid}" type="search" placeholder="${ph}" value="${esc(qv)}" autocomplete="off" aria-label="搜尋">
   ${on?`<button class="linkbtn" data-fclear="${key}">清除篩選</button>`:""}${tail?`<span class="tail">${tail}</span>`:""}</div>`;
 const fsel = (key, k, label, opts, cur) => `<select data-fk="${key}.${k}" aria-label="${label}">${opts.map(([v,l])=>optH(v,l,cur)).join("")}</select>`;
+// 排序：預設「新→舊」。Issue 依編號（ISS-029 → ISS-001），派遣依開始日
+const issNo = i => parseInt(String(i.id||"").replace(/\D/g,""), 10) || 0;
+const byIssNo = dir => (a,b) => dir==="asc" ? issNo(a)-issNo(b) : issNo(b)-issNo(a);
+const ordSeg = (key, cur, what) => `<div class="seg-t" role="group" aria-label="排序（${what}）"><button type="button" class="${cur!=="asc"?"on":""}" data-ord="${key}:desc" title="${what}：新到舊">新→舊</button><button type="button" class="${cur==="asc"?"on":""}" data-ord="${key}:asc" title="${what}：舊到新">舊→新</button></div>`;
 const issueText = i => [i.id, i.title, i.desc, i.owner, i.party, i.note, i.category, (i.log||[]).map(l=>l.text)];
 
 // ================= 頁面：總覽 =================
@@ -818,7 +822,7 @@ function viewOverview(){
   if (OV.q) { const q = OV.q, CAP = 40;
     const grp = (title, arr, item) => `<div class="card sr"><h3><span>${title}</span><span class="pc-n">${arr.length}</span></h3><div class="sr-list">${arr.slice(0,CAP).map(item).join("") || '<div class="sr-more">沒有符合的項目</div>'}${arr.length>CAP?`<div class="sr-more">另有 ${arr.length-CAP} 筆，請輸入更精確的關鍵字</div>`:""}</div></div>`;
     const ppl = DB.people.filter(p=>has(q, p.name, p.enName, p.org, p.company, p.title, p.unit, p.role, p.note)).sort((a,b)=>(a.orgType==="寶新"?0:1)-(b.orgType==="寶新"?0:1) || (a.status==="離職")-(b.status==="離職"));
-    const iss = sortIssues(DB.issues.filter(i=>inP(i.project) && has(q, issueText(i))));
+    const iss = DB.issues.filter(i=>inP(i.project) && has(q, issueText(i))).sort(byIssNo("desc"));
     const asg = DB.assignments.filter(a=>inP(a.project) && has(q, a.person, a.city, a.country, a.duty, a.line, proj(a.project).name)).sort((a,b)=>(aStart(b)||0)-(aStart(a)||0));
     const tks = DB.tasks.filter(t=>inP(t.project) && has(q, t.process, t.task, t.owner, t.note, t.section));
     const prj = DB.projects.filter(p=>inP(p.id) && has(q, p.name, p.city, p.country, p.owner, p.status));
@@ -887,7 +891,7 @@ function viewOverview(){
     <a class="card ptag ${od.length?"hot":""}" href="#issues" data-scroll="issues"><span class="k">Open Issue</span><span class="v">${openIss.length}<small>項</small></span><span class="s">${od.length?`<b class="od">逾期 ${od.length} 項</b>`:"沒有逾期"}</span></a>
   </section>
   ${found}
-  <section id="issues">${secH(scopedIss.length, `Open <mark>Issue</mark>`, "依專案分區・點選事項可更新進度", `<button class="btn sm" data-new-issue="${sp&&sp!=="__hq"?sp:""}">＋ 新增 Issue</button>`)}
+  <section id="issues">${secH(scopedIss.length, `Open <mark>Issue</mark>`, "依專案分區・每張卡先列最急的 3 項（逾期、嚴重度高優先）", `<button class="btn sm" data-new-issue="${sp&&sp!=="__hq"?sp:""}">＋ 新增 Issue</button>`)}
     <div class="iss-grid">${issueCards}</div></section>
   <section>${secH(rem.length, `系統<mark>提醒</mark>`, "自動偵測滾動天數、暫定行程與過期資料；需要追蹤的可轉成 Issue")}
     <div class="alerts">${rem.map(x=>`<div class="card alert ${x.sev}"><span class="chip sev ${SEV[x.sev][1]}">${SEV[x.sev][0]}</span>
@@ -956,7 +960,7 @@ function openUnit(name){
 }
 
 // ================= 頁面：人員派遣 =================
-const F = { year: TODAY.getFullYear(), project:"", org:"寶新", unit:"", country:"", status:"", q:"" };
+const F = { year: TODAY.getFullYear(), project:"", org:"寶新", unit:"", country:"", status:"", q:"", ord:"desc" };
 function viewDispatch(){
   const years = [...new Set(DB.assignments.flatMap(a=>[aStart(a),aEnd(a)]).filter(Boolean).map(d=>d.getFullYear()))].sort((a,b)=>b-a);
   const yS = new Date(F.year,0,1), yE = new Date(F.year,11,31);
@@ -1018,7 +1022,7 @@ function viewDispatch(){
   const table = `<div class="panel scroll"><table class="dt">
     <colgroup><col style="width:9%"><col style="width:11%"><col style="width:12%"><col style="width:5%"><col><col style="width:7%"><col style="width:9%"><col style="width:6%"></colgroup>
     <thead><tr><th>人員</th><th>地點</th><th>期間</th><th class="n">天數</th><th>專案 / 派遣目的</th><th>狀態</th><th class="n">預算 TWD</th><th></th></tr></thead>
-    <tbody>${list.map(a=>{ const p=personOf(a.person), s=aStart(a), e=aEnd(a);
+    <tbody>${(F.ord==="asc" ? list : [...list].reverse()).map(a=>{ const p=personOf(a.person), s=aStart(a), e=aEnd(a);
       const vchip = "";
       return `<tr><td class="nowrap"><b>${esc(a.person)}</b><div class="sub">${esc(p ? (inOrg(p) ? deptOf(p.unit) : affil(p)) : "")}</div></td>
       <td>${esc(a.city||"—")}<div class="sub">${esc(a.country)}</div></td>
@@ -1039,7 +1043,7 @@ function viewDispatch(){
     </section>
   ${util}
   <section>${secH(Object.keys(rows).length, `${F.year} 派遣<mark>時間軸</mark>`, "點選色條可編輯")}${gantt}</section>
-  <section>${secH(list.length, `派遣<mark>明細</mark>`, "")}${table}</section>`;
+  <section>${secH(list.length, `派遣<mark>明細</mark>`, "依開始日", ordSeg("F", F.ord, "開始日"))}${table}</section>`;
 }
 
 // ================= 時間軸共用 =================
@@ -1056,7 +1060,7 @@ const todayMark = ax => TODAY>=ax.S && TODAY<ax.E ? `<div class="g-today" style=
 
 // ================= 頁面：專案 =================
 let curProj = "P02";
-const PV = { closed:false, range:"near", q:"", iss:"", co:"", role:"", sec:"", health:"" };
+const PV = { closed:false, range:"near", q:"", iss:"", co:"", role:"", sec:"", health:"", ord:"desc" };
 const pvOn = () => PV.q||PV.iss||PV.co||PV.role||PV.sec||PV.health;
 const mpF = a => { const pp = personOf(a.person); return (!PV.co || groupOf(a)===PV.co) && (!PV.role || (pp?.role||"未填工種")===PV.role) && has(PV.q, a.person, pp?.enName, pp?.role, pp?.note, a.duty, a.line); };
 const HEALTH = {"完成":["var(--blue)","已完成"], "有風險":["var(--yellow)","進行中（有風險）"], "進行中":["var(--green)","順利進行中"], "未開始":["var(--beige)","未開始"]};
@@ -1135,7 +1139,7 @@ function viewProject(){
   const now = onSiteNow().filter(a=>a.project===p.id);
   const allIss = DB.issues.filter(i=>i.project===p.id);
   const issSt = i => PV.iss==="" ? isOpen(i) : PV.iss==="all" ? true : PV.iss==="已結案" ? !isOpen(i) : i.status===PV.iss;
-  const iss = sortIssues(allIss.filter(i=>issSt(i) && has(PV.q, issueText(i))));
+  const iss = allIss.filter(i=>issSt(i) && has(PV.q, issueText(i))).sort(byIssNo(PV.ord));
   const ts = DB.tasks.filter(t=>t.project===p.id);
   const tKeep = t => (!PV.sec || (t.section||"未分段")===PV.sec) && (!PV.health || taskHealth(t)===PV.health) && has(PV.q, t.process, t.task, t.owner, t.note, t.section, linkedIssues(t).map(i=>i.id));
   const tsN = ts.filter(tKeep).length;
@@ -1180,7 +1184,7 @@ function viewProject(){
     </div>
   </section>
   <section>${fb}</section>
-  <section>${secH(iss.length, PV.iss===""?`Open <mark>Issue</mark>`:`<mark>Issue</mark>`, `${PV.iss===""?"":`狀態：${PV.iss==="all"?"全部":esc(PV.iss)}・`}本專案共 ${allIss.length} 項（未結案 ${allIss.filter(isOpen).length}）`, `<button class="btn sm" data-new-issue="${p.id}">＋ 新增 Issue</button>`)}
+  <section>${secH(iss.length, PV.iss===""?`Open <mark>Issue</mark>`:`<mark>Issue</mark>`, `${PV.iss===""?"":`狀態：${PV.iss==="all"?"全部":esc(PV.iss)}・`}本專案共 ${allIss.length} 項（未結案 ${allIss.filter(isOpen).length}）・依編號`, `${ordSeg("PV", PV.ord, "Issue 編號")}<button class="btn sm" data-new-issue="${p.id}">＋ 新增 Issue</button>`)}
     ${iss.length?`<div class="panel scroll"><table class="dt"><thead><tr><th>編號</th><th>事項</th><th>類別</th><th>嚴重度</th><th>負責</th><th>期限</th><th>狀態</th><th>最新進度</th></tr></thead><tbody>
     ${iss.map(i=>{ const last = (i.log||[]).slice(-1)[0]; const t = i.task && DB.tasks.find(x=>x.id===i.task); return `<tr class="clickrow" data-issue="${i.id}"><td class="nowrap mono">${esc(i.id)}</td>
       <td class="wide"><b>${esc(i.title)}</b>${t?` <span class="tag">工序：${esc(t.process)}</span>`:""}<div class="sub">${esc(i.desc)}</div></td><td class="nowrap">${esc(i.category)}</td>
@@ -1259,7 +1263,7 @@ function viewPeople(){
 }
 
 // ================= 頁面：追蹤清單（週會 Task & Issue Tracker） =================
-const TF = { status:"open", owner:"", project:"all", q:"", group:"owner", kind:"", sev:"", od:"" };
+const TF = { status:"open", owner:"", project:"all", q:"", group:"owner", kind:"", sev:"", od:"", ord:"desc" };
 const weekAgo = () => iso(addD(TODAY,-7));
 const updatedThisWeek = i => (i.log||[]).some(l=>l.at && l.at >= weekAgo());
 function viewTracker(){
@@ -1309,10 +1313,10 @@ function viewTracker(){
       ${fsel("TF","od","期限",[["","全部期限"],["od","只看逾期"],["tbd","未訂期限"],["wk","本週有更新"]], TF.od)}`,
       "tfQ", TF.q, "搜尋事項、編號、負責人或進度內容", "TF", TF.owner||TF.project!=="all"||TF.kind||TF.sev||TF.od||TF.q)}
     <div class="pchips owners"><button class="${TF.owner===""?"on":""}" data-tf="owner:">全部負責人</button>${owners.map(o=>`<button class="${TF.owner===o?"on":""}" data-tf="owner:${esc(o)}">${esc(label(o))} <span class="pc-n">${open.filter(i=>(i.owner||"（未指派）")===o).length}</span></button>`).join("")}</div></section>
-  <section>${secH(list.length, `任務與問題點<mark>追蹤表</mark>`, "週會逐人檢視：按「✎ 更新對策」記錄本週的對策與進度")}
+  <section>${secH(list.length, `任務與問題點<mark>追蹤表</mark>`, "週會逐人檢視：按「✎ 更新對策」記錄本週的對策與進度・依編號", ordSeg("TF", TF.ord, "Issue 編號"))}
     ${list.length?`<div class="panel scroll"><table class="dt tk"><colgroup><col style="width:74px"><col style="width:24%"><col style="width:92px"><col style="width:100px"><col><col style="width:92px"><col style="width:110px"><col style="width:92px"></colgroup>
     <thead><tr><th class="n">No.／編號</th><th>任務／問題點</th><th>啟動日</th><th>預計完成</th><th>對策與進度</th><th>實際完成</th><th>負責人</th><th></th></tr></thead>
-    ${keys.map(k=>`<tbody><tr class="tk-group"><td colspan="8"><b>${esc(TF.group==="owner"?label(k):(k?proj(k).name:"處內事務"))}</b>${TF.group==="owner"&&personOf(k)?` <span class="sub">${esc(personOf(k).title||"")}</span>`:""} <span class="pc-n">${groups[k].length}</span></td></tr>${groups[k].sort((a,b)=>(isOpen(b)-isOpen(a))||(overdue(b)-overdue(a))||(a.due||"9").localeCompare(b.due||"9")).map(row).join("")}</tbody>`).join("")}
+    ${keys.map(k=>`<tbody><tr class="tk-group"><td colspan="8"><b>${esc(TF.group==="owner"?label(k):(k?proj(k).name:"處內事務"))}</b>${TF.group==="owner"&&personOf(k)?` <span class="sub">${esc(personOf(k).title||"")}</span>`:""} <span class="pc-n">${groups[k].length}</span></td></tr>${groups[k].sort((a,b)=>(isOpen(b)-isOpen(a)) || byIssNo(TF.ord)(a,b)).map(row).join("")}</tbody>`).join("")}
     </table></div>`:`<div class="card alert-empty">這個條件下沒有事項。</div>`}</section>`;
 }
 
@@ -1761,7 +1765,7 @@ const FDEF = { OV:{proj:"", q:""}, F:{project:"", unit:"", country:"", status:""
   PV:{q:"", iss:"", co:"", role:"", sec:"", health:""}, TF:{owner:"", project:"all", kind:"", sev:"", od:"", q:""} };
 document.addEventListener("click", e=>{
   if (e.target.closest(".totop")) return window.scrollTo({top:0, behavior: matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth"});
-  const t = e.target.closest("[data-close],[data-new],[data-edit],[data-leave],[data-issue],[data-new-issue],[data-promote],[data-person],[data-new-person],[data-new-onsite],[data-asg-for],[data-new-unit],[data-unit],[data-fill],[data-psort],[data-porg],[data-pf-clear],[data-tf],[data-quick],[data-close-issue],[data-reopen],[data-goto-tracker],[data-edit-proj],[data-new-proj],[data-new-task],[data-task],[data-raise],[data-new-ms],[data-ms],[data-range],[data-toggle-closed],[data-proj],[data-scroll],[data-fclear]"); if(!t) return;
+  const t = e.target.closest("[data-close],[data-new],[data-edit],[data-leave],[data-issue],[data-new-issue],[data-promote],[data-person],[data-new-person],[data-new-onsite],[data-asg-for],[data-new-unit],[data-unit],[data-fill],[data-psort],[data-porg],[data-pf-clear],[data-tf],[data-quick],[data-close-issue],[data-reopen],[data-goto-tracker],[data-edit-proj],[data-new-proj],[data-new-task],[data-task],[data-raise],[data-new-ms],[data-ms],[data-range],[data-toggle-closed],[data-proj],[data-scroll],[data-fclear],[data-ord]"); if(!t) return;
   const d = t.dataset;
   if (t.hasAttribute("data-close")) return closeForm();
   if (t.hasAttribute("data-new")) return openForm(null);
@@ -1778,6 +1782,7 @@ document.addEventListener("click", e=>{
   if (d.psort) { PF.sort = d.psort; return render(); }
   if (d.porg) { PF.org = d.porg; return render(); }
   if (t.hasAttribute("data-pf-clear")) { Object.assign(PF, {unit:"", st:"在職", co:"", role:"", proj:"", on:"", q:""}); return render(); }
+  if (d.ord) { const [o,v] = d.ord.split(":"); FS[o].ord = v; return render(); }
   if (d.fclear) { Object.assign(FS[d.fclear], FDEF[d.fclear]); return render(); }
   if (d.tf !== undefined) { const ix = d.tf.indexOf(":"); TF[d.tf.slice(0,ix)] = d.tf.slice(ix+1); return render(); }
   if (d.quick) return quickProgress(d.quick);
