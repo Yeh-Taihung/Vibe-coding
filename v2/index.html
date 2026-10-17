@@ -1,0 +1,1834 @@
+<!doctype html>
+<html lang="zh-Hant">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>工程處數據中控台</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@500;700;800&family=Noto+Sans+TC:wght@400;500;700;900&family=JetBrains+Mono:wght@400;500&display=swap">
+<style>
+/* 版面：粉彩漸層＋點陣底，內容為「貼紙卡」——米白卡面、粗黑框、無模糊的位移陰影。
+   黑底萊姆綠數字章標示數量，標題重點以螢光筆底線標記；紅橘只留給需要立刻處理的事。 */
+:root{
+  --bg1:#E2E9F3; --bg2:#F8E8D3; --bg3:#EEE4F4; --dot:rgba(23,23,27,.14);
+  --card:#FBFAF6; --soft:#EFECE4; --ink:#17171B; --shadow:#17171B; --fg:#17171B; --muted:#625E57;
+  --lime:#D4F53C; --yellow:#F7C437; --red:#F0532A; --blue:#2D5BFF; --green:#118449;
+  --sky:#8CCBFF; --lav:#B9AEFF; --mint:#8EE0B5; --peach:#FFB38A; --beige:#D9D0BF; --pink:#FFA8C5;
+  --on-bright:#17171B; --on-blue:#FFFFFF; --mark:#D4F53C; --chip-bg:#17171B; --chip-fg:#D4F53C;
+  --p1:#8CCBFF; --p2:#FFB38A; --p3:#B9AEFF; --p4:#8EE0B5; --p5:#F7C437; --p6:#D9D0BF; --p7:#FFA8C5; --p8:#D4F53C;
+  --f-body:"Noto Sans TC","PingFang TC","Microsoft JhengHei",system-ui,sans-serif;
+  --f-head:"Plus Jakarta Sans","Noto Sans TC","PingFang TC",system-ui,sans-serif;
+  --f-mono:"JetBrains Mono",ui-monospace,Menlo,monospace;
+  --r:14px; --b:2.5px; --sh:4px 4px 0 var(--shadow); --sh-sm:3px 3px 0 var(--shadow);
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  --bg1:#14171D; --bg2:#1F1A16; --bg3:#1A1722; --dot:rgba(255,255,255,.09);
+  --card:#22232A; --soft:#2C2D35; --ink:#E9E5DA; --shadow:#000000; --fg:#F2EFE7; --muted:#ABA69C;
+  --red:#FF6B47; --blue:#6E8CFF; --green:#4CC98A; --mark:#4E5E14; --chip-bg:#D4F53C; --chip-fg:#17171B;
+  color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg1:#14171D; --bg2:#1F1A16; --bg3:#1A1722; --dot:rgba(255,255,255,.09);
+  --card:#22232A; --soft:#2C2D35; --ink:#E9E5DA; --shadow:#000000; --fg:#F2EFE7; --muted:#ABA69C;
+  --red:#FF6B47; --blue:#6E8CFF; --green:#4CC98A; --mark:#4E5E14; --chip-bg:#D4F53C; --chip-fg:#17171B;
+  color-scheme:dark}
+
+*{box-sizing:border-box}
+body{background:var(--bg1);color:var(--fg);font-family:var(--f-body);font-size:14px;line-height:1.55;min-height:100%}
+.bgfx{position:fixed;inset:0;z-index:-1;background:
+  radial-gradient(var(--dot) 1.2px,transparent 1.4px) 0 0/22px 22px,
+  radial-gradient(120% 90% at 100% 100%,var(--bg2) 0%,transparent 60%),
+  radial-gradient(90% 80% at 0% 100%,var(--bg3) 0%,transparent 55%),
+  var(--bg1)}
+body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset-top,0px);z-index:10;background:var(--bg1)}
+.wrap{max-width:1180px;margin:0 auto;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+.num{font-family:var(--f-head);font-variant-numeric:tabular-nums}
+button,input,select,textarea{font:inherit;color:inherit}
+button{cursor:pointer}
+:focus-visible{outline:3px solid var(--blue);outline-offset:2px}
+h1,h2,h3{margin:0;text-wrap:balance}
+mark{background:linear-gradient(transparent 52%,var(--mark) 52% 92%,transparent 92%);color:inherit;padding:0 1px}
+
+/* 共用貼紙元件 */
+.card,.panel{background:var(--card);border:var(--b) solid var(--ink);border-radius:var(--r);box-shadow:var(--sh)}
+.pill{display:inline-flex;align-items:center;gap:6px;padding:5px 14px;border:var(--b) solid var(--ink);border-radius:999px;background:var(--card);box-shadow:var(--sh-sm);font-weight:700;white-space:nowrap}
+.badge{display:inline-grid;place-items:center;min-width:34px;height:34px;padding:0 7px;background:var(--chip-bg);color:var(--chip-fg);border-radius:9px;font-family:var(--f-head);font-weight:800;font-size:17px;box-shadow:2px 2px 0 var(--shadow)}
+.tag{display:inline-flex;align-items:center;gap:4px;padding:2px 9px;border:1.5px dashed var(--ink);border-radius:7px;font-size:12px;font-weight:500;color:var(--fg);background:var(--card);white-space:nowrap}
+.chip{display:inline-flex;align-items:center;gap:4px;padding:1px 9px;border:2px solid var(--ink);border-radius:999px;font-size:12px;font-weight:700;white-space:nowrap;background:var(--card);color:var(--fg)}
+.chip.ok{background:var(--mint);color:var(--on-bright)} .chip.warn{background:var(--yellow);color:var(--on-bright)}
+.chip.crit{background:var(--red);color:#fff} .chip.info{background:var(--sky);color:var(--on-bright)}
+.chip.acc{background:var(--lime);color:var(--on-bright)}
+.dot{width:10px;height:10px;border-radius:50%;display:inline-block;flex:none;border:1.5px solid var(--ink)}
+.mono{font-family:var(--f-mono);font-size:12px}
+
+/* header */
+.top{position:sticky;top:env(safe-area-inset-top,0px);z-index:5;background:color-mix(in srgb,var(--bg1) 88%,transparent);backdrop-filter:blur(6px);border-bottom:var(--b) solid var(--ink)}
+.top .wrap{display:flex;align-items:center;justify-content:space-between;gap:12px 20px;flex-wrap:wrap;padding-block:12px}
+.brand{display:flex;align-items:center;gap:12px}
+.brand .logo,.gate-card .logo{width:42px;height:42px;border-radius:11px;background:var(--chip-bg);color:var(--chip-fg);display:grid;place-items:center;font-weight:900;font-size:19px;box-shadow:2px 2px 0 var(--lime)}
+.brand h1{font-size:19px;font-weight:900;line-height:1.15;letter-spacing:.01em}
+.brand h1 small{display:block;font-family:var(--f-head);font-size:12px;font-weight:700;color:var(--muted);letter-spacing:.06em}
+.tabs{display:flex;gap:8px;overflow-x:auto;scrollbar-width:none;padding:3px 5px 6px 3px;margin:-3px -5px -6px -3px}
+.tabs a{padding:6px 14px;color:var(--fg);text-decoration:none;font-weight:700;white-space:nowrap;border:var(--b) solid var(--ink);border-radius:999px;background:var(--card);box-shadow:var(--sh-sm);transition:transform .08s}
+.tabs a:hover{transform:translate(-1px,-1px);box-shadow:4px 4px 0 var(--shadow)}
+.tabs a[aria-current="page"]{background:var(--chip-bg);color:var(--chip-fg)}
+.proto .wrap{padding-block:14px 0}
+.proto .tag{white-space:normal;line-height:1.5;font-size:12.5px}
+
+main .wrap{padding-block:22px 56px;display:flex;flex-direction:column;gap:34px}
+section{display:flex;flex-direction:column;gap:14px;min-width:0}
+.sec-h{display:flex;align-items:center;justify-content:space-between;gap:10px 16px;flex-wrap:wrap}
+.sec-h h2{display:flex;align-items:center;gap:10px;font-size:22px;font-weight:900;letter-spacing:.01em}
+.sec-h .hint{color:var(--muted);font-size:12.5px}
+
+/* summary price-tags */
+.sum{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:16px}
+.ptag{position:relative;padding:22px 16px 14px;text-align:center;display:flex;flex-direction:column;gap:2px;align-items:center;text-decoration:none;color:inherit}
+.ptag::before{content:"";position:absolute;top:9px;left:50%;width:11px;height:11px;margin-left:-6px;border:2.5px solid var(--ink);border-radius:50%;background:var(--card)}
+.ptag .k{font-weight:900;font-size:15px}
+.ptag .v{font-family:var(--f-head);font-weight:800;font-size:46px;line-height:1.05;letter-spacing:-.02em}
+.ptag .v small{font-family:var(--f-body);font-size:16px;font-weight:900;margin-left:3px}
+.ptag .s{font-size:12px;color:var(--muted)}
+.ptag.hot .v{color:var(--red)}
+.ptag:hover{transform:translate(-1px,-1px);box-shadow:6px 6px 0 var(--shadow)}
+
+/* alerts */
+.stamp{display:inline-block;transform:rotate(-4deg);border:3px solid var(--red);color:var(--red);padding:2px 12px;border-radius:8px;font-weight:900;font-size:17px;background:var(--card);box-shadow:3px 3px 0 color-mix(in srgb,var(--red) 35%,transparent)}
+.alerts{display:flex;flex-direction:column;gap:12px}
+.alert{display:grid;grid-template-columns:auto 1fr auto;gap:4px 14px;align-items:center;padding:12px 14px}
+.alert .sev{align-self:start;margin-top:1px}
+.alert .t{font-weight:900;font-size:15px} .alert .d{color:var(--muted);font-size:13px}
+.alert .go{background:var(--card);border:2px solid var(--ink);border-radius:999px;padding:4px 14px;font-size:12.5px;font-weight:700;box-shadow:2px 2px 0 var(--shadow)}
+.alert .go:hover{background:var(--lime);color:var(--on-bright)}
+.alert.crit{border-color:var(--red);box-shadow:4px 4px 0 var(--red)}
+.alert-empty{padding:18px;color:var(--muted)}
+
+/* where */
+.where{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:18px}
+.loc{padding:16px;display:flex;flex-direction:column;gap:12px}
+.loc-h{display:flex;align-items:center;justify-content:space-between;gap:8px}
+.loc-h h3{font-size:20px;font-weight:900;display:flex;align-items:center;gap:8px}
+.loc-h .count{font-family:var(--f-head);font-size:40px;font-weight:800;line-height:1}
+.loc-h .count small{font-family:var(--f-body);font-size:14px;font-weight:900;margin-left:2px}
+.bx-list{display:flex;flex-direction:column;gap:8px}
+.bx{display:grid;grid-template-columns:1fr auto;gap:2px 8px;font-size:13px;padding:8px 12px;background:var(--soft);border:2px solid var(--ink);border-radius:10px}
+.bx b{font-weight:900;font-size:14px} .bx .sub{color:var(--muted);font-size:12px;grid-column:1/-1}
+.bx .ret{font-family:var(--f-head);font-weight:700}
+.sup-list{display:flex;flex-wrap:wrap;gap:6px}
+.loc .stale{align-self:flex-start}
+
+/* upcoming */
+.upc{display:flex;flex-direction:column;gap:10px}
+.upc-row{display:grid;grid-template-columns:72px 1fr auto;gap:14px;align-items:center;padding:10px 14px}
+.cal{border:2px solid var(--ink);border-radius:10px;overflow:hidden;text-align:center;background:var(--card)}
+.cal .m{background:var(--chip-bg);color:var(--chip-fg);font-size:11px;font-weight:700;padding:1px 0}
+.cal .d{font-family:var(--f-head);font-weight:800;font-size:22px;line-height:1.3}
+.upc-row .what{min-width:0}
+.upc-row .what b{font-weight:900}
+.upc-row .what .sub{color:var(--muted);font-size:12.5px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+
+/* projects */
+.projects{display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:18px}
+.proj{padding:14px 16px;display:flex;flex-direction:column;gap:10px;text-align:left;color:inherit;transition:transform .08s}
+.proj:hover{transform:translate(-2px,-2px);box-shadow:6px 6px 0 var(--shadow)}
+.proj .ph{display:flex;justify-content:space-between;gap:8px;align-items:flex-start}
+.proj h3{font-size:16px;font-weight:900;line-height:1.3}
+.proj .stats{display:grid;grid-template-columns:repeat(3,1fr);gap:4px;font-size:12px;color:var(--muted)}
+.proj .stats b{font-family:var(--f-head);font-size:28px;color:var(--fg);font-weight:800;display:block;line-height:1.1}
+.proj.dim{opacity:.55;box-shadow:var(--sh-sm)}
+.seg{display:flex;height:16px;border:2px solid var(--ink);border-radius:999px;overflow:hidden;background:var(--card)}
+.seg i{display:block;height:100%;border-right:2px solid var(--ink)}
+.seg i:last-child{border-right:0}
+.seg-l{font-size:12px;color:var(--muted)}
+
+/* toolbar & tables */
+.toolbar{display:flex;flex-wrap:wrap;gap:10px;align-items:center}
+.toolbar select,.toolbar input{background:var(--card);border:var(--b) solid var(--ink);border-radius:999px;padding:6px 14px;min-width:0;font-weight:500;box-shadow:var(--sh-sm)}
+.toolbar input{flex:1 1 160px}
+.btn{background:var(--blue);color:var(--on-blue);border:var(--b) solid var(--ink);border-radius:999px;padding:7px 18px;font-weight:900;white-space:nowrap;box-shadow:var(--sh-sm);transition:transform .08s}
+.btn:hover{transform:translate(-1px,-1px);box-shadow:4px 4px 0 var(--shadow)}
+.btn:active{transform:translate(2px,2px);box-shadow:1px 1px 0 var(--shadow)}
+.btn.ghost{background:var(--card);color:var(--fg)}
+.scroll{overflow-x:auto}
+table{width:100%;border-collapse:collapse;font-size:13px}
+th{text-align:left;font-weight:700;color:var(--fg);font-size:12px;letter-spacing:.04em;padding:10px 12px;border-bottom:var(--b) solid var(--ink);white-space:nowrap;background:var(--soft)}
+td{padding:9px 12px;border-bottom:1.5px dashed color-mix(in srgb,var(--ink) 30%,transparent);vertical-align:top}
+tr:last-child td{border-bottom:0}
+td.n,th.n{text-align:right;font-family:var(--f-head);font-variant-numeric:tabular-nums}
+td b{font-weight:900}
+td .sub{color:var(--muted);font-size:12px}
+.linkbtn{background:var(--card);border:2px solid var(--ink);border-radius:999px;color:var(--fg);padding:1px 10px;font-size:12px;font-weight:700}
+.linkbtn:hover{background:var(--lime);color:var(--on-bright)}
+
+/* utilization */
+.util{display:grid;grid-template-columns:repeat(auto-fill,minmax(205px,1fr));gap:16px}
+.u{padding:14px 16px;display:flex;flex-direction:column;gap:8px}
+.u .uh{display:flex;justify-content:space-between;align-items:center}
+.u .uh b{font-weight:900;font-size:15px}
+.u .uv{font-family:var(--f-head);font-size:38px;font-weight:800;line-height:1}
+.u .uv small{font-size:13px;color:var(--muted);font-family:var(--f-body);font-weight:700;margin-left:6px}
+.u .meta{font-size:12px;color:var(--muted);display:flex;justify-content:space-between;gap:6px;flex-wrap:wrap}
+.u .meta .roll.warn{color:var(--fg);background:var(--yellow);padding:0 6px;border-radius:5px;font-weight:700}
+.u .meta .roll.crit{color:#fff;background:var(--red);padding:0 6px;border-radius:5px;font-weight:700}
+
+/* gantt */
+.gantt{min-width:760px;font-size:12.5px}
+.g-head,.g-row{display:grid;grid-template-columns:120px 1fr}
+.g-head{background:var(--soft);border-bottom:var(--b) solid var(--ink)}
+.g-head .months{display:grid;grid-template-columns:repeat(12,1fr);font-size:11.5px;font-weight:700}
+.g-head .months span{padding:7px 5px;border-left:1.5px dashed color-mix(in srgb,var(--ink) 35%,transparent)}
+.g-row{border-bottom:1.5px dashed color-mix(in srgb,var(--ink) 25%,transparent)}
+.g-row:last-child{border-bottom:0}
+.g-row .who{padding:8px 12px;font-weight:900;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.g-track{position:relative;min-height:36px;background-image:linear-gradient(to right,color-mix(in srgb,var(--ink) 12%,transparent) 1.5px,transparent 1.5px);background-size:calc(100%/12) 100%}
+.g-bar{position:absolute;top:7px;height:22px;border-radius:7px;font-size:11px;font-weight:700;line-height:18px;padding:0 6px;color:var(--on-bright);overflow:hidden;white-space:nowrap;min-width:4px;border:2px solid var(--ink);box-shadow:2px 2px 0 var(--shadow)}
+.g-bar.tent{background-image:repeating-linear-gradient(135deg,transparent 0 5px,rgba(255,255,255,.55) 5px 8px)!important}
+.g-today{position:absolute;top:0;bottom:0;width:0;border-left:2px dashed color-mix(in srgb,var(--red) 70%,transparent);z-index:1;pointer-events:none}
+.legend{display:flex;flex-wrap:wrap;gap:8px 14px;font-size:12px;font-weight:500}
+.legend span{display:inline-flex;align-items:center;gap:6px}
+
+/* project detail */
+.pd{display:flex;flex-direction:column;gap:18px}
+.pd-head{padding:18px;display:flex;flex-direction:column;gap:14px}
+.pd-head h2{font-size:24px;font-weight:900}
+.pd-meta{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px}
+.pd-meta div{font-size:12px;color:var(--muted);font-weight:500} .pd-meta b{display:block;color:var(--fg);font-weight:900;font-size:15px}
+.pd-meta b.num{font-size:28px;font-weight:800}
+.locked{color:var(--muted);font-style:normal;font-size:12px;font-weight:500}
+.stage{overflow:hidden}
+.stage-h{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:10px 14px;background:var(--ink);color:var(--card);font-weight:900}
+.stage-h .badge{background:var(--lime);color:var(--on-bright);box-shadow:none;height:26px;min-width:auto;font-size:13px;border-radius:7px}
+
+/* drawer */
+.scrim{position:fixed;inset:0;background:rgba(15,15,20,.45);z-index:20}
+.drawer{position:fixed;top:0;right:0;bottom:0;width:min(470px,100%);background:var(--card);z-index:21;display:flex;flex-direction:column;border-left:var(--b) solid var(--ink);box-shadow:-6px 0 0 var(--shadow);
+  padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px);padding-right:env(safe-area-inset-right,0px)}
+.drawer header{display:flex;justify-content:space-between;align-items:center;padding:16px 20px;border-bottom:var(--b) solid var(--ink);background:var(--soft)}
+.drawer header h2{font-size:19px;font-weight:900}
+.drawer form{flex:1;overflow-y:auto;padding:18px 20px;display:flex;flex-direction:column;gap:14px}
+.f{display:flex;flex-direction:column;gap:5px}
+.f label{font-size:12.5px;font-weight:700}
+.f input,.f select,.f textarea{background:var(--card);border:2px solid var(--ink);border-radius:10px;padding:8px 11px;width:100%;min-width:0}
+.f input:focus,.f select:focus,.f textarea:focus{outline:none;box-shadow:3px 3px 0 var(--lime);border-color:var(--ink)}
+.f textarea{min-height:64px;resize:vertical}
+.f2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.checks{display:flex;flex-direction:column;gap:8px}
+.check{font-size:13px;font-weight:700;padding:8px 12px;border-radius:10px;border:2px solid var(--ink)}
+.check.warn{background:var(--yellow);color:var(--on-bright)} .check.crit{background:var(--red);color:#fff} .check.ok{background:var(--mint);color:var(--on-bright)}
+.drawer footer{display:flex;gap:10px;justify-content:flex-end;padding:14px 20px;border-top:var(--b) solid var(--ink)}
+.x{background:var(--card);border:2px solid var(--ink);border-radius:9px;font-size:18px;line-height:1;width:34px;height:34px;box-shadow:2px 2px 0 var(--shadow)}
+
+.toast{position:fixed;left:50%;bottom:calc(22px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);background:var(--ink);color:var(--card);padding:10px 20px;border-radius:999px;z-index:30;font-size:14px;font-weight:700;max-width:calc(100% - 32px);box-shadow:3px 3px 0 var(--lime)}
+
+
+/* v2.2 */
+.sec-r{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.btn.sm{padding:4px 14px;font-size:13px}
+.btn.lime{background:var(--lime);color:var(--on-bright)}
+.hot{color:var(--red)!important}
+b.od,.od{color:var(--red);font-weight:900}
+.iss-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(330px,1fr));gap:18px}
+.iss-card{padding:14px 16px;display:flex;flex-direction:column;gap:10px}
+.ic-h{display:flex;justify-content:space-between;align-items:center;gap:10px}
+.ic-name{background:none;border:0;padding:0;font-size:17px;font-weight:900;text-align:left;color:var(--fg)}
+.ic-name:hover{text-decoration:underline;text-decoration-color:var(--lime);text-decoration-thickness:3px}
+.ic-n{font-family:var(--f-head);font-weight:800;font-size:34px;line-height:1;color:var(--red)}
+.ic-n.zero{color:var(--muted)}
+.ic-sev{display:flex;gap:6px;flex-wrap:wrap}
+.ic-list{display:flex;flex-direction:column;gap:8px}
+.ic-empty{color:var(--muted);font-size:13px;padding:6px 0}
+.ic-foot{margin-top:auto;display:flex;justify-content:space-between;align-items:center;gap:8px}
+.iss-row{display:grid;grid-template-columns:auto 1fr;gap:1px 10px;padding:8px 12px;border:2px solid var(--ink);border-radius:10px;background:var(--soft);text-align:left;width:100%;color:var(--fg)}
+.iss-row:hover{background:var(--card);box-shadow:2px 2px 0 var(--shadow)}
+.iss-row .t{font-weight:700;font-size:13.5px}
+.iss-row .m{grid-column:2;font-size:12px;color:var(--muted)}
+.sevdot{width:11px;height:11px;border-radius:3px;border:1.5px solid var(--ink);margin-top:5px}
+.pchips{display:flex;gap:8px;flex-wrap:wrap}
+.pchips button{padding:6px 14px;border:var(--b) solid var(--ink);border-radius:999px;background:var(--card);box-shadow:var(--sh-sm);font-weight:700;color:var(--fg)}
+.pchips button.on{background:var(--chip-bg);color:var(--chip-fg)}
+.pc-n{display:inline-grid;place-items:center;min-width:20px;height:20px;padding:0 5px;border-radius:999px;background:var(--red);color:#fff;font-size:11.5px;margin-left:4px}
+.sup-cards{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:14px}
+.sup{padding:14px 16px;display:flex;flex-direction:column;gap:10px}
+.sup.bxs{background:color-mix(in srgb,var(--lime) 18%,var(--card))}
+.sup h3{font-size:17px;font-weight:900}
+.dt td.wide{min-width:260px}
+.dt .purpose{margin-top:2px;line-height:1.5}
+.nowrap{white-space:nowrap}
+td.act{display:flex;gap:6px}
+.clickname{background:none;border:0;padding:0;font-weight:900;color:var(--fg);text-decoration:underline;text-decoration-thickness:3px;text-decoration-color:var(--lime);text-underline-offset:3px}
+.clickrow{cursor:pointer}
+.clickrow:hover td{background:color-mix(in srgb,var(--lime) 14%,transparent)}
+button.chip{cursor:pointer}
+button.chip:hover{background:var(--lime);color:var(--on-bright)}
+.fs{border:2px solid var(--ink);border-radius:12px;padding:10px 12px 12px;display:flex;flex-direction:column;gap:10px;background:var(--soft);margin:0}
+.fs legend{font-weight:900;font-size:13px;padding:0 6px}
+.hist{display:flex;flex-direction:column;gap:6px;max-height:200px;overflow-y:auto}
+.hist > div{font-size:12.5px;padding:6px 10px;border:1.5px dashed var(--ink);border-radius:8px;background:var(--card)}
+.hist .sub{color:var(--muted);font-size:12px}
+.f .help{font-size:12px;color:var(--muted)}
+.f input[readonly]{background:var(--soft)}
+.tag.wrap{white-space:normal}
+.note{margin:0;font-size:12px;color:var(--muted)}
+
+/* v2.3：回到頂端、專案新增、甘特圖 */
+.totop{position:fixed;right:max(18px,calc(env(safe-area-inset-right,0px) + 14px));bottom:calc(22px + env(safe-area-inset-bottom,0px));z-index:15;width:54px;height:54px;border-radius:16px;
+  background:var(--chip-bg);color:var(--chip-fg);border:var(--b) solid var(--ink);box-shadow:var(--sh);display:flex;flex-direction:column;align-items:center;justify-content:center;line-height:1;font-weight:900}
+.totop span{font-size:22px} .totop small{font-size:10.5px;margin-top:2px}
+.totop:hover{transform:translate(-1px,-1px);box-shadow:5px 5px 0 var(--shadow)}
+.addp{padding:6px 14px;border:var(--b) dashed var(--ink);border-radius:999px;background:transparent;font-weight:700;color:var(--fg)}
+.addp:hover{background:var(--lime);color:var(--on-bright)}
+.warnbtn{border-color:var(--red)!important}
+.warnbtn:hover{background:var(--red)!important;color:#fff!important}
+.act{display:inline-flex;gap:6px}
+.seg-t{display:inline-flex;border:var(--b) solid var(--ink);border-radius:999px;overflow:hidden;box-shadow:var(--sh-sm)}
+.seg-t button{background:var(--card);border:0;padding:5px 14px;font-weight:700;color:var(--fg)}
+.seg-t button + button{border-left:2px solid var(--ink)}
+.seg-t button.on{background:var(--chip-bg);color:var(--chip-fg)}
+.swatch{display:inline-block;width:26px;height:12px;border:2px solid var(--ink);border-radius:4px;background:var(--sky)}
+.swatch.fut{background:repeating-linear-gradient(135deg,var(--sky) 0 4px,var(--card) 4px 7px)}
+.swatch.open{background:linear-gradient(90deg,var(--sky) 55%,transparent);border-right-style:dashed}
+details.mp-list{overflow:hidden}
+details.mp-list summary{cursor:pointer;padding:12px 16px;font-weight:900;list-style:none;display:flex;align-items:center;gap:8px}
+details.mp-list summary::before{content:"▸";font-size:14px}
+details.mp-list[open] summary::before{content:"▾"}
+details.mp-list[open] summary{border-bottom:var(--b) solid var(--ink)}
+.ax-q,.ax-m{display:flex}
+.ax-q span,.ax-m span{flex:1;text-align:center;border-left:1.5px solid color-mix(in srgb,var(--ink) 35%,transparent);padding:3px 0;font-size:11.5px;font-weight:700;white-space:nowrap;overflow:hidden}
+.ax-q{border-bottom:1.5px solid color-mix(in srgb,var(--ink) 35%,transparent);background:color-mix(in srgb,var(--sky) 30%,transparent)}
+.ax-q span{font-family:var(--f-head)}
+/* 人力甘特 */
+.mg{font-size:12.5px}
+.mg-row{display:grid;grid-template-columns:170px 1fr;border-bottom:1.5px dashed color-mix(in srgb,var(--ink) 22%,transparent)}
+.mg-head{background:var(--soft);border-bottom:var(--b) solid var(--ink);position:sticky;top:0;z-index:2}
+.mg-head .mg-l{display:flex;align-items:flex-end;padding:6px 12px;font-weight:700}
+.mg-l{padding:6px 12px;display:flex;flex-direction:column;justify-content:center;min-width:0;position:sticky;left:0;background:var(--card);z-index:1;border-right:1.5px solid color-mix(in srgb,var(--ink) 30%,transparent)}
+.mg-head .mg-l{background:var(--soft)}
+.mg-l .sub{font-size:11.5px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.mg-l .clickname{text-align:left;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.mg-sec{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:7px 12px;background:var(--soft);border-bottom:1.5px solid color-mix(in srgb,var(--ink) 35%,transparent);font-weight:900;position:sticky;left:0}
+.mg-sec span:first-child{display:inline-flex;align-items:center;gap:8px}
+.mg-n{font-weight:500;font-size:12px;color:var(--muted)} .mg-n b{color:var(--fg)}
+.mg-t,.pg-t{position:relative;background-image:linear-gradient(to right,color-mix(in srgb,var(--ink) 12%,transparent) 1.5px,transparent 1.5px);background-size:calc(100% / var(--n)) 100%}
+.mg-t{min-height:40px}
+.mg-bar{position:absolute;top:8px;height:24px;border-radius:7px;border:2px solid var(--ink);background:var(--c);box-shadow:2px 2px 0 var(--shadow);padding:0 6px;font-size:11px;font-weight:700;color:var(--on-bright);overflow:hidden;white-space:nowrap;text-align:left;line-height:20px}
+.mg-bar.fut{background:repeating-linear-gradient(135deg,var(--c) 0 5px,var(--card) 5px 9px)}
+.mg-bar.open{background:linear-gradient(90deg,var(--c) 70%,color-mix(in srgb,var(--c) 15%,transparent));border-right-style:dashed;box-shadow:none}
+.mg-bar span{background:color-mix(in srgb,var(--card) 70%,transparent);border-radius:4px;padding:0 3px}
+.mg-stale{position:absolute;top:11px;margin-left:6px;font-size:10.5px;font-weight:700;background:var(--yellow);color:var(--on-bright);border:1.5px solid var(--ink);border-radius:999px;padding:0 6px;white-space:nowrap}
+/* 安裝任務甘特 */
+.pg{font-size:12.5px}
+.pg-row{display:grid;grid-template-columns:250px 44px 1fr;border-bottom:1.5px dashed color-mix(in srgb,var(--ink) 22%,transparent)}
+.pg-head{background:var(--soft);border-bottom:var(--b) solid var(--ink);position:sticky;top:0;z-index:2}
+.pg-head .pg-l{display:flex;align-items:flex-end;font-weight:700;background:var(--soft)}
+.pg-l{padding:8px 12px;position:sticky;left:0;background:var(--card);z-index:1;border-right:1.5px solid color-mix(in srgb,var(--ink) 30%,transparent);min-width:0;display:flex;flex-direction:column;gap:3px}
+.pg-row.risk .pg-l{background:color-mix(in srgb,var(--yellow) 22%,var(--card))}
+.pg-name{display:flex;align-items:baseline;gap:6px;flex-wrap:wrap;line-height:1.35}
+.pg-name .no{font-family:var(--f-head);font-weight:800;font-size:11px;min-width:20px;height:18px;display:inline-grid;place-items:center;background:var(--chip-bg);color:var(--chip-fg);border-radius:5px}
+.pg-sub{font-size:11.5px;color:var(--muted);display:flex;gap:4px;align-items:center;flex-wrap:wrap}
+.pg-note{font-size:11.5px;color:var(--fg);line-height:1.45;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.pg-act{display:flex;gap:6px;margin-top:2px}
+.pg-act .linkbtn{font-size:11px;padding:0 8px}
+.pg-lab{display:flex;flex-direction:column;justify-content:center;border-right:1.5px solid color-mix(in srgb,var(--ink) 25%,transparent);font-size:11px;font-weight:700;color:var(--muted);text-align:center}
+.pg-lab span{flex:1;display:grid;place-items:center} .pg-lab span + span{border-top:1px dashed color-mix(in srgb,var(--ink) 25%,transparent)}
+.pg-t{display:flex;flex-direction:column}
+.lane{position:relative;flex:1;min-height:26px}
+.lane + .lane{border-top:1px dashed color-mix(in srgb,var(--ink) 18%,transparent)}
+.gb{position:absolute;top:50%;height:8px;margin-top:-4px;border-radius:4px;background:var(--c,var(--muted))}
+.gb::after{content:"";position:absolute;right:-7px;top:50%;margin-top:-6px;border:6px solid transparent;border-left:7px solid var(--c,var(--muted));border-right:0}
+.gb.plan{--c:color-mix(in srgb,var(--ink) 45%,transparent)}
+.gb.act{border:1.5px solid var(--ink);height:11px;margin-top:-5.5px}
+.gb.act::after{display:none}
+.gb.open{border-right-style:dashed;background:linear-gradient(90deg,var(--c) 75%,color-mix(in srgb,var(--c) 30%,transparent))}
+.pg-sec{display:flex;justify-content:space-between;align-items:center;padding:8px 12px;background:var(--chip-bg);color:var(--chip-fg);font-weight:900;position:sticky;left:0}
+.pg-sec .badge{background:var(--card);color:var(--fg);box-shadow:none;height:24px;font-size:12px;min-width:auto;border-radius:7px}
+.pg-ms .pg-l{flex-direction:row;align-items:center;justify-content:space-between;background:color-mix(in srgb,var(--sky) 22%,var(--card))}
+.pg-ms .pg-t{min-height:62px}
+.msd{position:absolute;top:8px;transform:translateX(-50%);background:none;border:0;padding:0;display:flex;flex-direction:column;align-items:center;gap:1px;color:var(--fg);z-index:1}
+.msd .dia{width:16px;height:16px;transform:rotate(45deg);background:var(--card);border:2.5px solid var(--ink);box-shadow:2px 2px 0 var(--shadow)}
+.msd b{font-family:var(--f-head);font-size:12px;font-weight:800;margin-top:3px}
+.msd small{font-size:10.5px;color:var(--muted)}
+.msd:hover .dia{background:var(--lime)}
+.now-tag{position:absolute;bottom:3px;transform:translateX(-50%);font-size:10.5px;font-weight:700;background:var(--card);color:var(--red);border:1.5px dashed var(--red);padding:0 6px;border-radius:999px;white-space:nowrap;z-index:1}
+.pg-hint{position:absolute;left:12px;top:50%;transform:translateY(-50%);font-size:12px;color:var(--muted)}
+.lg-line{display:inline-block;width:28px;height:9px;border-radius:4px;border:1.5px solid var(--ink);background:var(--c)}
+.lg-line.plan{border:0;height:6px;background:color-mix(in srgb,var(--ink) 45%,transparent)}
+.pg-legend{margin-bottom:-4px}
+
+/* v2.4：人員名單與編輯按鈕 */
+[hidden]{display:none!important}
+.editbtn{display:inline-flex;align-items:center;gap:4px;padding:3px 12px;border:2px solid var(--ink);border-radius:999px;background:var(--lime);color:var(--on-bright);font-weight:900;font-size:12.5px;white-space:nowrap;box-shadow:2px 2px 0 var(--shadow);transition:transform .08s}
+.editbtn:hover{transform:translate(-1px,-1px);box-shadow:3px 3px 0 var(--shadow)}
+.roster{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:18px;align-items:start}
+.rs-col{padding:14px 16px;display:flex;flex-direction:column;gap:8px}
+.rs-col.pending{border-style:dashed}
+.rs-col.support{background:color-mix(in srgb,var(--sky) 14%,var(--card))}
+.rs-col.left{opacity:.7}
+.rs-h{display:flex;justify-content:space-between;align-items:center;gap:8px}
+.rs-h h3{font-size:17px;font-weight:900}
+.rs-h .count{font-family:var(--f-head);font-size:28px;font-weight:800;line-height:1}
+.rs-h .count small{font-family:var(--f-body);font-size:13px;font-weight:900;margin-left:2px}
+.rs-row{display:grid;grid-template-columns:1fr auto;gap:4px 8px;align-items:center;padding:8px 10px;border:2px solid var(--ink);border-radius:10px;background:var(--soft)}
+.rs-n{display:flex;flex-direction:column;min-width:0}
+.rs-n b{font-weight:900} .rs-n .sub{font-size:11.5px;color:var(--muted)}
+.rs-s{display:flex;gap:4px;flex-wrap:wrap;grid-column:1}
+.rs-row .editbtn{grid-column:2;grid-row:1/3}
+.rs-row.gone{background:transparent;border-style:dashed;color:var(--muted)}
+.rs-row.gone .editbtn{background:var(--card);color:var(--fg)}
+tr.gone td{color:var(--muted)} tr.gone td b{color:var(--muted)}
+.asg-mini{display:flex;flex-wrap:wrap;gap:2px 8px;align-items:baseline;text-align:left;padding:6px 10px;border:1.5px solid var(--ink);border-radius:8px;background:var(--card);color:var(--fg);font-size:12.5px}
+.asg-mini .sub{color:var(--muted);font-size:11.5px}
+.asg-mini:hover{background:var(--lime);color:var(--on-bright)}
+
+/* v2.5：組織層級 */
+.rs-top{padding:14px 16px;display:flex;flex-direction:column;gap:10px;background:color-mix(in srgb,var(--lime) 16%,var(--card))}
+.rs-toprow{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:8px}
+.rs-h .sub{display:block;font-size:12px;color:var(--muted)}
+.rs-hr{display:inline-flex;align-items:center;gap:10px}
+.rs-sec{display:flex;justify-content:space-between;align-items:center;gap:8px;margin-top:6px;padding:6px 10px;border-radius:8px;background:var(--chip-bg);color:var(--chip-fg);font-size:13px}
+.rs-sec b{font-weight:900}
+.rs-t{display:flex;align-items:baseline;gap:6px;flex-wrap:wrap}
+.rs-t .ttl{font-size:11px;font-weight:700;padding:0 6px;border:1.5px solid var(--ink);border-radius:5px;background:var(--card)}
+.rs-t .en{font-size:12px;color:var(--muted);font-family:var(--f-head)}
+.rs-row.tbh{border-color:var(--red);border-style:dashed;background:transparent}
+.rs-row.tbh b{color:var(--red)}
+.editbtn.ghost{background:var(--card);color:var(--fg)}
+.editbtn.sm{padding:1px 9px;font-size:12px}
+.sugg{display:flex;flex-wrap:wrap;gap:5px;margin-top:4px}
+.btn.sm.ghost{background:var(--card);color:var(--fg)}
+
+/* v2.7：追蹤清單 */
+.tk td{vertical-align:top}
+.tk .tk-group td{background:var(--chip-bg);color:var(--chip-fg);padding:7px 12px;font-size:13.5px;position:sticky;left:0}
+.tk .tk-group .sub{color:inherit;opacity:.75}
+.tk-meta{display:flex;flex-wrap:wrap;gap:4px 6px;align-items:center;margin-top:3px}
+.tk-log{font-size:12.5px;line-height:1.5;min-width:280px}
+.tk-log > div{padding:2px 0}
+.tk-log > div.last{background:color-mix(in srgb,var(--lime) 22%,transparent);border-radius:4px;padding:2px 4px;margin:0 -4px}
+.tk-log b.num{font-size:11.5px;margin-right:4px}
+tr.od-row td:first-child{box-shadow:inset 4px 0 0 var(--red)}
+.act.col{flex-direction:column;align-items:flex-start}
+.pchips.owners{margin-top:10px}
+.pchips.owners button{padding:4px 12px;font-size:13px}
+
+/* v2.7.1 */
+.chip.done{background:var(--green);color:#fff;border-color:var(--ink)}
+.f3{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}
+.nodate{display:inline-block;width:14px;color:var(--muted);font-weight:900}
+.hist{max-height:260px}
+tr.gone td{background:color-mix(in srgb,var(--green) 6%,transparent)}
+
+/* v2.7.2：進度逐筆編輯 */
+.hist.editable{max-height:340px}
+.hist .hl{display:flex;gap:8px;align-items:flex-start}
+.hist .hl-txt{flex:1;min-width:0}
+.hl-edit{flex:none;width:28px;height:28px;border:2px solid var(--ink);border-radius:8px;background:var(--lime);color:var(--on-bright);font-weight:900;line-height:1;box-shadow:2px 2px 0 var(--shadow)}
+.hl-edit:disabled{opacity:.35;cursor:default;box-shadow:none}
+.hist .hl.editing{flex-direction:column;align-items:stretch;gap:6px;border-style:solid;background:color-mix(in srgb,var(--lime) 14%,var(--card))}
+.hl-row{display:flex;gap:8px;align-items:center}
+.hl-row input{width:auto;background:var(--card);border:2px solid var(--ink);border-radius:8px;padding:4px 8px}
+.hl.editing textarea{width:100%;min-height:72px;background:var(--card);border:2px solid var(--ink);border-radius:8px;padding:6px 9px;resize:vertical}
+.hl-act{display:flex;gap:8px;align-items:center}
+
+/* v2.7.3 */
+.iss-no{font-family:var(--f-mono);font-size:11px;font-weight:500;color:var(--muted);margin-top:2px;white-space:nowrap;text-align:right}
+.btn.danger{border-color:var(--red);color:var(--red)}
+.btn.danger.armed{background:var(--red);color:#fff}
+.drawer footer{align-items:center}
+.legend-box summary{cursor:pointer;padding:10px 16px;font-weight:900;list-style:none;display:flex;gap:8px;align-items:center}
+.legend-box summary::before{content:"ⓘ";font-size:15px}
+.legend-box[open] summary{border-bottom:2px dashed color-mix(in srgb,var(--ink) 30%,transparent)}
+.lg-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:12px 22px;padding:12px 16px 14px;font-size:13px}
+.lg-grid b{font-weight:900}
+.lg-grid p{margin:4px 0 0;color:var(--fg);line-height:1.55}
+.grades{list-style:none;padding:0;margin:6px 0 0;display:flex;flex-direction:column;gap:5px}
+.grades .chip{min-width:28px;justify-content:center;margin-right:4px}
+.grades .roll{font-size:12px;padding:0 6px;border-radius:5px;font-weight:700;margin-right:4px}
+.grades .roll.warn{background:var(--yellow);color:var(--on-bright)} .grades .roll.crit{background:var(--red);color:#fff}
+
+/* v2.7.4 */
+:root{--grey:#B9B5AC}
+.chip.grey{background:var(--grey);color:var(--on-bright)}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--grey:#6E6B66}}
+:root[data-theme="dark"]{--grey:#6E6B66}
+
+/* v2.7.5 */
+.today-ic{display:inline-block;width:0;height:13px;border-left:2px dashed var(--red)}
+.mg-bar.gone{color:var(--muted);box-shadow:none;border-color:color-mix(in srgb,var(--ink) 55%,transparent)}
+.mg-bar.gone span{background:transparent}
+.mg-row.gone .mg-l .clickname,.mg-row.gone .mg-l .sub{color:var(--muted)}
+.swatch.gone{background:var(--grey);border-color:color-mix(in srgb,var(--ink) 55%,transparent)}
+
+/* v2.7.7：確認視窗 */
+.dlg-scrim{position:fixed;inset:0;z-index:40;background:rgba(15,15,20,.5);display:grid;place-items:center;padding:20px max(16px,env(safe-area-inset-left,0px)) 20px max(16px,env(safe-area-inset-right,0px))}
+.dlg{width:min(440px,100%);padding:20px 22px;display:flex;flex-direction:column;gap:14px}
+.dlg h2{font-size:20px;font-weight:900}
+.dlg-item{padding:10px 12px;border:2px dashed var(--ink);border-radius:10px;background:var(--soft);font-size:13.5px;line-height:1.5}
+.dlg-item .sub{color:var(--muted);font-size:12px;margin-top:2px}
+.dlg-act{display:flex;justify-content:flex-end;gap:10px;margin-top:4px}
+.btn.ok{background:var(--green);color:#fff}
+.btn.warnok{background:var(--yellow);color:var(--on-bright)}
+@media (prefers-reduced-motion:no-preference){.dlg{animation:pop .14s ease-out}@keyframes pop{from{transform:scale(.96);opacity:.5}}}
+
+/* v2.7.9 */
+.asg-row{display:flex;gap:10px;align-items:center;justify-content:space-between;padding:7px 10px;border:1.5px solid var(--ink);border-radius:8px;background:var(--card)}
+.asg-info{min-width:0} .asg-info .sub{color:var(--muted);font-size:12px}
+
+/* v2.8：人員名單篩選 */
+.pf-bar{padding:10px 12px;border:2px dashed color-mix(in srgb,var(--ink) 35%,transparent);border-radius:14px;background:color-mix(in srgb,var(--card) 70%,transparent)}
+.pf-l{font-weight:900;font-size:13px}
+.pf-bar input{flex:1 1 180px}
+.pf-bar select{max-width:100%}
+.pf-bar .tail{margin-left:auto}
+/* v2.9：總覽搜尋結果 */
+.sr-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:12px}
+.sr{padding:12px 12px 10px}
+.sr h3{font-size:14px;margin:0 0 8px;padding:0 4px;display:flex;justify-content:space-between;align-items:center}
+.sr-list{display:flex;flex-direction:column;gap:2px;max-height:340px;overflow:auto}
+.sr-item{display:block;text-align:left;width:100%;padding:6px 8px;border-radius:8px;background:transparent;border:0;font:inherit;color:inherit;cursor:pointer}
+.sr-item:hover{background:color-mix(in srgb,var(--lime) 35%,transparent)}
+.sr-item:focus-visible{outline:2px solid var(--ink);outline-offset:1px}
+.sr-item .sub{display:block}
+.sr-more{font-size:12px;color:var(--muted);padding:4px 8px}
+button.ptag{font:inherit;cursor:pointer;width:100%}
+/* v3.0：登入與同步 */
+#gate{position:fixed;inset:0;z-index:50;display:grid;place-items:center;padding:16px;background:var(--bg1)}
+#gate[hidden]{display:none}
+.gate-card{max-width:420px;width:100%;padding:28px 24px;display:flex;flex-direction:column;align-items:center;gap:12px;text-align:center}
+.gate-card h1{font-size:22px;margin:0}
+.gate-card .logo{width:56px;height:56px;font-size:26px}
+.gate-card #gBtn{min-height:44px}
+.gate-err{color:var(--red);font-weight:700;margin:0}
+.gate-note{font-size:12px;margin:4px 0 0}
+.sync{display:flex;flex-wrap:wrap;align-items:center;gap:6px 10px;font-size:13px;padding:8px 12px;border:2px dashed color-mix(in srgb,var(--ink) 30%,transparent);border-radius:12px}
+.sync .sub{font-size:12px}
+.sync-st{color:var(--muted)}
+.sync-err{color:var(--red)}
+.sync-r{margin-left:auto;display:flex;gap:10px}
+.scope-note{font-size:12.5px;color:var(--muted)}
+
+@media (max-width:760px){ .sum{grid-template-columns:repeat(2,minmax(0,1fr))} }
+@media (max-width:640px){
+  .f3{grid-template-columns:1fr}
+  .pg-row{grid-template-columns:190px 40px 1fr} .mg-row{grid-template-columns:120px 1fr}
+  .f2{grid-template-columns:1fr}
+  .sec-h h2{font-size:19px}
+  .ptag .v{font-size:38px}
+  .upc-row{grid-template-columns:60px 1fr}
+  .upc-row > .chip{grid-column:2;justify-self:start}
+  .alert{grid-template-columns:1fr}
+  .alert .sev{justify-self:start}
+  .alert .go{justify-self:start}
+}
+@media (prefers-reduced-motion:no-preference){.drawer{animation:slide .18s ease-out}@keyframes slide{from{transform:translateX(24px);opacity:.6}}}
+@media (prefers-reduced-motion:reduce){*{transition:none!important}}
+</style>
+
+<div class="bgfx" aria-hidden="true"></div>
+<div class="top">
+  <div class="wrap">
+    <div class="brand">
+      <span class="logo" aria-hidden="true">寶</span>
+      <h1>工程處 - 數據中控台<small id="today"></small></h1>
+    </div>
+    <nav class="tabs" id="tabs">
+      <a href="#overview">總覽</a>
+      <a href="#dispatch">人員派遣</a>
+      <a href="#projects">專案</a>
+      <a href="#tracker">追蹤清單</a>
+      <a href="#people">人員名單</a>
+    </nav>
+  </div>
+</div>
+<div class="proto"><div class="wrap" id="syncBar"><span class="tag">雛形預覽・資料為 10/17 從舊試算表搬移；在這裡新增或修改的資料只會留在您這台瀏覽器</span></div></div>
+<main><div class="wrap" id="view"></div></main>
+
+<div id="drawerRoot"></div>
+<button class="totop" type="button" aria-label="回到頁面頂端" hidden><span aria-hidden="true">↑</span><small>頂端</small></button>
+
+<div id="gate" hidden></div>
+<script src="config.js"></script>
+<script>
+// ================= 後台連線（Google 登入 → Apps Script → 試算表） =================
+// config.js 填好 api 與 clientId 時為「連線模式」：先用 Google 帳號登入，資料從試算表讀寫。
+// 沒有 config.js（例如雛形預覽）時為「預覽模式」：讀 data/db.js，修改只留在本機瀏覽器。
+(function(){
+  const C = window.BX_CONFIG || {};
+  const BX = window.BX = { online: !!(C.api && C.clientId) && location.protocol==="https:", api: C.api, user: null, token: "" };
+  const TK = "bx-idtoken";
+  const gate = () => document.getElementById("gate");
+  const exp = t => { try { return JSON.parse(atob(t.split(".")[1].replace(/-/g,"+").replace(/_/g,"/"))).exp*1000; } catch(e) { return 0; } };
+  const esc = s => String(s??"").replace(/[&<>"']/g, c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+  let waiters = [], gisReady = null;
+  function loadGis(){ return gisReady ||= new Promise((ok, no)=>{ const s = document.createElement("script"); s.src = "https://accounts.google.com/gsi/client"; s.async = true; s.onload = ok; s.onerror = ()=>no(new Error("無法載入 Google 登入，請確認網路")); document.head.appendChild(s); }); }
+  function showGate(msg, isErr){
+    const g = gate(); g.hidden = false;
+    g.innerHTML = `<div class="gate-card card"><span class="logo" aria-hidden="true">寶</span><h1>工程處 - 數據中控台</h1>
+      <p class="${isErr?"gate-err":"sub"}">${esc(msg||"請用已開通的 Google 帳號登入")}</p><div id="gBtn"></div>
+      ${isErr?'<button class="linkbtn" id="gSwitch" type="button">改用其他 Google 帳號</button>':""}
+      <p class="sub gate-note">資料存放在管理者的 Google 試算表；未開通的帳號無法讀取任何資料。</p></div>`;
+    loadGis().then(()=>{
+      google.accounts.id.initialize({ client_id: C.clientId, auto_select: !isErr, cancel_on_tap_outside: false, callback: r => onCred(r.credential) });
+      google.accounts.id.renderButton(document.getElementById("gBtn"), { theme:"outline", size:"large", text:"signin_with", shape:"pill", locale:"zh-TW" });
+      if (!isErr) google.accounts.id.prompt();
+      document.getElementById("gSwitch")?.addEventListener("click", ()=>{ google.accounts.id.disableAutoSelect(); showGate("請選擇要登入的 Google 帳號"); });
+    }).catch(e=>{ document.getElementById("gBtn").innerHTML = `<p class="gate-err">${esc(e.message)}</p>`; });
+  }
+  function onCred(t){ BX.token = t; try { sessionStorage.setItem(TK, t); } catch(e) {} const w = waiters; waiters = []; w.forEach(f=>f(t)); }
+  function needLogin(msg, isErr){ return new Promise(ok=>{ waiters.push(ok); showGate(msg, isErr); }); }
+  BX.call = async function(action, payload, retried){
+    if (!BX.token || exp(BX.token) < Date.now()+60000) await needLogin("登入已過期，請重新登入");
+    let res;
+    try {
+      const r = await fetch(BX.api, { method:"POST", headers:{"Content-Type":"text/plain;charset=utf-8"}, body: JSON.stringify(Object.assign({action, token:BX.token}, payload||{})) });
+      res = await r.json();
+    } catch(e) { return {ok:false, code:0, error:"連不上後台，請確認網路"}; }
+    if (!res.ok && res.code===401 && !retried) { BX.token = ""; await needLogin(res.error); return BX.call(action, payload, true); }
+    return res;
+  };
+  BX.logout = function(){ try { sessionStorage.removeItem(TK); } catch(e) {} try { google.accounts.id.disableAutoSelect(); } catch(e) {} location.reload(); };
+  BX.boot = async function(start){
+    if (!BX.online) return start();
+    try { const t = sessionStorage.getItem(TK); if (t && exp(t) > Date.now()+60000) BX.token = t; } catch(e) {}
+    if (!BX.token) await needLogin();
+    let res = await BX.call("load");
+    while (!res.ok) { BX.token = ""; try { sessionStorage.removeItem(TK); } catch(e) {} await needLogin(res.error, true); res = await BX.call("load"); }
+    BX.user = res.user; BX.loadedAt = Date.now(); window.DB = res.data;
+    gate().hidden = true; gate().innerHTML = "";
+    start();
+  };
+})();
+</script>
+<script src="data/db.js" onerror="void 0"></script>
+<script>
+window.bxStart = () => {
+"use strict";
+// ================= 資料層 =================
+// 連線模式：base＝試算表資料，local＝尚未送出的修改（送出成功就清掉）；預覽模式：base＝db.js，local＝本機修改。
+const BX = window.BX || {online:false};
+const LS_KEY = BX.online ? `bx-dash-v2-outbox:${BX.user.email}` : "bx-dash-v2-local";
+const base = window.DB || {};
+["people","projects","assignments","tasks","issues"].forEach(k => base[k] ||= []);
+base.lists ||= {};
+let local = {assignments:{}, people:{}, projects:{}, issues:{}, tasks:{}, units:{}, companies:{}, log:[]};
+try { const s = localStorage.getItem(LS_KEY); if (s) local = Object.assign(local, JSON.parse(s)); } catch(e) {}
+["assignments","people","projects","issues","tasks","units","companies"].forEach(k => local[k] ||= {});
+function saveLS(){ try { localStorage.setItem(LS_KEY, JSON.stringify(local)); } catch(e) {} }
+function persist(){
+  if (BX.online && BX.user.role==="檢視") { TABLES_.forEach(t=>local[t]={}); saveLS(); setTimeout(()=>{ toast("你的帳號只有檢視權限，修改不會儲存"); render(); }, 0); return; }
+  saveLS(); if (BX.online) { clearTimeout(flushT); flushT = setTimeout(flush, 400); syncState(); }
+}
+// ---------- 與試算表同步 ----------
+const TABLES_ = ["assignments","people","projects","issues","tasks","units","companies"];
+const keyName = t => ({people:"name", units:"name", companies:"name"})[t] || "id";
+let flushing = false, flushT = null, syncErr = "", lastSync = BX.online ? new Date() : null;
+const pending = () => TABLES_.flatMap(t => Object.entries(local[t]).map(([k,r]) => ({table:t, key:k, record:r, isNew: !(base[t]||[]).some(x=>x[keyName(t)]===k)})));
+async function flush(){
+  if (!BX.online || flushing) return;
+  const items = pending(); if (!items.length) return syncState();
+  flushing = true; syncState();
+  const sent = items.map(i=>JSON.stringify(i.record));
+  const res = await BX.call("save", {items});
+  flushing = false;
+  if (!res.ok) { syncErr = res.error || "儲存失敗"; flushT = setTimeout(flush, 30000); return syncState(); }
+  let renamed = false;
+  res.saved.forEach((sv, ix) => { const it = items[ix], t = sv.table, kn = keyName(t), arr = base[t] ||= [];
+    const j = arr.findIndex(x=>x[kn]===sv.key); if (j>=0) arr[j] = sv.record; else arr.push(sv.record);
+    if (JSON.stringify(local[t][it.key])===sent[ix]) delete local[t][it.key];
+    if (sv.oldKey) { renamed = true; toast(`編號 ${sv.oldKey} 剛被其他人使用，已改為 ${sv.key}`); } });
+  syncErr = ""; lastSync = new Date(); saveLS(); syncState();
+  if (renamed) render();
+  if (pending().length) flush();
+}
+async function reload(force){
+  if (!BX.online || flushing || pending().length) return;
+  if (!force && Date.now()-BX.loadedAt < 180000) return;
+  const res = await BX.call("load"); if (!res.ok) { syncErr = res.error; return syncState(); }
+  BX.loadedAt = Date.now(); lastSync = new Date(); syncErr = "";
+  TABLES_.forEach(t => base[t] = res.data[t] || []); Object.assign(base.lists, res.data.lists || {});
+  syncState(); if (!document.querySelector("#drawerRoot .drawer")) render();
+  if (force) toast("已更新為試算表最新資料");
+}
+function syncState(){
+  if (!BX.online) return;
+  const n = pending().length, hm = d => d ? `${d.getHours()}:${String(d.getMinutes()).padStart(2,"0")}` : "";
+  const st = syncErr ? `<b class="sync-err">⚠ ${esc(syncErr)}・${n} 筆待送出，30 秒後重試</b>` : flushing || n ? `<span>同步中…（${n} 筆）</span>` : `<span>已同步 ${hm(lastSync)}</span>`;
+  $("syncBar").innerHTML = `<div class="sync"><span class="chip ${BX.user.role==="檢視"?"":"acc"}">${esc(BX.user.role)}</span><b>${esc(BX.user.name||BX.user.email)}</b>
+    <span class="sub">${esc(BX.user.email)}</span><span class="sync-st">${st}</span>
+    <span class="sync-r"><button class="linkbtn" type="button" data-sync-reload>↻ 重新整理</button><button class="linkbtn" type="button" data-sync-logout>登出</button></span></div>`;
+}
+if (BX.online) {
+  document.addEventListener("visibilitychange", ()=>{ if (document.visibilityState==="visible") reload(false); });
+  window.addEventListener("beforeunload", e=>{ if (pending().length) { e.preventDefault(); e.returnValue = ""; } });
+  document.addEventListener("click", e=>{ if (e.target.closest("[data-sync-reload]")) { flush(); reload(true); } if (e.target.closest("[data-sync-logout]")) { if (!pending().length || confirm("還有修改尚未送出，確定登出？")) BX.logout(); } });
+  setTimeout(()=>{ syncState(); flush(); }, 0);
+}
+const merge = (arr, over, key="id") => { const m = new Map(arr.map(x=>[x[key],x])); Object.values(over).forEach(x=>m.set(x[key],x)); return [...m.values()]; };
+const DB = {
+  get people(){ return merge(base.people, local.people, "name").filter(p=>!p.deleted); },
+  get assignments(){ return merge(base.assignments, local.assignments).filter(a=>!a.deleted); },
+  get projects(){ return merge(base.projects, local.projects); },
+  get issues(){ return merge(base.issues, local.issues).filter(i=>!i.deleted); },
+  get companies(){ return merge(base.companies||[{name:"寶新",group:"協禾集團"}], local.companies, "name"); },
+  get units(){ return merge(base.units||[{name:"工程處",level:"處",parent:""}], local.units, "name").filter(u=>!u.retired); },
+  get tasks(){ return merge(base.tasks, local.tasks); }, lists: base.lists,
+};
+const L = base.lists;
+L.issueStatus ||= ["Open","處理中","待確認","已結案"];
+L.issueSeverity ||= ["高","中","低"];
+L.issueCategory ||= ["進度","人力","簽證","設備","物料","品質","安全","合約","其他"];
+L.visaAction ||= ["新辦","加簽","補簽","延期","換發","註銷"];
+L.projectStatus ||= ["規劃中","評估中","進行中","暫停","結案","未啟動"];
+L.assignStatus ||= ["暫定","確認","取消"];
+// ---- 組織：單位層級與職等排序（處 > 部 > 課；協理 > 經理 > 課長 > 專案經理 > 工程師／專員）----
+const TITLE_RANK = [["副總",0],["協理",1],["處長",1],["副處長",1.5],["副理",2.5],["專案經理",4],["經理",2],["副課長",3.5],["課長",3],["主任",4.5],["資深工程師",5],["工程師",5.2],["專員",5.2],["技術員",6],["助理",6.5]];
+const TITLE_SUGGEST = ["協理","經理","副理","課長","副課長","專案經理","資深工程師","工程師","自動化工程師","專員","助理"];
+const titleRank = t => { t = t||""; for (const [k,r] of TITLE_RANK) if (t.includes(k)) return r; return 9; };
+const LEVEL_RANK = {"處":0,"部":1,"課":2};
+const unitOf = n => DB.units.find(u=>u.name===n);
+const unitPath = n => { const out=[]; let u = unitOf(n); while (u && u.level!=="處") { out.unshift(u.name); u = unitOf(u.parent); } return out.join("・"); };
+const deptOf = n => { let u = unitOf(n); while (u && u.level==="課") u = unitOf(u.parent); return u ? u.name : ""; };
+const byRank = (a,b) => (titleRank(a.title||a.role) - titleRank(b.title||b.role)) || (a.name||"").localeCompare(b.name||"", "zh-Hant");
+function ensureUnit(name, parent){
+  name = (name||"").trim(); if (!name) return ""; if (unitOf(name)) return name;
+  const pu = unitOf(parent) || unitOf("工程處");
+  local.units[name] = {name, level: pu.level==="處" ? "部" : "課", parent: pu.name, openings:null}; return name;
+}
+L.taskStatus = ["未開始","進行中","有風險","完成"];
+L.milestone ||= ["KO","PA","TT","SOP","開工","設備進廠","驗收","量產"];
+
+const proj = id => DB.projects.find(p=>p.id===id) || {id, name:id||"（未指定專案）"};
+const personOf = n => DB.people.find(p=>p.name===n);
+const isBX = n => personOf(n)?.orgType === "寶新";
+const isStaff = p => p.orgType === "寶新" && p.status !== "離職";
+const HOME_CO = "寶新";   // 工程處所在的公司
+const inOrg = p => isStaff(p) && (p.company||HOME_CO)===HOME_CO && p.unit && DB.units.some(u=>u.name===p.unit);
+const isSupport = p => isStaff(p) && !inOrg(p) && (p.extDept || (p.company && p.company!==HOME_CO));
+const affil = p => !p ? "" : p.orgType!=="寶新" ? (p.org||"供應商") : inOrg(p) ? (unitPath(p.unit)||p.unit) : [p.company||HOME_CO, p.extDept].filter(Boolean).join("・");
+function ensureProject(name){
+  name = (name||"").trim(); if (!name) return "";
+  const hit = DB.projects.find(p=>p.name===name); if (hit) return hit.id;
+  const n = Math.max(0, ...DB.projects.map(p=>parseInt(p.id.slice(1))||0)) + 1;
+  const id = "P" + String(n).padStart(2,"0");
+  local.projects[id] = {id, name, country:"", city:"", status:"規劃中", owner:"", start:"", planEnd:"", note:"由派遣或 Issue 建立，請經理補填專案資訊"};
+  return id;
+}
+
+// ================= 日期工具 =================
+const TODAY = (() => { const d = new Date(); return new Date(d.getFullYear(), d.getMonth(), d.getDate()); })();
+const iso = d => d ? `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")}` : "";
+const P = s => { if(!s) return null; const [y,m,d] = s.split("-").map(Number); return new Date(y,m-1,d); };
+const DAY = 86400000;
+const days = (a,b) => Math.round((b-a)/DAY)+1;
+const addD = (d,n) => new Date(d.getFullYear(), d.getMonth(), d.getDate()+n);
+const md = s => { const d=P(s); return d ? `${d.getMonth()+1}/${d.getDate()}` : "—"; };
+const ymd = s => { const d=P(s); return d ? `${d.getFullYear()}/${d.getMonth()+1}/${d.getDate()}` : "—"; };
+const WK = "日一二三四五六";
+const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const aStart = a => P(a.actualStart || a.planStart);
+const aEnd = a => P(a.actualEnd || a.planEnd);
+const active = a => a.status !== "取消";
+
+// ================= 規則（沿用舊版看板） =================
+const RULE = { rollingCountries:["美國","印度"], rollingWarn:150, workDays:240, visaSoon:60, staleDays:60, home:"台灣" };
+function rollingDays(name, country, at){
+  const from = addD(at, -365);
+  return DB.assignments.filter(a => active(a) && a.person===name && a.country===country).reduce((sum,a)=>{
+    const s = aStart(a), e = aEnd(a); if(!s || !e) return sum;
+    const ss = s<from?from:s, ee = e>at?at:e; return ee>=ss ? sum + days(ss,ee) : sum;
+  },0);
+}
+// 出差越多越需要注意：A 紅、B 黃、C 綠、D 灰
+const grade = r => r>=80?["A","crit"]:r>=60?["B","warn"]:r>=40?["C","ok"]:["D","grey"];
+function visaState(p, until){
+  if(!p || !p.visaExpiry) return null;
+  const exp = P(p.visaExpiry), ref = until || TODAY;
+  if (exp < TODAY) return {cls:"crit", text:`已過期 ${ymd(p.visaExpiry)}`};
+  if (exp < ref) return {cls:"crit", text:`行程結束前到期 ${ymd(p.visaExpiry)}`};
+  if ((exp-TODAY)/DAY <= RULE.visaSoon) return {cls:"warn", text:`${Math.round((exp-TODAY)/DAY)} 天後到期`};
+  return {cls:"ok", text:ymd(p.visaExpiry)};
+}
+const projColor = id => `var(--p${((parseInt((id||"P1").slice(1))||1)-1)%8+1})`;
+const SEVC = {"高":"crit","中":"warn","低":"info"};
+const STC = {"Open":"crit","處理中":"info","待確認":"warn","已結案":"done"};
+const isOpen = i => i.status !== "已結案";
+const overdue = i => isOpen(i) && i.due && P(i.due) < TODAY;
+const sevRank = {"高":0,"中":1,"低":2};
+const sortIssues = arr => arr.sort((a,b)=>(overdue(b)-overdue(a)) || (sevRank[a.severity]-sevRank[b.severity]) || (a.due||"9").localeCompare(b.due||"9"));
+
+// ================= 計算 =================
+function onSiteNow(){
+  return DB.assignments.filter(a => { if(!active(a)) return false; const s=aStart(a), e=aEnd(a); return s && s<=TODAY && (!e || e>=TODAY); });
+}
+const stale = a => !aEnd(a) && a.updated && (TODAY-P(a.updated))/DAY > RULE.staleDays;
+function reminders(){
+  const out = [];
+  const now = onSiteNow();
+  DB.assignments.filter(a=>active(a)&&a.status==="暫定").forEach(a=>{
+    const s=aStart(a); const gap = (s-TODAY)/DAY;
+    if (gap <= 30) out.push({sev: gap<=0?"crit":"warn", proj:a.project, cat:"人力", t:`${a.person} 的${a.city||a.country}行程仍是「暫定」`,
+      d:`${ymd(a.planStart)} – ${ymd(a.planEnd)}　${gap<=0?"已過出發日，請確認是否成行":`距出發 ${Math.round(gap)} 天`}`});
+  });
+  // 簽證屬於各公司與個人自行管理，中控台不監控
+  DB.assignments.filter(a=>active(a)&&RULE.rollingCountries.includes(a.country)&&isBX(a.person)).forEach(a=>{
+    const e=aEnd(a); if(!e || e<TODAY) return;
+    const r = rollingDays(a.person, a.country, e);
+    if (r >= RULE.rollingWarn) out.push({sev: r>=180?"crit":"warn", proj:a.project, cat:"簽證", t:`${a.person} 到 ${md(iso(e))} 時，近 365 天已在${a.country}停留 ${r} 天`, d:`超過 ${RULE.rollingWarn} 天警戒線，請確認入境停留規定`});
+  });
+  const st = {}; now.filter(stale).forEach(a=>(st[a.project] ||= []).push(a));
+  Object.entries(st).forEach(([pid,list])=> out.push({sev:"info", proj:pid, cat:"人力", t:`${list.length} 位供應商人員沒有離崗日，且資料超過 ${RULE.staleDays} 天未更新`, d:"可能已離開現場但未登記，請到專案頁「登記離崗」"}));
+  const rank = {crit:0,warn:1,info:2}; return out.sort((a,b)=>rank[a.sev]-rank[b.sev]);
+}
+
+// ================= 共用 UI =================
+const SEV = {crit:["緊急","crit"], warn:["注意","warn"], info:["提醒","info"]};
+const secH = (count, title, hint, action) => `<div class="sec-h"><h2>${count!=null?`<span class="badge">${count}</span>`:""}<span>${title}</span></h2><div class="sec-r">${hint?`<span class="hint">${hint}</span>`:""}${action||""}</div></div>`;
+const seg = parts => `<div class="seg">${parts.filter(p=>p[0]>0).map(([w,c])=>`<i style="width:${w}%;background:${c}"></i>`).join("")}</div>`;
+const countBy = (arr, f) => arr.reduce((m,x)=>{ const k=f(x); m[k]=(m[k]||0)+1; return m; },{});
+const issueRow = i => `<button class="iss-row" data-issue="${i.id}"><span class="sevdot" style="background:var(--${SEVC[i.severity]==="crit"?"red":SEVC[i.severity]==="warn"?"yellow":"sky"})"></span>
+  <span class="t">${esc(i.title)}</span><span class="m">${esc(i.id)} · ${esc(i.owner||"未指派")}${i.party?`／${esc(i.party)}`:""} · ${i.due?`期限 ${md(i.due)}`:"未訂期限"}${overdue(i)?' · <b class="od">已逾期</b>':""}${i.status!=="Open"?` · ${esc(i.status)}`:""}</span></button>`;
+
+// ---------- 篩選／搜尋共用 ----------
+const optH = (v, label, cur) => `<option value="${esc(v)}" ${String(v)===String(cur)?"selected":""}>${esc(label)}</option>`;
+const has = (q, ...xs) => !q || xs.flat().filter(Boolean).join(" ").toLowerCase().includes(q.toLowerCase());
+const kindOf = i => i.kind==="問題" ? "問題點" : (i.kind || "問題點");
+const fbar = (inner, qid, qv, ph, key, on, tail="") => `<div class="toolbar pf-bar"><span class="pf-l">篩選</span>${inner}
+  <input id="${qid}" type="search" placeholder="${ph}" value="${esc(qv)}" autocomplete="off" aria-label="搜尋">
+  ${on?`<button class="linkbtn" data-fclear="${key}">清除篩選</button>`:""}${tail?`<span class="tail">${tail}</span>`:""}</div>`;
+const fsel = (key, k, label, opts, cur) => `<select data-fk="${key}.${k}" aria-label="${label}">${opts.map(([v,l])=>optH(v,l,cur)).join("")}</select>`;
+const issueText = i => [i.id, i.title, i.desc, i.owner, i.party, i.note, i.category, (i.log||[]).map(l=>l.text)];
+
+// ================= 頁面：總覽 =================
+const OV = { proj:"", q:"" };
+function viewOverview(){
+  const sp = OV.proj, inP = pid => !sp || (sp==="__hq" ? !pid : pid===sp);
+  const now = onSiteNow();
+  const bxAll = DB.people.filter(inOrg), pendingN = DB.people.filter(p=>isStaff(p) && !inOrg(p) && !isSupport(p)).length;
+  const outAsg = now.filter(a=>isBX(a.person) && a.country!==RULE.home);
+  const outSet = new Set(outAsg.map(a=>a.person));
+  const byCountry = countBy([...outSet].map(n=>outAsg.find(a=>a.person===n).country), c=>c);
+  const openIss = DB.issues.filter(isOpen), od = openIss.filter(overdue);
+  const rem = reminders().map((x,ix)=>({...x, ix})).filter(x=>inP(x.proj));
+
+  // Open Issue：每個專案一張卡
+  const pIssue = [...DB.projects, {id:"", name:"處內事務", status:"進行中"}].filter(p=>inP(p.id)).map(p=>({p, list: sortIssues(openIss.filter(i=>(i.project||"")===p.id))}))
+    .filter(x=>sp || x.list.length || x.p.status==="進行中").sort((a,b)=>b.list.length-a.list.length);
+  const scopedIss = openIss.filter(i=>inP(i.project));
+
+  // 搜尋結果
+  let found = "";
+  if (OV.q) { const q = OV.q, CAP = 40;
+    const grp = (title, arr, item) => `<div class="card sr"><h3><span>${title}</span><span class="pc-n">${arr.length}</span></h3><div class="sr-list">${arr.slice(0,CAP).map(item).join("") || '<div class="sr-more">沒有符合的項目</div>'}${arr.length>CAP?`<div class="sr-more">另有 ${arr.length-CAP} 筆，請輸入更精確的關鍵字</div>`:""}</div></div>`;
+    const ppl = DB.people.filter(p=>has(q, p.name, p.enName, p.org, p.company, p.title, p.unit, p.role, p.note)).sort((a,b)=>(a.orgType==="寶新"?0:1)-(b.orgType==="寶新"?0:1) || (a.status==="離職")-(b.status==="離職"));
+    const iss = sortIssues(DB.issues.filter(i=>inP(i.project) && has(q, issueText(i))));
+    const asg = DB.assignments.filter(a=>inP(a.project) && has(q, a.person, a.city, a.country, a.duty, a.line, proj(a.project).name)).sort((a,b)=>(aStart(b)||0)-(aStart(a)||0));
+    const tks = DB.tasks.filter(t=>inP(t.project) && has(q, t.process, t.task, t.owner, t.note, t.section));
+    const prj = DB.projects.filter(p=>inP(p.id) && has(q, p.name, p.city, p.country, p.owner, p.status));
+    const total = ppl.length+iss.length+asg.length+tks.length+prj.length;
+    found = `<section>${secH(total, `搜尋<mark>結果</mark>`, `關鍵字「${esc(q)}」${sp?"・限所選專案":""}`)}
+      ${total?`<div class="sr-grid">
+      ${grp("人員", ppl, p=>`<button class="sr-item" data-person="${esc(p.name)}"><b>${esc(p.name)}</b>${p.enName?` ${esc(p.enName)}`:""}${p.status==="離職"?' <span class="chip">已離職</span>':""}<span class="sub">${esc(p.orgType==="寶新" ? [p.title, inOrg(p)?p.unit:affil(p)].filter(Boolean).join("・") : [p.org, p.role].filter(Boolean).join("・"))}</span></button>`)}
+      ${grp("Issue／任務與問題點", iss, i=>`<button class="sr-item" data-issue="${i.id}"><b>${esc(i.title)}</b><span class="sub">${esc(i.id)}・${esc(i.project?proj(i.project).name:"處內事務")}・${esc(i.owner||"未指派")}・${isOpen(i)?esc(i.status):"已結案"}${overdue(i)?"・逾期":""}</span></button>`)}
+      ${grp("派遣／到崗", asg, a=>{ const e=aEnd(a); return `<button class="sr-item" data-edit="${a.id}"><b>${esc(a.person)}</b> ${esc(a.city||a.country)}<span class="sub">${aStart(a)?ymd(iso(aStart(a))):"—"} – ${e?ymd(iso(e)):"未定"}・${esc(proj(a.project).name)}${a.duty?`・${esc(a.duty)}`:""}${a.status!=="確認"?`・${esc(a.status)}`:""}</span></button>`; })}
+      ${grp("安裝任務", tks, t=>`<button class="sr-item" data-task="${t.id}"><b>${esc(t.process)}</b> ${esc(t.task)}<span class="sub">${esc(proj(t.project).name)}・${esc(t.section||"未分段")}・${taskHealth(t)}</span></button>`)}
+      ${grp("專案", prj, p=>`<button class="sr-item" data-proj="${p.id}"><b>${esc(p.name)}</b><span class="sub">${esc([p.country,p.city].filter(Boolean).join(" · ")||"地點待補")}・${esc(p.status||"")}</span></button>`)}
+      </div>`:`<div class="card alert-empty">找不到符合「${esc(q)}」的人員、Issue、派遣、任務或專案。</div>`}</section>`;
+  }
+  const ovBar = `<section>${fbar(fsel("OV","proj","專案範圍",[["","全部專案"],...DB.projects.map(p=>[p.id,p.name]),["__hq","處內事務（非專案）"]],sp),
+    "ovQ", OV.q, "搜尋人員、Issue、派遣、任務、專案", "OV", sp||OV.q, sp?`<span class="scope-note">上方人數統計與人員名單為全處；其餘區塊只看所選範圍</span>`:"")}</section>`;
+  const issueCards = pIssue.map(({p,list})=>{
+    const sc = countBy(list, i=>i.severity), odn = list.filter(overdue).length;
+    return `<div class="card iss-card">
+      <div class="ic-h"><button class="ic-name" ${p.id?`data-proj="${p.id}"`:`data-goto-tracker=""`}>${esc(p.name)}</button><span class="ic-n ${list.length?"":"zero"}">${list.length}</span></div>
+      <div class="ic-sev">${["高","中","低"].map(s=>`<span class="chip ${sc[s]?SEVC[s]:""}">${s} ${sc[s]||0}</span>`).join("")}${odn?`<span class="chip crit">逾期 ${odn}</span>`:""}</div>
+      <div class="ic-list">${list.slice(0,3).map(issueRow).join("") || `<div class="ic-empty">目前沒有 Open Issue</div>`}</div>
+      <div class="ic-foot">${list.length>3?`<button class="linkbtn" ${p.id?`data-proj="${p.id}"`:`data-goto-tracker=""`}>其餘 ${list.length-3} 項 →</button>`:"<span></span>"}<button class="btn sm lime" data-new-issue="${p.id}">＋ 新增</button></div>
+    </div>`;
+  }).join("");
+
+  // 寶新同仁動態
+  const home = bxAll.filter(p=>!outSet.has(p.name));
+  const outShown = outAsg.filter(a=>inP(a.project));
+  const groups = {}; outShown.forEach(a => { const k = `${a.country}｜${a.city||"—"}`; (groups[k] ||= []).push(a); });
+  const outCards = Object.entries(groups).sort((a,b)=>b[1].length-a[1].length).map(([k,list])=>{
+    const [country, city] = k.split("｜");
+    return `<div class="card loc"><div class="loc-h"><h3>${esc(city)} <span class="tag">${esc(country)}</span></h3><span class="count">${list.length}<small>人</small></span></div>
+      <div class="bx-list">${list.map(a=>{ const e=aEnd(a); return `<div class="bx"><b>${esc(a.person)} ${a.status==="暫定"?'<span class="chip warn">暫定</span>':""}</b><span class="ret">${e?`回程 ${md(iso(e))}`:"未定"}</span>
+        <span class="sub">${esc(proj(a.project).name)} · 第 ${days(aStart(a),TODAY)} 天</span></div>`; }).join("")}</div></div>`;
+  }).join("");
+
+  const horizon = addD(TODAY, 60), ev = [];
+  DB.assignments.filter(a=>active(a)&&isBX(a.person)&&inP(a.project)).forEach(a=>{
+    const s=aStart(a), e=aEnd(a);
+    if (s && s>TODAY && s<=horizon) ev.push({d:s, kind:"出發", a});
+    if (e && e>=TODAY && e<=horizon) ev.push({d:e, kind:"回程", a});
+  });
+  ev.sort((x,y)=>x.d-y.d);
+
+  const shownProj = DB.projects.filter(p=>inP(p.id));
+  const projCards = shownProj.map(p=>{
+    const here = now.filter(a=>a.project===p.id);
+    const bxN = here.filter(a=>isBX(a.person)).length;
+    const oi = openIss.filter(i=>i.project===p.id).length;
+    const ts = DB.tasks.filter(t=>t.project===p.id), cnt = s => ts.filter(t=>t.status===s).length;
+    const bar = ts.length ? `${seg([[cnt("完成")/ts.length*100,"var(--green)"],[cnt("進行中")/ts.length*100,"var(--sky)"],[cnt("卡關")/ts.length*100,"var(--red)"]])}
+      <div class="seg-l">安裝任務完成 <b class="num">${cnt("完成")}/${ts.length}</b></div>` : "";
+    const sc = {"進行中":"acc","評估中":"info","規劃中":"info","暫停":"warn"}[p.status] ?? "";
+    return `<button class="card proj ${["未啟動","結案"].includes(p.status)?"dim":""}" data-proj="${p.id}">
+      <div class="ph"><h3>${esc(p.name)}</h3><span class="chip ${sc}">${esc(p.status)}</span></div>
+      <span class="tag" style="align-self:flex-start">${esc([p.country,p.city].filter(Boolean).join(" · ")||"地點待補")}</span>
+      <div class="stats"><span><b>${bxN}</b>寶新在崗</span><span><b>${here.length-bxN}</b>供應商在崗</span><span><b class="${oi?"hot":""}">${oi}</b>Open Issue</span></div>
+      ${bar}</button>`;
+  }).join("");
+
+  return `${ovBar}
+  <section class="sum">
+    <a class="card ptag" href="#people"><span class="k">工程處人數</span><span class="v">${bxAll.length}<small>人</small></span><span class="s">${(()=>{ const op = DB.units.reduce((n,u)=>n+(u.openings?.count||0),0); return (op?`計畫 ${bxAll.length+op} 人・待補 ${op} 人`:"依組織圖統計") + (pendingN?`・另 ${pendingN} 人待確認`:""); })()}</span></a>
+    <a class="card ptag" href="#people"><span class="k">在台灣</span><span class="v">${bxAll.length-outSet.size}<small>人</small></span><span class="s">今天未出差</span></a>
+    <a class="card ptag" href="#dispatch"><span class="k">在外</span><span class="v">${outSet.size}<small>人</small></span><span class="s">${Object.entries(byCountry).map(([c,n])=>`${c} ${n}`).join("・")||"今天沒有人出差"}</span></a>
+    <a class="card ptag ${od.length?"hot":""}" href="#issues" data-scroll="issues"><span class="k">Open Issue</span><span class="v">${openIss.length}<small>項</small></span><span class="s">${od.length?`<b class="od">逾期 ${od.length} 項</b>`:"沒有逾期"}</span></a>
+  </section>
+  ${found}
+  <section id="issues">${secH(scopedIss.length, `Open <mark>Issue</mark>`, "依專案分區・點選事項可更新進度", `<button class="btn sm" data-new-issue="${sp&&sp!=="__hq"?sp:""}">＋ 新增 Issue</button>`)}
+    <div class="iss-grid">${issueCards}</div></section>
+  <section>${secH(rem.length, `系統<mark>提醒</mark>`, "自動偵測滾動天數、暫定行程與過期資料；需要追蹤的可轉成 Issue")}
+    <div class="alerts">${rem.map(x=>`<div class="card alert ${x.sev}"><span class="chip sev ${SEV[x.sev][1]}">${SEV[x.sev][0]}</span>
+      <div><div class="t">${esc(x.t)}</div><div class="d"><span class="tag">${esc(proj(x.proj).name)}</span> ${esc(x.d)}</div></div>
+      <button class="go" data-promote="${x.ix}">轉為 Issue</button></div>`).join("") || `<div class="card alert-empty">目前沒有系統提醒。</div>`}</div></section>
+  <section>${secH(new Set(outShown.map(a=>a.person)).size, `在外<mark>動態</mark>`, `${md(iso(TODAY))} 今天・在台灣 ${home.length} 人`)}
+    <div class="where">${outCards || `<div class="card alert-empty">今天沒有同仁在外地。</div>`}</div></section>
+  <section id="roster">${secH(bxAll.length, `工程處<mark>人員名單</mark>`, "依部門分組、職等排序・按「編輯」可設定單位、職稱、在職／離職與派遣", `<button class="btn sm ghost" data-new-unit>＋ 新增單位</button><button class="btn sm" data-new-person="寶新">＋ 新增同仁</button>`)}
+    ${rosterHTML(outAsg)}</section>
+  <section>${secH(ev.length, `未來 60 天<mark>行程</mark>`, `寶新同仁 · ${md(iso(TODAY))} – ${md(iso(horizon))}`)}
+    <div class="upc">${ev.map(x=>`<div class="card upc-row"><div class="cal"><div class="m">${x.d.getMonth()+1}月 · 週${WK[x.d.getDay()]}</div><div class="d">${x.d.getDate()}</div></div>
+      <div class="what"><b>${esc(x.a.person)}</b> ${x.kind==="出發"?"出發前往":"結束"} ${esc(x.a.city||x.a.country)}<div class="sub">${esc(proj(x.a.project).name)} · ${esc(x.a.duty)}</div></div>
+      <span class="chip ${x.kind==="出發"?"acc":""}">${x.kind}${x.a.status==="暫定"?"・暫定":""}</span></div>`).join("") || `<div class="card alert-empty">未來 60 天沒有排定的出發或回程。</div>`}</div></section>
+  ${shownProj.length?`<section>${secH(shownProj.length, `<mark>專案</mark>`, "點選卡片進入專案頁", `<button class="btn sm" data-new-proj>＋ 新增專案</button>`)}<div class="projects">${projCards}</div></section>`:""}`;
+}
+
+function rosterHTML(outAsg){
+  const outMap = new Map(outAsg.map(a=>[a.person,a]));
+  const bx = DB.people.filter(p=>p.orgType==="寶新");
+  const live = bx.filter(p=>p.status!=="離職"), left = bx.filter(p=>p.status==="離職");
+  const units = DB.units;
+  const row = p => { const a = outMap.get(p.name); const v = visaState(p); const gone = p.status==="離職";
+    return `<div class="rs-row ${gone?"gone":""}"><div class="rs-n"><span class="rs-t"><span class="ttl">${esc(p.title||p.role||"職稱待補")}</span><b>${esc(p.name)}</b>${p.enName?`<span class="en">${esc(p.enName)}</span>`:""}</span>
+      <span class="sub"></span></div>
+      <div class="rs-s">${gone?'<span class="chip">已離職</span>':`${a?`<span class="chip acc">${esc(a.city||a.country)}</span>`:'<span class="chip">台灣</span>'}`}</div>
+      <button class="editbtn" data-person="${esc(p.name)}" aria-label="編輯 ${esc(p.name)}">✎ 編輯</button></div>`; };
+  const tbh = u => u.openings?.count ? `<div class="rs-row tbh"><div class="rs-n"><b>TBH × ${u.openings.count}</b><span class="sub">${esc(u.openings.note||"待補人力")}</span></div><button class="editbtn ghost" data-unit="${esc(u.name)}">✎ 職缺</button></div>` : "";
+  const members = n => live.filter(p=>p.unit===n).sort(byRank);
+  const top = units.find(u=>u.level==="處");
+  const depts = units.filter(u=>u.level==="部");  // 依組織圖順序，新增的部排在後面
+  const deptCard = d => { const secs = units.filter(u=>u.level==="課" && u.parent===d.name);
+    const n = members(d.name).length + secs.reduce((k,c)=>k+members(c.name).length,0);
+    const head = members(d.name)[0];
+    return `<div class="card rs-col"><div class="rs-h"><div><h3>${esc(d.name)}</h3>${head?`<span class="sub">主管 ${esc(head.name)}${head.enName?` ${esc(head.enName)}`:""}</span>`:""}</div><span class="rs-hr"><button class="editbtn ghost sm" data-unit="${esc(d.name)}">✎</button><span class="count">${n}<small>人</small></span></span></div>
+      ${members(d.name).map(row).join("")}${tbh(d)}
+      ${secs.map(c=>`<div class="rs-sec"><span><b>${esc(c.name)}</b>　${members(c.name).length} 人${c.openings?.count?`・待補 ${c.openings.count}`:""}</span><button class="editbtn ghost sm" data-unit="${esc(c.name)}">✎</button></div>${members(c.name).map(row).join("")}${tbh(c)}`).join("")}
+      ${!n && !secs.length ? `<div class="ic-empty">尚無同仁，按「＋ 新增同仁」並選擇此單位</div>` : ""}</div>`; };
+  const known = new Set(units.map(u=>u.name));
+  const support = live.filter(isSupport).sort(byRank);
+  const orphan = live.filter(p=>!inOrg(p) && !isSupport(p)).sort(byRank);
+  const sRow = p => row(p).replace('<span class="sub">', `<span class="sub"><span class="tag">${esc(affil(p))}</span> `);
+  return `${top?`<div class="card rs-top"><div class="rs-h"><div><h3>${esc(top.name)}</h3><span class="sub">${esc((DB.companies.find(c=>c.name===HOME_CO)||{}).group||"")} ${esc(HOME_CO)}・處級</span></div><span class="count">${live.filter(inOrg).length}<small>人在職</small></span></div><div class="rs-toprow">${members(top.name).map(row).join("")}</div></div>`:""}
+  <div class="roster">${depts.map(deptCard).join("")}
+    ${support.length?`<div class="card rs-col support"><div class="rs-h"><div><h3>支援同仁（非工程處）</h3><span class="sub">集團其他公司或部門，支援工程處專案；不計入工程處人數</span></div><span class="count">${support.length}<small>人</small></span></div>${support.map(sRow).join("")}</div>`:""}
+    ${orphan.length?`<div class="card rs-col pending"><div class="rs-h"><div><h3>未列入組織圖</h3><span class="sub">請按「編輯」指定工程處單位、改填其他公司／部門，或設為離職</span></div><span class="count">${orphan.length}<small>人</small></span></div>${orphan.map(row).join("")}</div>`:""}
+    ${left.length?`<div class="card rs-col left"><div class="rs-h"><h3>已離職</h3><span class="count">${left.length}<small>人</small></span></div>${left.sort(byRank).map(row).join("")}</div>`:""}</div>`;
+}
+function openUnit(name){
+  const isNew = !name; const u = name ? unitOf(name) : {name:"", level:"部", parent:"工程處", openings:null};
+  const parents = DB.units.filter(x=>x.level!=="課" && x.name!==u.name).map(x=>x.name);
+  const body = `<span class="tag wrap">上層選「工程處」會建立新的「部」並自動多一個區塊；上層選某個部則建立「課」</span>
+    <div class="f2">${fld("uName","單位名稱",inp("uName",u.name,`placeholder="例：品保部、系統整合課" ${u.level==="處"?"readonly":""}`))}${u.level==="處"?"":fld("uParent","上層單位",sel("uParent",parents,u.parent))}</div>
+    <fieldset class="fs"><legend>職缺（TBH）</legend><div class="f2">${fld("uOpen","待補人數",inp("uOpen",u.openings?.count||"",'type="number" min="0"'))}${fld("uOpenNote","職缺說明",inp("uOpenNote",u.openings?.note||"",'placeholder="例：PLC、Robot、電控"'))}</div></fieldset>`;
+  drawer(isNew?"新增單位":`編輯單位：${esc(u.name)}`, body, isNew?"建立單位":"儲存", ()=>{
+    const nm = val("uName"); if (!nm) return toast("請填寫單位名稱");
+    if (nm!==u.name && unitOf(nm)) return toast(`已有單位「${nm}」`);
+    const parent = u.level==="處" ? "" : val("uParent"); const pu = unitOf(parent);
+    const rec = {name:nm, level: u.level==="處" ? "處" : (pu && pu.level==="處" ? "部" : "課"), parent, openings: +val("uOpen") ? {count:+val("uOpen"), note:val("uOpenNote")} : null};
+    if (!isNew && nm!==u.name) { // 改名：同步人員與下層單位
+      DB.people.filter(p=>p.unit===u.name).forEach(p=>upsertPerson(p.name,{unit:nm}));
+      DB.units.filter(x=>x.parent===u.name).forEach(x=>local.units[x.name] = Object.assign({}, x, {parent:nm}));
+      local.units[u.name] = Object.assign({}, u, {retired:true, level:"舊"});
+    }
+    local.units[nm] = rec; logChange(isNew?"新增單位":"更新單位", nm, ""); persist(); closeForm(); toast(`${isNew?"已建立":"已更新"}單位：${nm}`); render();
+  });
+}
+
+// ================= 頁面：人員派遣 =================
+const F = { year: TODAY.getFullYear(), project:"", org:"寶新", unit:"", country:"", status:"", q:"" };
+function viewDispatch(){
+  const years = [...new Set(DB.assignments.flatMap(a=>[aStart(a),aEnd(a)]).filter(Boolean).map(d=>d.getFullYear()))].sort((a,b)=>b-a);
+  const yS = new Date(F.year,0,1), yE = new Date(F.year,11,31);
+  const inYear = DB.assignments.filter(a=>{ const p = personOf(a.person); const s=aStart(a), e=aEnd(a)||yE;
+    return s && s<=yE && e>=yS && (p?.orgType||"")==="寶新"; });
+  const list = inYear.filter(a=>{
+    const p = personOf(a.person);
+    if (F.project && a.project!==F.project) return false;
+    if (F.unit && !(p && unitMatch(p, F.unit))) return false;
+    if (F.country && a.country!==F.country) return false;
+    if (F.status && a.status!==F.status) return false;
+    if (F.q && !has(F.q, a.person, p?.enName, p?.org, p?.unit, a.city, a.country, a.duty, a.line, a.note)) return false;
+    return true;
+  }).sort((a,b)=>aStart(a)-aStart(b));
+
+  let util = "";
+  if (F.org==="寶新"){
+    const agg = {};
+    list.filter(active).forEach(a=>{ const s=aStart(a), e=aEnd(a); if(!e) return;
+      const ss=s<yS?yS:s, ee=e>yE?yE:e; const g = agg[a.person] ||= {d:0,budget:0,cost:0};
+      g.d += days(ss,ee); g.budget += +a.budget||0; g.cost += +a.cost||0; });
+    util = `<section>${secH(Object.keys(agg).length, `${F.year} 出差<mark>負載</mark>`, "")}
+      <details class="panel legend-box" open><summary>怎麼看這一區？</summary><div class="lg-grid">
+        <div><b>負載 %</b><p>${F.year} 年度出差天數 ÷ ${RULE.workDays} 個年度工作天。跨年度的行程只算落在 ${F.year} 年的天數；出發日與回程日都算。</p></div>
+        <div><b>等級</b><ul class="grades">
+          <li><span class="chip crit">A</span> ≥ 80%　幾乎長駐外地，請留意人力負荷與輪替</li>
+          <li><span class="chip warn">B</span> 60–79%　出差比重高，安排新行程前先確認</li>
+          <li><span class="chip ok">C</span> 40–59%　內外勤各半</li>
+          <li><span class="chip grey">D</span> &lt; 40%　以台灣內勤為主</li></ul>
+          <p class="sub">顏色越紅代表出差越多、越需要留意負荷；等級不代表績效好壞。</p></div>
+        <div><b>美國／印度滾動天數</b><p>從今天往回推 365 天，在該國累計停留的天數，用來留意入境停留限制。</p>
+          <ul class="grades"><li><span class="roll warn">≥ ${RULE.rollingWarn} 天</span> 接近警戒，安排行程前先確認</li><li><span class="roll crit">≥ 180 天</span> 已達半年，請確認簽證與稅務規定</li></ul></div>
+      </div></details>
+      <div class="util">${Object.entries(agg).sort((a,b)=>b[1].d-a[1].d).map(([n,g])=>{
+        const r = Math.round(g.d/RULE.workDays*100), [gl,gc] = grade(r);
+        const rolls = RULE.rollingCountries.map(c=>[c, rollingDays(n,c,TODAY)]).filter(x=>x[1]>0);
+        return `<div class="panel u"><div class="uh"><b>${esc(n)}</b><span class="chip ${gc}">等級 ${gl}</span></div>
+          <div class="uv">${r}%<small>${g.d} 天</small></div>
+          ${seg([[Math.min(r,100), {ok:"var(--mint)",warn:"var(--yellow)",crit:"var(--red)",grey:"var(--grey)"}[gc]]])}
+          <div class="meta">${rolls.length? rolls.map(([c,v])=>`<span class="roll ${v>=180?"crit":v>=RULE.rollingWarn?"warn":""}">${c}滾動 ${v} 天</span>`).join("") : "<span>近 365 天無美國/印度停留</span>"}</div>
+          ${g.budget||g.cost?`<div class="meta"><span>預算 <b class="num">${g.budget.toLocaleString()}</b></span><span>實支 <b class="num">${g.cost.toLocaleString()}</b></span></div>`:""}</div>`;
+      }).join("") || `<div class="panel alert-empty">這個條件下沒有出差紀錄。</div>`}</div></section>`;
+  }
+
+  const rows = {}; list.forEach(a=>(rows[a.person] ||= []).push(a));
+  const pct = d => Math.max(0, Math.min(100, (d-yS)/(yE-yS+DAY)*100));
+  const todayLine = TODAY>=yS && TODAY<=yE ? `<div class="g-today" style="left:${pct(TODAY)}%"></div>` : "";
+  const usedProj = [...new Set(list.map(a=>a.project))];
+  const gantt = `<div class="panel scroll"><div class="gantt">
+    <div class="g-head"><span></span><div class="months">${Array.from({length:12},(_,i)=>`<span>${i+1}月</span>`).join("")}</div></div>
+    ${Object.entries(rows).map(([n,as])=>`<div class="g-row"><div class="who" title="${esc(n)}">${esc(n)}</div><div class="g-track">${todayLine}
+      ${as.map(a=>{ const s=aStart(a), e=aEnd(a)||yE; const l=pct(s), w=Math.max(pct(addD(e,1))-l, .4);
+        return `<button class="g-bar ${a.status==="暫定"?"tent":""}" data-edit="${a.id}" style="left:${l}%;width:${w}%;background:${projColor(a.project)}${active(a)?"":";opacity:.35"}"
+          title="${esc(`${a.person}｜${a.city||a.country}｜${ymd(iso(s))}–${aEnd(a)?ymd(iso(e)):"未定"}｜${proj(a.project).name}${a.status==="暫定"?"（暫定）":""}`)}">${esc(a.city||a.country)}</button>`; }).join("")}
+    </div></div>`).join("") || `<div class="alert-empty">這個條件下沒有派遣紀錄。</div>`}
+  </div></div>
+  <div class="legend">${usedProj.map(id=>`<span><i class="dot" style="background:${projColor(id)}"></i>${esc(proj(id).name)}</span>`).join("")}<span><i class="today-ic"></i>今天</span><span>斜紋 = 暫定</span></div>`;
+
+  const table = `<div class="panel scroll"><table class="dt">
+    <colgroup><col style="width:9%"><col style="width:11%"><col style="width:12%"><col style="width:5%"><col><col style="width:7%"><col style="width:9%"><col style="width:6%"></colgroup>
+    <thead><tr><th>人員</th><th>地點</th><th>期間</th><th class="n">天數</th><th>專案 / 派遣目的</th><th>狀態</th><th class="n">預算 TWD</th><th></th></tr></thead>
+    <tbody>${list.map(a=>{ const p=personOf(a.person), s=aStart(a), e=aEnd(a);
+      const vchip = "";
+      return `<tr><td class="nowrap"><b>${esc(a.person)}</b><div class="sub">${esc(p ? (inOrg(p) ? deptOf(p.unit) : affil(p)) : "")}</div></td>
+      <td>${esc(a.city||"—")}<div class="sub">${esc(a.country)}</div></td>
+      <td class="nowrap">${ymd(iso(s))}<div class="sub">至 ${e?ymd(iso(e)):"未定"}</div></td>
+      <td class="n">${e?days(s,e):"—"}${(()=>{ const ps=P(a.planStart), pe=P(a.planEnd); if(!(a.actualStart&&ps&&pe&&e)) return ""; const pd=days(ps,pe); return pd!==days(s,e)?`<div class="sub">計畫 ${pd}</div>`:""; })()}</td>
+      <td class="wide"><b>${esc(proj(a.project).name)}</b>${a.line?` <span class="chip">${esc(a.line)}</span>`:""}<div class="purpose">${esc(a.duty)||'<span class="sub">（未填寫派遣目的）</span>'}</div>${vchip}</td>
+      <td><span class="chip ${a.status==="暫定"?"warn":a.status==="取消"?"":"ok"}">${esc(a.status)}</span></td>
+      <td class="n">${a.budget!=null&&a.budget!==""?Number(a.budget).toLocaleString():"—"}</td>
+      <td><button class="linkbtn" data-edit="${a.id}">編輯</button></td></tr>`; }).join("")}</tbody></table></div>`;
+
+  return `<section>
+    ${fbar(`<select id="fYear" aria-label="年度">${years.map(y=>`<option ${y===F.year?"selected":""}>${y}</option>`).join("")}</select>
+      <select id="fProj" aria-label="專案"><option value="">全部專案</option>${DB.projects.map(p=>`<option value="${p.id}" ${F.project===p.id?"selected":""}>${esc(p.name)}</option>`).join("")}</select>
+      ${fsel("F","unit","單位",[["","全部單位"], ...DB.units.filter(u=>u.level==="部").flatMap(d=>[[d.name,d.name], ...DB.units.filter(c=>c.level==="課"&&c.parent===d.name).map(c=>[c.name,`　└ ${c.name}`])]), ["__support","支援同仁"]], F.unit)}
+      ${fsel("F","country","國家／地點",[["","全部國家"], ...[...new Set(inYear.map(a=>a.country).filter(Boolean))].sort().map(c=>[c,`${c}（${inYear.filter(a=>a.country===c).length}）`])], F.country)}
+      ${fsel("F","status","狀態",[["","全部狀態"], ...L.assignStatus.map(s=>[s,s])], F.status)}`,
+      "fQ", F.q, "搜尋姓名、城市、派遣目的", "F", F.project||F.unit||F.country||F.status||F.q, `<button class="btn" data-new>＋ 新增派遣</button>`)}
+    </section>
+  ${util}
+  <section>${secH(Object.keys(rows).length, `${F.year} 派遣<mark>時間軸</mark>`, "點選色條可編輯")}${gantt}</section>
+  <section>${secH(list.length, `派遣<mark>明細</mark>`, "")}${table}</section>`;
+}
+
+// ================= 時間軸共用 =================
+function axis(s0, e0){
+  const months = []; let d = new Date(s0.getFullYear(), s0.getMonth(), 1);
+  while (d <= e0) { months.push(d); d = new Date(d.getFullYear(), d.getMonth()+1, 1); }
+  const S = months[0], E = new Date(months.at(-1).getFullYear(), months.at(-1).getMonth()+1, 1), span = E - S;
+  const pct = x => Math.max(0, Math.min(100, (x - S) / span * 100));
+  const qs = []; months.forEach(m => { const q = `${String(m.getFullYear()).slice(2)}Q${Math.floor(m.getMonth()/3)+1}`; const last = qs.at(-1); if (last && last.q===q) last.n++; else qs.push({q, n:1}); });
+  const head = `<div class="ax-q">${qs.map(x=>`<span style="flex:${x.n}">${x.q}</span>`).join("")}</div><div class="ax-m">${months.map(m=>`<span>${m.getMonth()+1}月</span>`).join("")}</div>`;
+  return {S, E, pct, n: months.length, head};
+}
+const todayMark = ax => TODAY>=ax.S && TODAY<ax.E ? `<div class="g-today" style="left:${ax.pct(TODAY)}%"></div>` : "";
+
+// ================= 頁面：專案 =================
+let curProj = "P02";
+const PV = { closed:false, range:"near", q:"", iss:"", co:"", role:"", sec:"", health:"" };
+const pvOn = () => PV.q||PV.iss||PV.co||PV.role||PV.sec||PV.health;
+const mpF = a => { const pp = personOf(a.person); return (!PV.co || groupOf(a)===PV.co) && (!PV.role || (pp?.role||"未填工種")===PV.role) && has(PV.q, a.person, pp?.enName, pp?.role, pp?.note, a.duty, a.line); };
+const HEALTH = {"完成":["var(--blue)","已完成"], "有風險":["var(--yellow)","進行中（有風險）"], "進行中":["var(--green)","順利進行中"], "未開始":["var(--beige)","未開始"]};
+const linkedIssues = t => DB.issues.filter(i=>i.task===t.id && isOpen(i));
+function taskHealth(t){
+  if (t.status==="完成" || t.actualEnd) return "完成";
+  if (t.status==="有風險" || linkedIssues(t).length) return "有風險";
+  if (t.actualStart || t.status==="進行中") return "進行中";
+  return "未開始";
+}
+const groupOf = a => isBX(a.person) ? "寶新" : (personOf(a.person)?.org || "其他");
+
+function manGantt(p){
+  const all = DB.assignments.filter(a=>a.project===p.id && active(a) && aStart(a) && mpF(a));
+  if (!all.length) return `<div class="card alert-empty">${PV.co||PV.role||PV.q?"這個篩選條件下沒有人員。":"這個專案還沒有人員派遣紀錄。"}</div>`;
+  let ws, we;
+  if (PV.range==="near") { ws = addD(TODAY,-120); we = addD(TODAY,120); }
+  else { ws = new Date(Math.min(...all.map(aStart))); we = new Date(Math.max(TODAY, ...all.map(a=>aEnd(a)||TODAY))); we = addD(we, 20); }
+  const list = all.filter(a => aStart(a) <= we && (aEnd(a) || addD(TODAY, 3650)) >= ws);
+  const ax = axis(ws, we);
+  const groups = {}; list.forEach(a=>(groups[groupOf(a)] ||= []).push(a));
+  const order = Object.keys(groups).sort((a,b)=>a==="寶新"?-1:b==="寶新"?1:groups[b].length-groups[a].length);
+  const colors = ["var(--sky)","var(--peach)","var(--lav)","var(--mint)","var(--yellow)","var(--pink)","var(--beige)"];
+  const rows = order.map((org,gi)=>{
+    const c = org==="寶新" ? "var(--lime)" : colors[gi % colors.length];
+    const g = groups[org].sort((a,b)=>aStart(a)-aStart(b));
+    const onN = g.filter(a=>aStart(a)<=TODAY && (!aEnd(a) || aEnd(a)>=TODAY)).length;
+    return `<div class="mg-sec"><span><i class="dot" style="background:${c}"></i>${esc(org)}</span><span class="mg-n">今天在崗 <b>${onN}</b> 人 · 區間內 ${g.length} 人</span></div>` +
+      g.map(a=>{ const s=aStart(a), e=aEnd(a); const fut = s>TODAY; const openEnd = !e; const gone = e && e < TODAY;
+        const l = ax.pct(s), r = ax.pct(addD(openEnd ? ax.E : e, openEnd?0:1)); const pp = personOf(a.person);
+        return `<div class="mg-row ${gone?"gone":""}"><div class="mg-l"><button class="clickname" data-person="${esc(a.person)}">${esc(a.person)}</button><span class="sub">${esc(pp?.role||"—")}</span></div>
+          <div class="mg-t" style="--n:${ax.n}">${todayMark(ax)}<button class="mg-bar ${fut?"fut":""} ${openEnd?"open":""} ${gone?"gone":""}" data-edit="${a.id}" style="left:${l}%;width:${Math.max(r-l,.8)}%;--c:${gone?"var(--grey)":c}"
+            title="${esc(`${a.person}（${org}）｜到崗 ${ymd(iso(s))}｜離崗 ${e?ymd(iso(e)):"未定"}${gone?"（已離崗）":""}${a.duty?`｜${a.duty}`:""}`)}"><span>${md(iso(s))}–${e?md(iso(e)):"未定"}</span></button>
+            ${stale(a)?`<span class="mg-stale" style="left:min(${r}%, calc(100% - 92px))">${Math.round((TODAY-P(a.updated))/DAY)} 天未更新</span>`:""}</div></div>`; }).join("");
+  }).join("");
+  return `<div class="toolbar"><div class="seg-t" role="group" aria-label="期間"><button class="${PV.range==="near"?"on":""}" data-range="near">前後 4 個月</button><button class="${PV.range==="all"?"on":""}" data-range="all">全部期間</button></div>
+    <span class="legend"><span><i class="swatch"></i>在崗</span><span><i class="swatch gone"></i>已離崗</span><span><i class="swatch fut"></i>預計到崗</span><span><i class="swatch open"></i>離崗日未定</span><span><i class="today-ic"></i>今天</span></span></div>
+  <div class="panel scroll"><div class="mg" style="min-width:${180+ax.n*64}px"><div class="mg-row mg-head"><div class="mg-l">人員</div><div class="mg-ax">${ax.head}</div></div>${rows}</div></div>`;
+}
+
+function planGantt(p, ts, keep = ()=>true){
+  const ms = p.milestones || [];
+  const ds = [...ts.flatMap(t=>[t.planStart,t.planEnd,t.actualStart,t.actualEnd]), ...ms.map(m=>m.date)].filter(Boolean).map(P);
+  ds.push(TODAY);
+  const ax = axis(addD(new Date(Math.min(...ds)),-10), addD(new Date(Math.max(...ds)),25));
+  const bar = (s, e, cls, color, openToToday) => { if (!s) return "";
+    const S = P(s); const E = e ? P(e) : (openToToday && S<=TODAY ? TODAY : S);
+    const l = ax.pct(S), w = Math.max(ax.pct(addD(E,1)) - l, .7);
+    return `<i class="gb ${cls} ${!e&&openToToday?"open":""}" style="left:${l}%;width:${w}%;${color?`--c:${color}`:""}"></i>`; };
+  const tm = todayMark(ax);
+  const msRow = `<div class="pg-row pg-ms"><div class="pg-l"><b>項目節點</b><button class="linkbtn" data-new-ms="${p.id}">＋ 節點</button></div><div class="pg-lab"></div>
+    <div class="pg-t" style="--n:${ax.n}">${tm}${TODAY>=ax.S&&TODAY<ax.E?`<span class="now-tag" style="left:${ax.pct(TODAY)}%">現時點 ${md(iso(TODAY))}</span>`:""}
+    ${ms.map((m,ix)=>`<button class="msd" data-ms="${p.id}|${ix}" style="left:${ax.pct(P(m.date))}%" title="${esc(`${m.name} ${ymd(m.date)}${m.note?`｜${m.note}`:""}`)}"><span class="dia"></span><b>${esc(m.name)}</b><small>${md(m.date)}</small></button>`).join("")}
+    ${ms.length?"":`<span class="pg-hint">尚未設定節點，按「＋ 節點」加入 KO、PA、TT、SOP 等里程碑</span>`}</div></div>`;
+  const secs = [...new Set(ts.map(t=>t.section||"未分段"))];
+  let no = 0;
+  const body = secs.map(sec=>{
+    const g = ts.filter(t=>(t.section||"未分段")===sec), done = g.filter(t=>taskHealth(t)==="完成").length;
+    if (!g.some(keep)) { no += g.length; return ""; }
+    return `<div class="pg-sec"><span>${esc(sec)}</span><span class="badge">${done}/${g.length} 完成</span></div>` + g.map(t=>{ no++; if (!keep(t)) return "";
+      const h = taskHealth(t), li = linkedIssues(t), unsched = !t.planStart && !t.actualStart;
+      return `<div class="pg-row ${h==="有風險"?"risk":""}"><div class="pg-l"><div class="pg-name"><span class="no">${no}</span><b>${esc(t.process)}</b> ${esc(t.task)}</div>
+        <div class="pg-sub">${esc(t.owner||"負責單位未定")}${unsched?' · <span class="chip">未排程</span>':""}${li.map(i=>` <button class="chip crit" data-issue="${i.id}" title="${esc(i.title)}">${i.id}</button>`).join("")}</div>
+        ${t.note?`<div class="pg-note">${esc(t.note)}</div>`:""}
+        <div class="pg-act"><button class="linkbtn" data-task="${t.id}">編輯</button><button class="linkbtn warnbtn" data-raise="${t.id}">回報 Issue</button></div></div>
+        <div class="pg-lab"><span>計畫</span><span>實際</span></div>
+        <div class="pg-t" style="--n:${ax.n}">${tm}<div class="lane">${bar(t.planStart, t.planEnd, "plan")}</div><div class="lane">${bar(t.actualStart, t.actualEnd, "act", HEALTH[h][0], true)}</div></div></div>`;
+    }).join("");
+  }).join("") || (pvOn() ? `<div class="alert-empty" style="padding:14px">這個篩選條件下沒有任務。</div>` : "");
+  return `<div class="legend pg-legend">${["進行中","有風險","完成"].map(k=>`<span><i class="lg-line" style="--c:${HEALTH[k][0]}"></i>${HEALTH[k][1]}</span>`).join("")}<span><i class="lg-line plan"></i>計畫</span><span><i class="today-ic"></i>現時點</span></div>
+  <div class="panel scroll"><div class="pg" style="min-width:${300+ax.n*72}px"><div class="pg-row pg-head"><div class="pg-l">內容</div><div class="pg-lab"></div><div class="pg-ax">${ax.head}</div></div>${msRow}${body}</div></div>`;
+}
+
+function viewProject(){
+  const p = proj(curProj);
+  const now = onSiteNow().filter(a=>a.project===p.id);
+  const allIss = DB.issues.filter(i=>i.project===p.id);
+  const issSt = i => PV.iss==="" ? isOpen(i) : PV.iss==="all" ? true : PV.iss==="已結案" ? !isOpen(i) : i.status===PV.iss;
+  const iss = sortIssues(allIss.filter(i=>issSt(i) && has(PV.q, issueText(i))));
+  const ts = DB.tasks.filter(t=>t.project===p.id);
+  const tKeep = t => (!PV.sec || (t.section||"未分段")===PV.sec) && (!PV.health || taskHealth(t)===PV.health) && has(PV.q, t.process, t.task, t.owner, t.note, t.section, linkedIssues(t).map(i=>i.id));
+  const tsN = ts.filter(tKeep).length;
+  const lock = '<i class="locked">待經理補填</i>';
+  const pAsg = DB.assignments.filter(a=>a.project===p.id && active(a));
+  const nowF = now.filter(mpF);
+  const fb = fbar(
+    fsel("PV","iss","Issue 狀態",[["","Issue：未結案"],["Open","Issue：Open"],["處理中","Issue：處理中"],["待確認","Issue：待確認"],["已結案","Issue：已結案"],["all","Issue：全部"]], PV.iss) +
+    fsel("PV","co","公司",[["","人力：全部公司"], ...[...new Set(pAsg.map(groupOf))].sort((a,b)=>a==="寶新"?-1:b==="寶新"?1:a.localeCompare(b)).map(c=>[c,`人力：${c}`])], PV.co) +
+    fsel("PV","role","工種",[["","人力：全部工種"], ...[...new Set(pAsg.filter(a=>!PV.co||groupOf(a)===PV.co).map(a=>personOf(a.person)?.role||"未填工種"))].sort().map(r=>[r,`人力：${r}`])], PV.role) +
+    (ts.length ? fsel("PV","sec","工段",[["","任務：全部工段"], ...[...new Set(ts.map(t=>t.section||"未分段"))].map(s=>[s,`任務：${s}`])], PV.sec) +
+      fsel("PV","health","任務狀態",[["","任務：全部狀態"], ...["未開始","進行中","有風險","完成"].map(s=>[s,`任務：${s==="完成"?"已完成":s}`])], PV.health) : ""),
+    "pvQ", PV.q, "搜尋本專案的 Issue、人員、任務", "PV", pvOn());
+  const g = {}; nowF.forEach(a=>(g[groupOf(a)] ||= []).push(a));
+  const supCards = Object.entries(g).sort((a,b)=>(a[0]==="寶新"?-1:b[0]==="寶新"?1:b[1].length-a[1].length)).map(([org,list])=>{
+    const roles = countBy(list, a=>personOf(a.person)?.role||"未填工種");
+    return `<div class="card sup ${org==="寶新"?"bxs":""}"><div class="loc-h"><h3>${esc(org)}</h3><span class="count">${list.length}<small>人</small></span></div>
+      <div class="sup-list">${Object.entries(roles).sort((a,b)=>b[1]-a[1]).map(([r,n])=>`<span class="chip">${esc(r)} <span class="num">${n}</span></span>`).join("")}</div></div>`;
+  }).join("");
+  const mpRow = a => { const pp = personOf(a.person); const e = aEnd(a); const fut = aStart(a) > TODAY;
+    return `<tr><td class="nowrap"><button class="clickname" data-person="${esc(a.person)}">${esc(a.person)}</button></td><td class="nowrap">${esc(groupOf(a))}</td><td class="nowrap">${esc(pp?.role||"—")}</td>
+      <td class="wide">${esc(a.duty||"—")}${a.line?` <span class="chip">${esc(a.line)}</span>`:""}</td>
+      <td class="nowrap">${md(iso(aStart(a)))}${fut?' <span class="chip info">預計</span>':""}</td><td class="nowrap">${e?md(iso(e)):"未定"}</td>
+      <td class="sub" style="min-width:140px">${esc(pp?.note||"")}</td>
+      <td class="nowrap"><span class="act"><button class="linkbtn" data-edit="${a.id}">編輯</button>${fut?"":`<button class="linkbtn" data-leave="${a.id}">登記離崗</button>`}</span></td></tr>`; };
+  const upcoming = pAsg.filter(a=>aStart(a) > TODAY && mpF(a)).sort((a,b)=>aStart(a)-aStart(b));
+
+  return `<section><div class="pchips" role="tablist">${DB.projects.map(x=>{ const n = DB.issues.filter(i=>i.project===x.id&&isOpen(i)).length;
+      return `<button class="${x.id===p.id?"on":""}" data-proj="${x.id}" role="tab" aria-selected="${x.id===p.id}">${esc(x.name)}${n?` <span class="pc-n">${n}</span>`:""}</button>`; }).join("")}
+    <button class="addp" data-new-proj>＋ 新增專案</button></div></section>
+  <section class="pd">
+    <div class="panel pd-head"><div class="sec-h"><h2><mark>${esc(p.name)}</mark></h2><div class="sec-r"><span class="chip acc">${esc(p.status||"")}</span><button class="linkbtn" data-edit-proj="${p.id}">編輯專案資訊</button></div></div>
+      <div class="pd-meta">
+        <div>地點<b>${esc([p.country,p.city].filter(Boolean).join(" · "))||lock}</b></div>
+        <div>專案負責人<b>${esc(p.owner)||lock}</b></div>
+        <div>開始日<b>${p.start?ymd(p.start):lock}</b></div>
+        <div>計畫完成<b>${p.planEnd?ymd(p.planEnd):lock}</b></div>
+        <div>現場人數<b class="num">${now.length}</b></div>
+        <div>Open Issue<b class="num ${allIss.filter(isOpen).length?"hot":""}">${allIss.filter(isOpen).length}</b></div>
+      </div>
+      <p class="note">專案層級資料（名稱、負責人、開始日、計畫完成、項目節點）僅課長／經理級以上可以編輯。</p>
+    </div>
+  </section>
+  <section>${fb}</section>
+  <section>${secH(iss.length, PV.iss===""?`Open <mark>Issue</mark>`:`<mark>Issue</mark>`, `${PV.iss===""?"":`狀態：${PV.iss==="all"?"全部":esc(PV.iss)}・`}本專案共 ${allIss.length} 項（未結案 ${allIss.filter(isOpen).length}）`, `<button class="btn sm" data-new-issue="${p.id}">＋ 新增 Issue</button>`)}
+    ${iss.length?`<div class="panel scroll"><table class="dt"><thead><tr><th>編號</th><th>事項</th><th>類別</th><th>嚴重度</th><th>負責</th><th>期限</th><th>狀態</th><th>最新進度</th></tr></thead><tbody>
+    ${iss.map(i=>{ const last = (i.log||[]).slice(-1)[0]; const t = i.task && DB.tasks.find(x=>x.id===i.task); return `<tr class="clickrow" data-issue="${i.id}"><td class="nowrap mono">${esc(i.id)}</td>
+      <td class="wide"><b>${esc(i.title)}</b>${t?` <span class="tag">工序：${esc(t.process)}</span>`:""}<div class="sub">${esc(i.desc)}</div></td><td class="nowrap">${esc(i.category)}</td>
+      <td><span class="chip ${SEVC[i.severity]}">${esc(i.severity)}</span></td><td class="nowrap">${esc(i.owner||"未指派")}${i.party?`<div class="sub">${esc(i.party)}</div>`:""}</td>
+      <td class="nowrap">${i.due?md(i.due):"—"}${overdue(i)?'<div><span class="chip crit">逾期</span></div>':""}</td>
+      <td class="nowrap">${isOpen(i)?`<span class="chip ${STC[i.status]}">${esc(i.status)}</span>`:`<span class="chip done">✓ 已結案</span>`}</td><td class="sub" style="min-width:160px">${last?`${last.at?md(last.at):""} ${esc(last.text)}`:"—"}</td></tr>`; }).join("")}
+    </tbody></table></div>`:`<div class="card alert-empty">${pvOn()?"這個篩選條件下沒有 Issue。":"這個專案目前沒有 Open Issue。"}</div>`}</section>
+  <section>${secH(nowF.length, `現場<mark>人力</mark>`, "今天實際在崗；外包／供應商人員在這裡登記，離開現場請按「登記離崗」", `<button class="btn sm" data-new-onsite="${p.id}">＋ 新增到崗人員</button>`)}
+    ${supCards?`<div class="sup-cards">${supCards}</div>`:""}
+    ${manGantt(p)}
+    ${nowF.length||upcoming.length?`<details class="panel mp-list" ${PV.q||PV.co||PV.role?"open":""}><summary>人員清單（在崗 ${nowF.length}・即將到崗 ${upcoming.length}）— 登記離崗、編輯</summary><div class="scroll"><table class="dt">
+      <thead><tr><th>姓名</th><th>所屬</th><th>工種</th><th>職責 / 產線</th><th>到崗</th><th>預計離崗</th><th>備註</th><th></th></tr></thead>
+      <tbody>${[...nowF.sort((a,b)=>groupOf(a).localeCompare(groupOf(b))), ...upcoming].map(mpRow).join("")}</tbody></table></div></details>`:""}
+  </section>
+  <section>${secH(pvOn()?`${tsN}/${ts.length}`:ts.length, `安裝<mark>任務</mark>`, ts.length?["完成","進行中","有風險","未開始"].map(s=>`${HEALTH[s][1].replace("進行中（有風險）","有風險")} ${ts.filter(t=>taskHealth(t)===s).length}`).join(" · "):"", `<button class="btn sm" data-new-task="${p.id}">＋ 新增任務</button>`)}
+    <p class="note">每個項目上排「計畫」、下排「實際」。工序遇到問題時，按該項目的「回報 Issue」建立追蹤；有未結案 Issue 的項目會以黃色標示為有風險，Issue 結案後自動恢復。</p>
+    ${ts.length||(p.milestones||[]).length ? planGantt(p, ts, tKeep) : `<div class="card alert-empty">還沒有任務。按「＋ 新增任務」建立計畫時程，或先用「＋ 節點」設定 KO、SOP 等里程碑。</div>${`<div style="margin-top:8px"><button class="linkbtn" data-new-ms="${p.id}">＋ 節點</button></div>`}`}
+  </section>`;
+}
+
+// ================= 頁面：人員名單 =================
+const PF = {org:"寶新", sort:"company", unit:"", st:"在職", co:"", role:"", proj:"", on:"", q:""};
+// 單位篩選：選「部」時包含其下各「課」
+const unitMatch = (p, u) => !u ? true : u==="__support" ? isSupport(p) : u==="__none" ? (!inOrg(p) && !isSupport(p))
+  : inOrg(p) && (p.unit===u || unitOf(p.unit)?.parent===u);
+function viewPeople(){
+  const staff = PF.org === "寶新";
+  const lastAsg = n => DB.assignments.filter(x=>x.person===n && active(x)).sort((x,y)=>aStart(y)-aStart(x))[0];
+  const nowMap = new Map(onSiteNow().map(a=>[a.person,a]));
+  const all = DB.people.filter(p=>p.orgType===PF.org);
+  const q = PF.q;
+  const ppl = all.filter(p => staff
+      ? unitMatch(p, PF.unit) && (!PF.st || (PF.st==="在職" ? p.status!=="離職" : p.status==="離職")) && (!q || (p.name+(p.enName||"")+(p.note||"")).toLowerCase().includes(q.toLowerCase()))
+      : (!PF.co || p.org===PF.co) && (!PF.role || p.role===PF.role)
+        && (!PF.proj || DB.assignments.some(a=>a.person===p.name && a.project===PF.proj))
+        && (!PF.on || (PF.on==="on" ? nowMap.has(p.name) : !nowMap.has(p.name)))
+        && (!q || (p.name+(p.org||"")+(p.note||"")).toLowerCase().includes(q.toLowerCase())))
+    .sort((a,b)=>((a.status==="離職")-(b.status==="離職")) || (staff ? byRank(a,b)
+    : PF.sort==="company" ? ((a.org||"").localeCompare(b.org||"") || (a.role||"").localeCompare(b.role||"")) : ((lastAsg(b.name)?aStart(lastAsg(b.name)):0) - (lastAsg(a.name)?aStart(lastAsg(a.name)):0))));
+  const opt = (v, label, cur) => `<option value="${esc(v)}" ${v===cur?"selected":""}>${esc(label)}</option>`;
+  const cnt = f => all.filter(f).length;
+  const filters = staff
+    ? `<select id="pfUnit" aria-label="單位">${opt("","全部單位",PF.unit)}${DB.units.filter(u=>u.level!=="處").sort((a,b)=>LEVEL_RANK[a.level]-LEVEL_RANK[b.level]).flatMap(d=> d.level==="部" ? [d, ...DB.units.filter(c=>c.parent===d.name)] : []).map(u=>opt(u.name, `${u.level==="課"?"　└ ":""}${u.name}（${cnt(p=>p.status!=="離職"&&unitMatch(p,u.name))}）`, PF.unit)).join("")}
+        ${opt("工程處","工程處（處級）",PF.unit)}${opt("__support",`支援同仁（${cnt(p=>isSupport(p))}）`,PF.unit)}${opt("__none",`未列入組織圖（${cnt(p=>p.status!=="離職"&&!inOrg(p)&&!isSupport(p))}）`,PF.unit)}</select>
+       <select id="pfSt" aria-label="在職狀態">${opt("在職","在職",PF.st)}${opt("離職","已離職",PF.st)}${opt("","在職＋離職",PF.st)}</select>`
+    : `<select id="pfCo" aria-label="公司">${opt("","全部公司",PF.co)}${[...new Set(all.map(p=>p.org).filter(Boolean))].sort().map(c=>opt(c, `${c}（${cnt(p=>p.org===c)}）`, PF.co)).join("")}</select>
+       <select id="pfRole" aria-label="工種">${opt("","全部工種",PF.role)}${[...new Set(all.filter(p=>!PF.co||p.org===PF.co).map(p=>p.role).filter(Boolean))].sort().map(r=>opt(r, r, PF.role)).join("")}</select>
+       <select id="pfProj" aria-label="專案">${opt("","全部專案",PF.proj)}${DB.projects.filter(x=>DB.assignments.some(a=>a.project===x.id && !isBX(a.person))).map(x=>opt(x.id, x.name, PF.proj)).join("")}</select>
+       <select id="pfOn" aria-label="在崗狀態">${opt("","在崗＋不在現場",PF.on)}${opt("on",`目前在崗（${cnt(p=>nowMap.has(p.name))}）`,PF.on)}${opt("off","不在現場",PF.on)}</select>`;
+  const active_ = staff ? (PF.unit||PF.st!=="在職"||PF.q) : (PF.co||PF.role||PF.proj||PF.on||PF.q);
+  const filterBar = `<div class="toolbar pf-bar"><span class="pf-l">篩選</span>${filters}
+    <input id="pfQ" type="search" placeholder="${staff?"搜尋姓名、英文名、備註":"搜尋姓名、公司、備註"}" value="${esc(PF.q)}" autocomplete="off">
+    ${active_?`<button class="linkbtn" data-pf-clear>清除篩選</button>`:""}</div>`;
+  const head = staff
+    ? `<th></th><th>姓名</th><th>單位</th><th>職稱</th><th>目前位置</th><th>備註</th>`
+    : `<th></th><th>姓名</th><th>公司</th><th>工種</th><th>目前在崗</th><th>最近到崗</th><th>備註</th>`;
+  return `<section><div class="toolbar"><div class="seg-t" role="group" aria-label="名單"><button class="${staff?"on":""}" data-porg="寶新">集團同仁</button><button class="${staff?"":"on"}" data-porg="供應商">供應商現場人員</button></div>
+    <span class="hint" style="color:var(--muted);font-size:12.5px;flex:1">${staff?"每一列最左邊的「✎ 編輯」可更新公司、單位、職稱、在職狀態、備註與派遣":"每一列的「✎ 編輯」可更新公司、工種、備註與到崗紀錄；也可在各專案頁「新增到崗人員」登記"}</span>
+    <button class="btn" data-new-person="${staff?"寶新":"供應商"}">＋ 新增${staff?"同仁":"供應商人員"}</button></div></section>
+  <section>${filterBar}</section>
+  <section>${secH(ppl.length, staff?`集團同仁<mark>名單</mark>`:`供應商<mark>現場人員</mark>`, staff?`依職等排序${active_?`・共 ${all.filter(p=>p.status!=="離職").length} 人中符合 ${ppl.length} 人`:""}`:(active_?`共 ${all.length} 人中符合 ${ppl.length} 人`:""), staff?"":`<div class="seg-t" role="group" aria-label="排序"><button class="${PF.sort==="company"?"on":""}" data-psort="company">依公司</button><button class="${PF.sort==="recent"?"on":""}" data-psort="recent">依最近到崗</button></div>`)}
+  ${ppl.length?"":`<div class="card alert-empty">沒有符合條件的人員。<button class="linkbtn" data-pf-clear>清除篩選</button></div>`}
+  <div class="panel scroll" ${ppl.length?"":"hidden"}><table class="dt"><thead><tr>${head}</tr></thead><tbody>
+  ${ppl.map(p=>{ const a=nowMap.get(p.name);
+    const edit = `<td class="nowrap"><button class="editbtn" data-person="${esc(p.name)}">✎ 編輯</button></td>`;
+    const note = `<td class="sub" style="min-width:160px">${esc(p.note||"")}</td>`;
+    if (staff) return `<tr class="${p.status==="離職"?"gone":""}">${edit}
+      <td class="nowrap"><b>${esc(p.name)}</b>${p.enName?` <span class="sub">${esc(p.enName)}</span>`:""}${p.status==="離職"?' <span class="chip">已離職</span>':""}</td>
+      <td>${inOrg(p)||isSupport(p)?`${!inOrg(p)?'<span class="chip info">支援</span> ':""}${esc(affil(p))}`:'<i class="locked">未列入組織圖</i>'}</td><td class="nowrap">${esc(p.title||p.role||"—")}</td>
+      <td class="nowrap">${a&&a.country!==RULE.home?`<span class="chip acc">${esc(a.city||a.country)}</span>`:(p.status==="離職"?"—":"台灣")}</td>${note}</tr>`;
+    const la = lastAsg(p.name);
+    return `<tr class="${a?"":"gone"}">${edit}<td class="nowrap"><b>${esc(p.name)}</b></td><td>${esc(p.org)}</td><td class="nowrap">${esc(p.role||"—")}</td>
+      <td class="nowrap">${a?`<span class="chip acc">${esc(proj(a.project).name)}</span>`:'<span class="sub">不在現場</span>'}</td>
+      <td class="nowrap">${la?`${ymd(iso(aStart(la)))}<div class="sub">${aEnd(la)?`至 ${ymd(iso(aEnd(la)))}`:"離崗日未定"}</div>`:"—"}</td>${note}</tr>`; }).join("")}
+  </tbody></table></div></section>`;
+}
+
+// ================= 頁面：追蹤清單（週會 Task & Issue Tracker） =================
+const TF = { status:"open", owner:"", project:"all", q:"", group:"owner", kind:"", sev:"", od:"" };
+const weekAgo = () => iso(addD(TODAY,-7));
+const updatedThisWeek = i => (i.log||[]).some(l=>l.at && l.at >= weekAgo());
+function viewTracker(){
+  const all = DB.issues;
+  const inStatus = i => TF.status==="all" ? true : TF.status==="open" ? isOpen(i) : (!isOpen(i) && i.closed && i.closed >= weekAgo());
+  const list = all.filter(i => inStatus(i)
+    && (!TF.owner || (i.owner||"（未指派）")===TF.owner)
+    && (TF.project==="all" || (i.project||"")===TF.project)
+    && (!TF.kind || kindOf(i)===TF.kind)
+    && (!TF.sev || i.severity===TF.sev)
+    && (!TF.od || (TF.od==="od" ? overdue(i) : TF.od==="tbd" ? (!i.due && isOpen(i)) : updatedThisWeek(i)))
+    && has(TF.q, issueText(i)));
+  const open = all.filter(isOpen);
+  const owners = [...new Set(open.map(i=>i.owner||"（未指派）"))].sort((a,b)=>{ const pa=personOf(a), pb=personOf(b); return (pa&&pb)?byRank(pa,pb):(pa?-1:pb?1:0); });
+  const label = n => { const p = personOf(n); return p?.enName ? `${n} ${p.enName.split(" ")[0]}` : n; };
+  const groups = {};
+  list.forEach(i => { const k = TF.group==="owner" ? (i.owner||"（未指派）") : (i.project||""); (groups[k] ||= []).push(i); });
+  const keys = Object.keys(groups).sort((a,b)=>{ if (TF.group==="owner") { const pa=personOf(a), pb=personOf(b); return (pa&&pb)?byRank(pa,pb):(pa?-1:pb?1:0); } return (a===""?1:b===""?-1:a.localeCompare(b)); });
+  let no = 0;
+  const row = i => { no++; const logs = (i.log||[]); const lastDated = logs.map(l=>!!l.at).lastIndexOf(true);
+    const datedN = logs.filter(l=>l.at).length; const start = datedN > 3 ? logs.findIndex((l,ix)=>l.at && logs.slice(ix).filter(x=>x.at).length<=3) : 0;
+    const shown = logs.slice(start).map((l,k)=>({...l, last: start+k===lastDated})); const more = start; const od = overdue(i);
+    return `<tr class="${isOpen(i)?"":"gone"} ${od?"od-row":""}">
+      <td class="n">${no}<div class="iss-no">${esc(i.id)}</div></td>
+      <td class="wide"><b>${esc(i.title)}</b>${updatedThisWeek(i)&&isOpen(i)?' <span class="chip acc">本週更新</span>':""}
+        <div class="tk-meta"><span class="tag">${esc(i.project?proj(i.project).name:"處內事務")}</span>${i.task?' <span class="chip">工序</span>':""}${i.note?` <span class="sub">備註：${esc(i.note)}</span>`:""}</div></td>
+      <td class="nowrap">${i.opened?ymd(i.opened):"—"}</td>
+      <td class="nowrap">${i.due?`${ymd(i.due)}${od?'<div><span class="chip crit">逾期</span></div>':""}`:(i.dueTBD?'<span class="chip warn">TBD</span>':"—")}</td>
+      <td class="tk-log">${more>0?`<div class="sub">⋯ 更早 ${more} 筆</div>`:""}${shown.map(l=>`<div class="${l.last?"last":""}">${l.at?`<b class="num">${md(l.at)}</b> `:'<span class="nodate">・</span>'}${esc(l.text).replace(/\n/g,"<br>")}</div>`).join("") || '<span class="sub">尚無進度</span>'}</td>
+      <td class="nowrap">${isOpen(i)?`<span class="chip ${STC[i.status]}">${esc(i.status)}</span>`:`<span class="chip done">✓ 已結案</span><div class="sub num">${i.closed?ymd(i.closed):""}</div>`}</td>
+      <td class="nowrap">${esc(i.owner?label(i.owner):(i.party||"未指派"))}</td>
+      <td class="nowrap"><span class="act col"><button class="editbtn" data-quick="${i.id}">✎ 更新對策</button><button class="linkbtn" data-issue="${i.id}">編輯</button>${isOpen(i)?`<button class="linkbtn" data-close-issue="${i.id}">結案</button>`:`<button class="linkbtn" data-reopen="${i.id}">重開</button>`}</span></td></tr>`; };
+  const odN = open.filter(overdue).length, wkN = open.filter(updatedThisWeek).length, clN = all.filter(i=>!isOpen(i) && i.closed && i.closed>=weekAgo()).length;
+  return `<section class="sum">
+    <div class="card ptag"><span class="k">未結案</span><span class="v">${open.length}<small>項</small></span><span class="s">${owners.length} 位負責人</span></div>
+    <button class="card ptag ${odN?"hot":""}" data-tf="od:od" title="只看逾期"><span class="k">已逾期</span><span class="v">${odN}<small>項</small></span><span class="s">超過預計完成日・點選篩選</span></button>
+    <button class="card ptag" data-tf="od:wk" title="只看本週有更新"><span class="k">本週有更新</span><span class="v">${wkN}<small>項</small></span><span class="s">${md(weekAgo())} 起・點選篩選</span></button>
+    <button class="card ptag" data-tf="status:closedweek" title="只看本週結案"><span class="k">本週結案</span><span class="v">${clN}<small>項</small></span><span class="s">${md(weekAgo())} 起・點選篩選</span></button>
+  </section>
+  <section><div class="toolbar">
+    <div class="seg-t" role="group" aria-label="狀態"><button class="${TF.status==="open"?"on":""}" data-tf="status:open">未結案</button><button class="${TF.status==="closedweek"?"on":""}" data-tf="status:closedweek">本週結案</button><button class="${TF.status==="all"?"on":""}" data-tf="status:all">全部</button></div>
+    <div class="seg-t" role="group" aria-label="分組"><button class="${TF.group==="owner"?"on":""}" data-tf="group:owner">依負責人</button><button class="${TF.group==="project"?"on":""}" data-tf="group:project">依專案</button></div>
+    <button class="btn" data-new-issue="" style="margin-left:auto">＋ 任務／問題點／其他</button></div>
+    ${fbar(`<select id="tfProj" aria-label="專案"><option value="all">全部專案</option><option value="" ${TF.project===""?"selected":""}>處內事務</option>${DB.projects.map(p=>`<option value="${p.id}" ${TF.project===p.id?"selected":""}>${esc(p.name)}</option>`).join("")}</select>
+      ${fsel("TF","kind","類型",[["","全部類型"],["任務","任務"],["問題點","問題點"],["其他","其他"]], TF.kind)}
+      ${fsel("TF","sev","嚴重度",[["","全部嚴重度"],["高","嚴重度：高"],["中","嚴重度：中"],["低","嚴重度：低"]], TF.sev)}
+      ${fsel("TF","od","期限",[["","全部期限"],["od","只看逾期"],["tbd","未訂期限"],["wk","本週有更新"]], TF.od)}`,
+      "tfQ", TF.q, "搜尋事項、編號、負責人或進度內容", "TF", TF.owner||TF.project!=="all"||TF.kind||TF.sev||TF.od||TF.q)}
+    <div class="pchips owners"><button class="${TF.owner===""?"on":""}" data-tf="owner:">全部負責人</button>${owners.map(o=>`<button class="${TF.owner===o?"on":""}" data-tf="owner:${esc(o)}">${esc(label(o))} <span class="pc-n">${open.filter(i=>(i.owner||"（未指派）")===o).length}</span></button>`).join("")}</div></section>
+  <section>${secH(list.length, `任務與問題點<mark>追蹤表</mark>`, "週會逐人檢視：按「✎ 更新對策」記錄本週的對策與進度")}
+    ${list.length?`<div class="panel scroll"><table class="dt tk"><colgroup><col style="width:74px"><col style="width:24%"><col style="width:92px"><col style="width:100px"><col><col style="width:92px"><col style="width:110px"><col style="width:92px"></colgroup>
+    <thead><tr><th class="n">No.／編號</th><th>任務／問題點</th><th>啟動日</th><th>預計完成</th><th>對策與進度</th><th>實際完成</th><th>負責人</th><th></th></tr></thead>
+    ${keys.map(k=>`<tbody><tr class="tk-group"><td colspan="8"><b>${esc(TF.group==="owner"?label(k):(k?proj(k).name:"處內事務"))}</b>${TF.group==="owner"&&personOf(k)?` <span class="sub">${esc(personOf(k).title||"")}</span>`:""} <span class="pc-n">${groups[k].length}</span></td></tr>${groups[k].sort((a,b)=>(isOpen(b)-isOpen(a))||(overdue(b)-overdue(a))||(a.due||"9").localeCompare(b.due||"9")).map(row).join("")}</tbody>`).join("")}
+    </table></div>`:`<div class="card alert-empty">這個條件下沒有事項。</div>`}</section>`;
+}
+
+// ================= 抽屜表單（共用） =================
+const $ = id => document.getElementById(id);
+const val = id => ($(id)?.value ?? "").trim();
+function drawer(title, body, saveLabel, onSave, onInput){
+  $("drawerRoot").innerHTML = `<div class="scrim" data-close></div>
+  <aside class="drawer" role="dialog" aria-labelledby="dTitle"><header><h2 id="dTitle">${title}</h2><button class="x" data-close aria-label="關閉">×</button></header>
+  <form id="dForm" novalidate autocomplete="off">${body}<div class="checks" id="checks" aria-live="polite"></div></form>
+  <footer><button class="btn ghost" data-close type="button">取消</button><button class="btn" id="saveBtn" type="button">${saveLabel}</button></footer></aside>`;
+  if (onInput) { $("dForm").addEventListener("input", onInput); onInput(); }
+  $("saveBtn").addEventListener("click", onSave);
+  setTimeout(()=>$("dForm").querySelector("input:not([readonly]),select,textarea")?.focus(), 50);
+}
+const fld = (id, label, inner, help) => `<div class="f"><label for="${id}">${label}</label>${inner}${help?`<span class="help">${help}</span>`:""}</div>`;
+// 所有欄位關閉瀏覽器自動填入（避免跳出瀏覽器儲存的姓名、地址等個人資訊）
+const inp = (id, v, attrs="") => `<input id="${id}" name="f_${id}" value="${esc(v??"")}" autocomplete="off" data-lpignore="true" data-form-type="other" ${attrs}>`;
+const sel = (id, opts, v) => `<select id="${id}">${opts.map(o=>`<option ${o===v?"selected":""}>${esc(o)}</option>`).join("")}</select>`;
+const dl = (id, opts) => `<datalist id="${id}">${[...new Set(opts)].map(o=>`<option value="${esc(o)}">`).join("")}</datalist>`;
+const projNames = () => DB.projects.map(p=>p.name);
+const projPick = (pre, pid, allowNone=false) => `<div class="f"><label for="${pre}ProjSel">專案</label><select id="${pre}ProjSel" data-projsel="${pre}">${allowNone?`<option value="" ${!pid?"selected":""}>處內事務（非專案）</option>`:(pid?"":`<option value="">— 請選擇專案 —</option>`)}${DB.projects.map(p=>`<option value="${p.id}" ${p.id===pid?"selected":""}>${esc(p.name)}</option>`).join("")}<option value="__new">＋ 新增專案…</option></select>
+  ${inp(pre+"ProjNew","",'placeholder="輸入新專案名稱，例：北非項目" hidden')}<span class="help">清單裡沒有的專案，選最後一項「＋ 新增專案…」直接輸入名稱</span></div>`;
+const projPicked = pre => { const v = val(pre+"ProjSel"); return v==="__new" ? (val(pre+"ProjNew") ? ensureProject(val(pre+"ProjNew")) : "") : v; };
+const orgNames = () => ["寶新", ...DB.people.filter(x=>x.orgType==="供應商").map(x=>x.org)];
+const supplierNames = () => [...new Set(DB.people.filter(x=>x.orgType==="供應商").map(x=>x.org).filter(Boolean))].sort();
+function closeForm(){ $("drawerRoot").innerHTML = ""; }
+function upsertPerson(name, patch){ const p = personOf(name) || {id:"H"+Date.now(), name, orgType:"寶新", company:HOME_CO, org:"", unit:"", role:"", title:"", status:"在職", note:""};
+  local.people[name] = Object.assign({}, p, patch); }
+function logChange(action, id, who){ local.log.push({at:new Date().toISOString(), action, id, who}); }
+
+// ---------- 派遣（集團同仁）與現場到崗（供應商） ----------
+function openForm(id, preset={}){
+  const a = id ? DB.assignments.find(x=>x.id===id) : Object.assign({person:"",project:"P02",country:"美國",city:"芝加哥",planStart:"",planEnd:"",actualStart:"",actualEnd:"",duty:"",line:"",status:"確認",budget:"",cost:"",note:""}, preset);
+  const site = preset.site || (id && !isBX(a.person));
+  return site ? openSiteForm(id, a) : openStaffForm(id, a);
+}
+function staffOptions(sel){
+  const live = DB.people.filter(isStaff);
+  const grp = (label, arr) => arr.length ? `<optgroup label="${esc(label)}">${arr.sort(byRank).map(p=>`<option value="${esc(p.name)}" ${p.name===sel?"selected":""}>${esc(p.name)}${p.enName?` ${esc(p.enName)}`:""}・${esc(p.title||p.role||"")}</option>`).join("")}</optgroup>` : "";
+  let html = grp("工程處", live.filter(p=>p.unit==="工程處"));
+  DB.units.filter(u=>u.level==="部").forEach(d => { html += grp(d.name, live.filter(p=>inOrg(p) && p.unit===d.name));
+    DB.units.filter(u=>u.level==="課" && u.parent===d.name).forEach(c => { html += grp(unitPath(c.name), live.filter(p=>inOrg(p) && p.unit===c.name)); }); });
+  html += grp("支援同仁（非工程處）", live.filter(isSupport));
+  html += grp("未列入組織圖", live.filter(p=>!inOrg(p) && !isSupport(p)));
+  return html;
+}
+function openStaffForm(id, a){
+  const body = `
+    <div class="f"><label for="iPerson">派遣人員</label><select id="iPerson"><option value="">— 選擇集團同仁 —</option>${staffOptions(a.person)}<option value="__new">＋ 新增同仁…</option></select>
+      ${inp("iPersonNew","",'placeholder="新同仁中文姓名" hidden')}<span class="help" id="iAffil">${a.person&&personOf(a.person)?esc(affil(personOf(a.person))):"只列集團同仁；外包／供應商人員請到專案頁「新增到崗人員」登記"}</span></div>
+    ${projPick("i", a.project)}
+    <div class="f2">${fld("iCountry","國家",inp("iCountry",a.country,'list="dlCountry"')+dl("dlCountry",[...(L.country||[]),"台灣"]))}${fld("iCity","城市",inp("iCity",a.city))}</div>
+    <div class="f2">${fld("iPS","計畫出發",inp("iPS",a.planStart,'type="date"'))}${fld("iPE","計畫回程",inp("iPE",a.planEnd,'type="date"'))}</div>
+    <div class="f2">${fld("iAS","實際出發",inp("iAS",a.actualStart,'type="date"'))}${fld("iAE","實際回程",inp("iAE",a.actualEnd,'type="date"'))}</div>
+    <div id="dayInfo" class="dayinfo" aria-live="polite"></div>
+    ${fld("iDuty","派遣目的",`<textarea id="iDuty" placeholder="例：電芯項目一期設備安裝">${esc(a.duty)}</textarea>`)}
+    <div class="f2">${fld("iLine","產線（選填）",inp("iLine",a.line,'placeholder="例：C、D、電芯"'))}${fld("iStatus","狀態",sel("iStatus",L.assignStatus,a.status))}</div>
+    <div class="f2">${fld("iBudget","出差預算（TWD）",inp("iBudget",a.budget??"",'type="number" min="0" step="1000" placeholder="機票＋住宿＋日支"'))}${fld("iCost","實際支出（TWD）",inp("iCost",a.cost??"",'type="number" min="0" placeholder="回程後填寫"'))}</div>
+    ${fld("iNote","備註",`<textarea id="iNote">${esc(a.note)}</textarea>`)}`;
+  const who = () => val("iPerson")==="__new" ? val("iPersonNew") : val("iPerson");
+  function check(){
+    const out = []; const name = who(), s=P(val("iAS")||val("iPS")), e=P(val("iAE")||val("iPE")), country=val("iCountry");
+    $("iPersonNew").hidden = val("iPerson")!=="__new";
+    const pp = personOf(name); $("iAffil").textContent = pp ? affil(pp) : (val("iPerson")==="__new" ? "新同仁會先放在「未列入組織圖」，之後可到人員名單指定單位" : "只列集團同仁；外包／供應商人員請到專案頁「新增到崗人員」登記");
+    dayInfo("dayInfo", val("iPS"), val("iPE"), val("iAS"), val("iAE"), {plan:"計畫", go:"出發", back:"回程"}, out);
+    if (val("iProjSel")==="__new") out.push(["warn", val("iProjNew") ? `將建立新專案「${val("iProjNew")}」` : "請輸入新專案名稱"]);
+    if (name && s && e) DB.assignments.filter(x=>x.person===name && x.id!==id && active(x)).forEach(x=>{
+      const xs=aStart(x), xe=aEnd(x); if (xs && xe && xs<=e && xe>=s) out.push(["warn",`與既有行程重疊：${x.city||x.country} ${md(iso(xs))}–${md(iso(xe))}`]); });
+    if (name && e && s && RULE.rollingCountries.includes(country)) { const from=addD(e,-365); const r = rollingDays(name,country,e) + (id?0:days(s<from?from:s,e));
+      if (r>=RULE.rollingWarn) out.push([r>=180?"crit":"warn",`回程時近 365 天在${country}停留約 ${r} 天，已超過 ${RULE.rollingWarn} 天警戒線`]); }
+    $("checks").innerHTML = out.map(([c,t])=>`<div class="check ${c}">${esc(t).replace(/\n/g,"<br>")}</div>`).join("");
+    return !out.some(x=>x[0]==="crit" && /早於/.test(x[1]));
+  }
+  drawer(id?"編輯派遣":"新增派遣", body, id?"儲存變更":"新增派遣", ()=>{
+    const name = who();
+    if (!name || !(val("iPS")||val("iAS"))) return toast("請選擇派遣人員並填寫出發日期");
+    if (!val("iProjSel") || (val("iProjSel")==="__new" && !val("iProjNew"))) return toast("請選擇專案，或輸入新專案名稱");
+    if (!check()) return toast("回程日期早於出發日期，請修正");
+    if (!personOf(name)) upsertPerson(name, {orgType:"寶新", company:HOME_CO});
+    const pid = projPicked("i");
+    const rec = Object.assign({}, a, { id: id || "L"+Date.now(), person:name, project:pid, country:val("iCountry"), city:val("iCity"),
+      planStart:val("iPS"), planEnd:val("iPE"), actualStart:val("iAS"), actualEnd:val("iAE"), duty:val("iDuty"), line:val("iLine"),
+      status:val("iStatus"), budget: val("iBudget")===""?null:+val("iBudget"), cost: val("iCost")===""?null:+val("iCost"), note:val("iNote"),
+      updated: iso(TODAY), source: a.source || "中控台" });
+    local.assignments[rec.id] = rec; logChange(id?"編輯派遣":"新增派遣", rec.id, name); persist(); closeForm();
+    toast(`${id?"已更新":"已新增"}：${name} · ${proj(pid).name} · ${md(rec.actualStart||rec.planStart)}–${md(rec.actualEnd||rec.planEnd)}`); render();
+  }, check);
+  if (id) addDeleteAsg(id, "派遣");
+}
+let siteReturn = null;   // 從供應商人員抽屜開啟時，存檔／刪除後回到該抽屜
+function backToSupplier(){ const n = siteReturn; siteReturn = null; if (n && personOf(n)) openSupplier(n); }
+function openSiteForm(id, a){
+  const p = personOf(a.person) || {};
+  const pr = proj(a.project);
+  const body = `<span class="tag wrap">${esc(pr.name)}・現場人力登記（外包／供應商），用來統計現場工種、數量與來源公司</span>
+    <div class="f2">${fld("sName","姓名",inp("sName",a.person,'placeholder="現場人員姓名"'))}${fld("sOrg","所屬公司",inp("sOrg",p.org||a.org||"",'list="dlSupX" placeholder="例：JEE、南實"')+dl("dlSupX",supplierNames()))}</div>
+    <div class="f2">${fld("sRole","工種",inp("sRole",p.role||"",'list="dlRoleX" placeholder="例：PLC工程師、鉗工"')+dl("dlRoleX",DB.people.filter(x=>x.orgType==="供應商").map(x=>x.role).filter(Boolean)))}${fld("sLine","產線（選填）",inp("sLine",a.line,'placeholder="例：C、D"'))}</div>
+    ${fld("sDuty","職責（選填）",inp("sDuty",a.duty,'placeholder="例：調試、設備安裝"'))}
+    <div class="f2">${fld("sPS","預計到崗",inp("sPS",a.planStart,'type="date"'))}${fld("sPE","預計離崗",inp("sPE",a.planEnd,'type="date"'))}</div>
+    <div class="f2">${fld("sAS","實際到崗",inp("sAS",a.actualStart,'type="date"'))}${fld("sAE","實際離崗",inp("sAE",a.actualEnd,'type="date"'),"離開現場後填寫，在崗人數才會準確")}</div>
+    <div id="sDayInfo" class="dayinfo" aria-live="polite"></div>`;
+  function check(){ const out=[];
+    dayInfo("sDayInfo", val("sPS"), val("sPE"), val("sAS"), val("sAE"), {plan:"預計", go:"到崗", back:"離崗"}, out);
+    $("checks").innerHTML = out.map(([c,t])=>`<div class="check ${c}">${esc(t)}</div>`).join(""); return !out.length; }
+  drawer(id?"編輯現場人員":"新增到崗人員", body, id?"儲存":"新增", ()=>{
+    const name = val("sName"), org = val("sOrg"), role = val("sRole");
+    if (!name || !org || !(val("sPS")||val("sAS"))) return toast("請填寫姓名、所屬公司與到崗日期");
+    if (!check()) return toast("離崗日期早於到崗日期，請修正");
+    const ex = personOf(name);
+    if (ex && ex.orgType==="寶新") return toast(`「${name}」是集團同仁，請改用「人員派遣」登記`);
+    upsertPerson(name, {orgType:"供應商", org, role:val("sRole")});
+    const rec = Object.assign({}, a, { id: id || "L"+Date.now(), person:name, project:a.project, country:pr.country||a.country, city:pr.city||a.city,
+      planStart:val("sPS"), planEnd:val("sPE"), actualStart:val("sAS") || (val("sPS") && val("sPS")<=iso(TODAY) ? val("sPS") : ""), actualEnd:val("sAE"),
+      duty:val("sDuty"), line:val("sLine"), status:"確認", updated: iso(TODAY), source: a.source || "中控台" });
+    local.assignments[rec.id] = rec; logChange(id?"編輯到崗":"新增到崗", rec.id, name); persist(); closeForm();
+    toast(`${id?"已更新":"已登記"}：${org} ${name}（${role||"工種未填"}）`); render(); backToSupplier();
+  }, check);
+  if (id) addDeleteAsg(id, "到崗紀錄");
+}
+// 計畫（預計）天數與實際天數：派遣與現場到崗共用
+function dayInfo(boxId, psS, peS, asS, aeS, w, out){
+  const ps=P(psS), pe=P(peS), as_=P(asS), ae=P(aeS);
+  if (ps && pe && pe<ps) out.push(["crit",`${w.plan}${w.back}早於${w.plan}${w.go}`]);
+  if (as_ && ae && ae<as_) out.push(["crit",`實際${w.back}早於實際${w.go}`]);
+  const pd = ps && pe && pe>=ps ? days(ps,pe) : null, ad = as_ && ae && ae>=as_ ? days(as_,ae) : null;
+  const lines = [`${w.plan}：${pd!=null?`${pd} 天（${md(iso(ps))}–${md(iso(pe))}）`:(ps?`${md(iso(ps))} ${w.go}，${w.back}日未定`:"未填完整")}`];
+  if (ad!=null) lines.push(`實際：${ad} 天（${md(iso(as_))}–${md(iso(ae))}）${pd!=null&&ad!==pd?`，比${w.plan}${ad>pd?"多":"少"} ${Math.abs(ad-pd)} 天`:""}`);
+  else if (as_) lines.push(`實際：${md(iso(as_))} ${w.go}，${as_<=TODAY?`目前第 ${days(as_,TODAY)} 天（${w.back}日未填）`:"（日期在今天之後，請確認）"}`);
+  else lines.push("實際：尚未填寫");
+  $(boxId).innerHTML = (ps || as_) ? `<div class="check ${ad!=null&&pd!=null&&ad!==pd?"warn":"ok"}">${lines.map(esc).join("<br>")}</div>` : "";
+}
+function addDeleteAsg(id, label){
+  const a = DB.assignments.find(x=>x.id===id); if (!a) return;
+  const foot = document.querySelector(".drawer footer");
+  foot.insertAdjacentHTML("afterbegin", `<button type="button" class="btn ghost danger" id="delAsg">刪除此${label}</button><span style="flex:1"></span>`);
+  $("delAsg").addEventListener("click", e=>{ const b = e.currentTarget;
+    if (!b.dataset.confirm) { b.dataset.confirm = "1"; b.textContent = "確定刪除？再按一次"; b.classList.add("armed"); return; }
+    local.assignments[id] = Object.assign({}, a, {deleted:true, deletedAt:iso(TODAY)}); logChange(`刪除${label}`, id, a.person); persist(); closeForm();
+    toast(`已刪除：${a.person} · ${a.city||a.country} ${md(a.actualStart||a.planStart)}–${md(a.actualEnd||a.planEnd)}`); render(); backToSupplier(); });
+}
+function markLeft(id){
+  const a = DB.assignments.find(x=>x.id===id); if (!a) return;
+  local.assignments[id] = Object.assign({}, a, {actualEnd: iso(TODAY), updated: iso(TODAY)});
+  logChange("登記離崗", id, a.person); persist(); toast(`已登記 ${a.person} 今天離崗`); render();
+}
+
+// ---------- Issue（含週會追蹤事項） ----------
+function issueSave(i, patch, msg){
+  const rec = Object.assign({}, i, patch); local.issues[rec.id] = rec; logChange("更新 Issue", rec.id, ""); persist(); toast(msg || `已更新 ${rec.id}`); render();
+}
+function openIssue(id, preset={}){
+  const isNew = !id;
+  const i = id ? DB.issues.find(x=>x.id===id) : Object.assign({project:curProjFor(), kind:"問題", title:"", desc:"", category:"其他", severity:"中", owner:"", party:"", opened:iso(TODAY), due:"", status:"Open", note:"", log:[]}, preset);
+  const bx = DB.people.filter(isStaff).sort(byRank);
+  const body = `
+    <div class="f2">${fld("qKind","類型",sel("qKind",["任務","問題點","其他"],i.kind==="問題"?"問題點":(i.kind||"問題點")))}${fld("qStatus","狀態",sel("qStatus",L.issueStatus,i.status))}</div>
+    ${projPick("q", i.project, true)}
+    ${i.task?(()=>{ const t=DB.tasks.find(x=>x.id===i.task); return t?`<span class="tag wrap">關聯工序：${esc(t.section)}・${esc(t.process)} ${esc(t.task)}</span>`:""; })():""}
+    ${fld("qTitle","任務／問題點",inp("qTitle",i.title,'placeholder="一句話說明，例：化成設備進廠日期未定"'))}
+    ${fld("qDesc","說明（選填）",`<textarea id="qDesc" placeholder="背景、影響範圍、需要誰決定">${esc(i.desc)}</textarea>`)}
+    <div class="f2"><div class="f"><label for="qOwner">負責人 PIC</label><select id="qOwner"><option value="">— 未指派 —</option>${bx.map(p=>`<option value="${esc(p.name)}" ${p.name===i.owner?"selected":""}>${esc(p.name)}${p.enName?` ${esc(p.enName.split(" ")[0])}`:""}</option>`).join("")}</select></div>
+      ${fld("qParty","對口單位（選填）",inp("qParty",i.party,'list="dlOrg" placeholder="例：杭可"')+dl("dlOrg",supplierNames()))}</div>
+    <div class="f3">${fld("qOpen","啟動日",inp("qOpen",i.opened,'type="date"'))}${fld("qDue","預計完成",inp("qDue",i.due,'type="date"'),"未定可留空")}${fld("qClosed","實際完成",inp("qClosed",i.closed||"",'type="date"'),"填寫即結案")}</div>
+    <div class="f2">${fld("qSev","嚴重度",sel("qSev",L.issueSeverity,i.severity))}${fld("qCat","類別",sel("qCat",L.issueCategory,i.category))}</div>
+    ${fld("qNote","備註（選填）",inp("qNote",i.note||"",'placeholder="例：審計日期 12/15、Lucy 代理"'))}
+    ${isNew?"":`<div class="f"><label>對策與進度 <span class="help" style="font-weight:500">按 ✎ 可直接修改日期或內容；按「儲存」後才會生效</span></label><div class="hist editable" id="qHist"></div></div>`}
+    ${fld("qLog", isNew?"初始進度（選填）":`新增進度（記為 ${md(iso(TODAY))}）`, `<textarea id="qLog" placeholder="${isNew?"例：週會提出，待確認時程":"例：已聯繫杭可，預計 10/25 回覆進廠日"}"></textarea>`)}
+`;
+  // 進度紀錄工作副本：在抽屜內修改，按「儲存」才寫回
+  const ed = logEditor(i.log);
+  drawer(isNew?"新增任務／問題點／其他":`${esc(i.id)}　更新事項`, body, isNew?"建立":"儲存", ()=>{
+    if (!ed.commit()) return;
+    if (!val("qTitle")) return toast("請填寫任務／問題點");
+    if (val("qProjSel")==="__new" && !val("qProjNew")) return toast("請輸入新專案名稱");
+    const pid = projPicked("q");
+    const log = ed.result();
+    let stNew = val("qStatus"); const closedV = val("qClosed");
+    if (closedV && stNew!=="已結案") stNew = "已結案";
+    if (!isNew && stNew !== i.status) log.push({at:iso(TODAY), text:`狀態：${i.status} → ${stNew}`});
+    if (val("qLog")) log.push({at:iso(TODAY), text:val("qLog")});
+    if (isNew && !val("qLog")) log.push({at:iso(TODAY), text:"建立"});
+    const nid = id || `ISS-${String(Math.max(0,...merge(base.issues, local.issues).map(x=>parseInt(x.id.slice(4))||0))+1).padStart(3,"0")}`;  // 含已刪除，編號不重複使用
+    const rec = Object.assign({}, i, {id:nid, project:pid, kind:val("qKind"), title:val("qTitle"), desc:val("qDesc"), category:val("qCat"), severity:val("qSev"),
+      owner:val("qOwner"), party:val("qParty"), opened:val("qOpen"), due:val("qDue"), dueTBD: !val("qDue") && i.dueTBD, status:stNew, note:val("qNote"), log,
+      closed: stNew==="已結案" ? (closedV||i.closed||iso(TODAY)) : ""});
+    local.issues[nid] = rec; logChange(isNew?"新增 Issue":"更新 Issue", nid, ""); persist(); closeForm();
+    toast(`${isNew?"已建立":"已更新"} ${nid}：${rec.title}${ed.dirty()?"（含進度修改）":""}`); render();
+  });
+  if (!isNew) {
+    const foot = document.querySelector(".drawer footer");
+    foot.insertAdjacentHTML("afterbegin", `<button type="button" class="btn ghost danger" id="delIssue">刪除此事項</button><span style="flex:1"></span>`);
+    $("delIssue").addEventListener("click", e=>{ const b = e.currentTarget;
+      if (!b.dataset.confirm) { b.dataset.confirm = "1"; b.textContent = `確定刪除 ${i.id}？再按一次`; b.classList.add("armed"); return; }
+      local.issues[i.id] = Object.assign({}, i, {deleted:true, deletedAt:iso(TODAY)}); logChange("刪除 Issue", i.id, ""); persist(); closeForm();
+      toast(`已刪除 ${i.id}：${i.title}${i.task?"（關聯工序已恢復）":""}`); render(); });
+    ed.mount("qHist");
+  }
+}
+// ---------- 對策與進度：逐筆修改／刪除（編輯抽屜與更新對策抽屜共用） ----------
+function logEditor(src){
+  const draft = (src||[]).map(l=>({...l}));
+  let editing = -1, dirty = false, boxId = "";
+  const box = () => $(boxId);
+  function render_(){
+    const el = box(); if (!el) return;
+    el.innerHTML = draft.map((l,ix)=> ix===editing
+      ? `<div class="hl editing"><div class="hl-row">${inp("hlDate",l.at||"",'type="date" aria-label="日期"')}<span class="help">日期可留空（條列項目）</span></div>
+          <textarea id="hlText" aria-label="進度內容">${esc(l.text)}</textarea>
+          <div class="hl-act"><button type="button" class="btn sm" data-hl="ok">完成</button><button type="button" class="btn sm ghost" data-hl="cancel">取消</button><span style="flex:1"></span><button type="button" class="linkbtn warnbtn" data-hl="del">刪除這筆</button></div></div>`
+      : `<div class="hl"><div class="hl-txt">${l.at?`<b class="num">${ymd(l.at)}</b>　`:'<span class="nodate">・</span>'}${esc(l.text).replace(/\n/g,"<br>")}${l.edited?' <span class="chip">已修改</span>':""}</div>
+          <button type="button" class="hl-edit" data-hl="edit" data-ix="${ix}" aria-label="修改這筆進度" ${editing>=0?"disabled":""}>✎</button></div>`).join("")
+      || '<div class="sub">尚無紀錄</div>';
+    if (editing>=0) setTimeout(()=>{ const t=$("hlText"); if (t){ t.focus(); t.setSelectionRange(t.value.length,t.value.length); } },20);
+  }
+  function commit(){ if (editing<0) return true; const txt = val("hlText");
+    if (!txt) { toast("內容不能空白；要移除請按「刪除這筆」"); return false; }
+    const d = draft[editing]; if (txt!==d.text || val("hlDate")!==(d.at||"")) { draft[editing] = {...d, at:val("hlDate"), text:txt, edited:true}; dirty = true; }
+    editing = -1; render_(); return true; }
+  function mount(id){ boxId = id; render_();
+    box().addEventListener("click", e=>{ const b = e.target.closest("[data-hl]"); if (!b) return; e.preventDefault();
+      const act = b.dataset.hl;
+      if (act==="edit") { if (editing>=0 && !commit()) return; editing = +b.dataset.ix; render_(); }
+      else if (act==="ok") commit();
+      else if (act==="cancel") { editing = -1; render_(); }
+      else if (act==="del") { if (b.dataset.confirm) { draft.splice(editing,1); editing = -1; dirty = true; render_(); toast("已移除，按下方按鈕儲存後生效"); }
+        else { b.dataset.confirm = "1"; b.textContent = "確定刪除？再按一次"; } } });
+    box().addEventListener("keydown", e=>{ if (e.target.id==="hlText" && e.key==="Enter" && (e.ctrlKey||e.metaKey)) { e.preventDefault(); commit(); }
+      if (e.key==="Escape" && editing>=0) { e.stopPropagation(); editing=-1; render_(); } }); }
+  return { mount, commit, result: () => draft.map(l=>({...l})), dirty: () => dirty };
+}
+function quickProgress(id){
+  const i = DB.issues.find(x=>x.id===id);
+  const ed = logEditor(i.log);
+  drawer(`${esc(i.id)}　更新對策與進度`, `<span class="tag wrap">${esc(i.title)}</span>
+    <div class="f"><label>目前的對策與進度 <span class="help" style="font-weight:500">按 ✎ 可修改或刪除既有內容</span></label><div class="hist editable" id="kHist"></div></div>
+    ${fld("kLog",`新增一筆對策／進度（記為 ${md(iso(TODAY))}，選填）`,`<textarea id="kLog" placeholder="例：已提交 v2 版本，待對方簽回" style="min-height:96px"></textarea>`)}
+    <div class="f2">${fld("kDue","預計完成（可調整）",inp("kDue",i.due,'type="date"'))}${fld("kStatus","狀態",sel("kStatus",L.issueStatus,i.status))}</div>`,
+  "儲存", ()=>{
+    if (!ed.commit()) return;
+    if (!val("kLog") && !ed.dirty() && val("kStatus")===i.status && val("kDue")===(i.due||"")) return toast("沒有任何變更");
+    const log = ed.result();
+    if (val("kLog")) log.push({at:iso(TODAY), text:val("kLog")});
+    if (val("kDue")!==(i.due||"")) log.push({at:iso(TODAY), text:`預計完成日：${i.due?md(i.due):"未定"} → ${val("kDue")?md(val("kDue")):"未定"}`});
+    if (val("kStatus")!==i.status) log.push({at:iso(TODAY), text:`狀態：${i.status} → ${val("kStatus")}`});
+    const st = val("kStatus");
+    closeForm(); issueSave(i, {log, due:val("kDue"), status: st==="Open" && val("kLog") ? "處理中" : st, closed: st==="已結案" ? (i.closed||iso(TODAY)) : ""}, `已更新 ${i.id} 對策與進度`);
+  });
+  ed.mount("kHist");
+  setTimeout(()=>$("kLog")?.focus(), 60);
+}
+// ---------- 確認視窗（結案／重開） ----------
+function confirmDialog({title, item, body, okLabel, okClass, onOk}){
+  closeDialog();
+  document.body.insertAdjacentHTML("beforeend", `<div class="dlg-scrim" id="dlgRoot"><div class="dlg card" role="alertdialog" aria-modal="true" aria-labelledby="dlgT">
+    <h2 id="dlgT">${title}</h2><div class="dlg-item">${item}</div>${body||""}
+    <div class="dlg-act"><button type="button" class="btn ghost" id="dlgNo">取消</button><button type="button" class="btn ${okClass||""}" id="dlgOk">${okLabel}</button></div></div></div>`);
+  $("dlgNo").addEventListener("click", closeDialog);
+  $("dlgRoot").addEventListener("click", e=>{ if (e.target.id==="dlgRoot") closeDialog(); });
+  $("dlgOk").addEventListener("click", ()=>{ if (onOk()!==false) closeDialog(); });
+  setTimeout(()=>$("dlgNo").focus(), 30);
+}
+function closeDialog(){ $("dlgRoot")?.remove(); }
+function confirmClose(id){
+  const i = DB.issues.find(x=>x.id===id);
+  confirmDialog({ title:"確定要結案嗎？", okLabel:"確定結案", okClass:"ok",
+    item:`<span class="mono">${esc(i.id)}</span>　<b>${esc(i.title)}</b><div class="sub">負責人：${esc(i.owner||"未指派")}</div>`,
+    body:`<div class="f2">${fld("cDate","實際完成日",inp("cDate",iso(TODAY),'type="date"'))}<div></div></div>${fld("cNote","結案說明（選填）",inp("cNote","",'placeholder="例：協議已簽回，正本歸檔"'))}`,
+    onOk:()=>{ const dt = val("cDate"); if (!dt) { toast("請填寫實際完成日"); return false; }
+      issueSave(i, {status:"已結案", closed:dt, log:[...(i.log||[]), {at:iso(TODAY), text: val("cNote") ? `結案：${val("cNote")}` : "結案"}]}, `${i.id} 已結案`); } });
+}
+function confirmReopen(id){
+  const i = DB.issues.find(x=>x.id===id);
+  confirmDialog({ title:"確定要重新開啟嗎？", okLabel:"確定重開", okClass:"warnok",
+    item:`<span class="mono">${esc(i.id)}</span>　<b>${esc(i.title)}</b><div class="sub">原結案日：${i.closed?ymd(i.closed):"—"}</div>`,
+    body:fld("rNote","重開原因（選填）",inp("rNote","",'placeholder="例：對方要求修改條文"')),
+    onOk:()=>{ issueSave(i, {status:"處理中", closed:"", log:[...(i.log||[]), {at:iso(TODAY), text: val("rNote") ? `重新開啟：${val("rNote")}` : "重新開啟"}]}, `${i.id} 已重新開啟`); } });
+}
+function curProjFor(){ return route()==="projects" ? curProj : ""; }
+
+// ---------- 人員與簽證 ----------
+function openPerson(name, newType="寶新"){
+  if ((name && personOf(name)?.orgType==="供應商") || (!name && newType==="供應商")) return openSupplier(name);
+  const isNew = !name;
+  const p = name ? personOf(name) : {name:"", enName:"", orgType:newType, org:"", unit:"", title:"", role:"", status:"在職"};
+  const unitOpts = DB.units.slice().sort((a,b)=>LEVEL_RANK[a.level]-LEVEL_RANK[b.level]).map(u=>`<option value="${esc(u.name)}" ${u.name===p.unit?"selected":""}>${u.level==="課"?"　└ ":""}${esc(u.name)}（${u.level}）</option>`).join("");
+  const asg = name ? DB.assignments.filter(a=>a.person===name).sort((a,b)=>aStart(b)-aStart(a)) : [];
+  const body = `
+    <div class="f2">${fld("pName","中文姓名",inp("pName",p.name, isNew?"":"readonly"))}${fld("pEn","英文名",inp("pEn",p.enName,'placeholder="例：Justin Shih"'))}</div>
+    <div class="f bx-only" ${p.orgType==="寶新"?"":"hidden"}><label for="pCo">公司</label><select id="pCo">${DB.companies.map(c=>`<option value="${esc(c.name)}" ${c.name===(p.company||HOME_CO)?"selected":""}>${esc(c.group?c.group+"・":"")}${esc(c.name)}</option>`).join("")}<option value="__new">＋ 新增公司…</option></select>
+      <input id="pCoNew" autocomplete="off" placeholder="新公司名稱，例：協禾綠能" hidden></div>
+    <div class="f bx-only" ${p.orgType==="寶新"?"":"hidden"}><label for="pUnit">所屬單位</label><select id="pUnit" ${(p.company||HOME_CO)===HOME_CO?"":"hidden"}><option value="">— 未指定 —</option>${unitOpts}<option value="__new">＋ 新增工程處單位…</option><option value="__ext" ${p.extDept?"selected":""}>工程處以外的部門…</option></select>
+      <div class="f2 newunit" hidden><input id="pUnitNew" autocomplete="off" placeholder="新單位名稱，例：品保部"><select id="pUnitParent">${DB.units.filter(u=>u.level!=="課").map(u=>`<option value="${esc(u.name)}">上層：${esc(u.name)}</option>`).join("")}</select></div>
+      <div class="extdept" ${p.extDept || (p.company||HOME_CO)!==HOME_CO ? "" : "hidden"}>${inp("pExt",p.extDept||"",'list="dlExt" placeholder="直接輸入部門，例：業務部、財務部"')+dl("dlExt",[...new Set(DB.people.map(x=>x.extDept).filter(Boolean).concat(["業務部","財務部","採購部","品保部","研發部","管理部"]))])}</div>
+      <span class="help">工程處同仁選單位（上層選「工程處」＝新的部，選某個部＝新的課）；其他部門或其他公司的支援同仁，直接輸入部門名稱</span></div>
+    <div class="f sup-only" ${p.orgType==="寶新"?"hidden":""}><label for="pSup">供應商</label>${inp("pSup",p.org,'list="dlSup"')+dl("dlSup",orgNames().slice(1))}</div>
+    <div class="f"><label for="pRole">職稱／工種</label>${inp("pRole",p.title||p.role,'placeholder="直接輸入，例：協理、經理、課長、PLC工程師"')}
+      <div class="sugg">${[...new Set([...TITLE_SUGGEST, ...DB.people.map(x=>x.title||x.role).filter(Boolean)])].slice(0,14).map(t=>`<button type="button" class="chip" data-fill="pRole" data-v="${esc(t)}">${esc(t)}</button>`).join("")}</div>
+      <span class="help">可直接打字；名單依職等排序：協理 > 經理 > 課長 > 專案經理 > 工程師／專員</span></div>
+    <fieldset class="fs bx-only" ${p.orgType==="寶新"?"":"hidden"}><legend>在職狀態</legend>
+      <div class="f2">${fld("pStatus","狀態",sel("pStatus",["在職","離職"],p.status||"在職"),"設為離職後會以灰色排在名單最後，不計入人數")}<div></div></div>
+    </fieldset>
+    ${fld("pNote","備註（選填）",`<textarea id="pNote" placeholder="例：長駐芝加哥、英文溝通、證照資訊">${esc(p.note||"")}</textarea>`)}
+    ${isNew?"":`<fieldset class="fs"><legend>派遣紀錄（${asg.length}）</legend>
+      ${asg.slice(0,5).map(a=>`<button type="button" class="asg-mini" data-edit="${a.id}"><b>${esc(a.city||a.country)}</b> ${ymd(a.actualStart||a.planStart)} – ${a.actualEnd||a.planEnd?ymd(a.actualEnd||a.planEnd):"未定"}<span class="sub">${esc(proj(a.project).name)}</span></button>`).join("") || '<span class="sub">尚無派遣紀錄</span>'}
+      <button type="button" class="btn sm lime" data-asg-for="${esc(p.name)}">＋ 為 ${esc(p.name)} 新增派遣</button></fieldset>`}
+`;
+  drawer(isNew?"新增人員":`${esc(p.name)}　人員資料`, body, "儲存", ()=>{
+    const nm = val("pName"); if (!nm) return toast("請填寫姓名");
+    if (isNew && personOf(nm)) return toast(`「${nm}」已經存在`);
+    const type = "寶新";
+    const patch = {orgType:type, role:val("pRole"), title:val("pRole"), note:val("pNote")};
+    if (val("pUnit")==="__new" && !val("pUnitNew")) return toast("請輸入新單位名稱");
+    if (val("pCo")==="__new" && !val("pCoNew")) return toast("請輸入新公司名稱");
+    const company = val("pCo")==="__new" ? (local.companies[val("pCoNew")] ||= {name:val("pCoNew"), group:"協禾集團"}).name : val("pCo");
+    const ext = company!==HOME_CO || val("pUnit")==="__ext";
+    const unit = ext ? "" : (val("pUnit")==="__new" ? ensureUnit(val("pUnitNew"), val("pUnitParent")) : val("pUnit"));
+    if (type==="寶新") Object.assign(patch, {company, extDept: ext ? val("pExt") : "", unit, enName:val("pEn"), status:val("pStatus")});
+    upsertPerson(nm, Object.assign(isNew?{name:nm}:{}, patch)); logChange(isNew?"新增人員":"更新人員", nm, nm); persist(); closeForm();
+    toast(`${isNew?"已新增":"已更新"} ${nm}`); render();
+  });
+}
+function openSupplier(name){
+  const isNew = !name;
+  const p = name ? personOf(name) : {name:"", orgType:"供應商", org:"", role:"", note:""};
+  const asg = name ? DB.assignments.filter(a=>a.person===name).sort((a,b)=>aStart(b)-aStart(a)) : [];
+  const body = `<span class="tag wrap">供應商／外包現場人員：用來統計各專案現場的工種、人數與來源公司</span>
+    <div class="f2">${fld("uName","姓名",inp("uName",p.name, isNew?'placeholder="現場人員姓名"':"readonly"))}${fld("uOrg","所屬公司",inp("uOrg",p.org,'list="dlSupP" placeholder="例：JEE、南實"')+dl("dlSupP",supplierNames()))}</div>
+    ${fld("uRole","工種",inp("uRole",p.role,'list="dlRoleP" placeholder="例：PLC工程師、鉗工"')+dl("dlRoleP",DB.people.filter(x=>x.orgType==="供應商").map(x=>x.role).filter(Boolean)))}
+    ${fld("uNote","備註（選填）",`<textarea id="uNote" placeholder="例：B 簽至 2027/1、可兼任電工、對口窗口">${esc(p.note||"")}</textarea>`)}
+    ${isNew ? `<fieldset class="fs"><legend>登記到崗（選填）</legend>
+        <div class="f"><label for="uProj">專案</label><select id="uProj"><option value="">— 先不登記 —</option>${DB.projects.map(x=>`<option value="${x.id}">${esc(x.name)}</option>`).join("")}</select></div>
+        <div class="f2">${fld("uPS","到崗日",inp("uPS","",'type="date"'))}${fld("uPE","預計離崗",inp("uPE","",'type="date"'))}</div></fieldset>`
+      : `<fieldset class="fs"><legend>到崗紀錄（${asg.length}）</legend>
+        ${asg.map(a=>{ const e=aEnd(a); const on = aStart(a)<=TODAY && (!e||e>=TODAY);
+          const s_=aStart(a); const n = e ? days(s_, e) : null;
+          return `<div class="asg-row"><div class="asg-info"><b>${esc(proj(a.project).name)}</b> ${on?'<span class="chip acc">在崗</span>':(e&&e<TODAY?'<span class="chip">已離崗</span>':'<span class="chip info">預計</span>')}
+            <div class="sub">${ymd(iso(s_))} – ${e?ymd(iso(e)):"未定"}${n!=null?`（${n} 天）`:""}${a.duty?`・${esc(a.duty)}`:""}</div></div>
+            <span class="act"><button type="button" class="linkbtn" data-asg-edit="${a.id}">✎ 修改</button><button type="button" class="linkbtn warnbtn" data-asg-del="${a.id}">刪除</button></span></div>`; }).join("") || '<span class="sub">尚無到崗紀錄</span>'}
+        <div class="f2"><select id="uNewProj" aria-label="專案">${DB.projects.map(x=>`<option value="${x.id}">${esc(x.name)}</option>`).join("")}</select><button type="button" class="btn sm lime" id="uAddSite">＋ 新增到崗紀錄</button></div></fieldset>`}`;
+  drawer(isNew?"新增供應商人員":`${esc(p.name)}　供應商人員`, body, "儲存", ()=>{
+    const nm = val("uName"), org = val("uOrg");
+    if (!nm || !org) return toast("請填寫姓名與所屬公司");
+    if (isNew && personOf(nm)) return toast(`「${nm}」已經存在`);
+    upsertPerson(nm, {name:nm, orgType:"供應商", org, role:val("uRole"), note:val("uNote")});
+    if (isNew && val("uProj")) { const pr = proj(val("uProj")); if (!val("uPS")) return toast("請填寫到崗日，或專案選「先不登記」");
+      const ps = val("uPS"); local.assignments["L"+Date.now()] = {id:"L"+Date.now(), person:nm, project:pr.id, country:pr.country, city:pr.city, planStart:ps, planEnd:val("uPE"),
+        actualStart: ps<=iso(TODAY)?ps:"", actualEnd:"", duty:"", line:"", status:"確認", updated:iso(TODAY), source:"中控台"}; }
+    logChange(isNew?"新增供應商人員":"更新供應商人員", nm, nm); persist(); closeForm(); toast(`${isNew?"已新增":"已更新"}：${org} ${nm}`); render();
+  });
+  if (!isNew) {
+    $("uAddSite").addEventListener("click", ()=>{ const pr = proj(val("uNewProj")); siteReturn = p.name; closeForm(); openForm(null, {site:true, person:p.name, project:pr.id, country:pr.country, city:pr.city}); });
+    $("dForm").addEventListener("click", e=>{
+      const ed_ = e.target.closest("[data-asg-edit]"), del = e.target.closest("[data-asg-del]");
+      if (ed_) { e.preventDefault(); e.stopPropagation(); siteReturn = p.name; closeForm(); openForm(ed_.dataset.asgEdit); }
+      if (del) { e.preventDefault(); e.stopPropagation();
+        if (!del.dataset.confirm) { del.dataset.confirm = "1"; del.textContent = "確定？再按一次"; return; }
+        const a = DB.assignments.find(x=>x.id===del.dataset.asgDel);
+        local.assignments[a.id] = Object.assign({}, a, {deleted:true, deletedAt:iso(TODAY)}); logChange("刪除到崗紀錄", a.id, a.person); persist();
+        toast(`已刪除 ${p.name} 的到崗紀錄：${proj(a.project).name} ${md(a.actualStart||a.planStart)}`); render(); openSupplier(p.name); } });
+    const foot = document.querySelector(".drawer footer");
+    foot.insertAdjacentHTML("afterbegin", `<button type="button" class="btn ghost danger" id="delPerson">刪除此人員</button><span style="flex:1"></span>`);
+    $("delPerson").addEventListener("click", e=>{ const b = e.currentTarget; const n = asg.length;
+      if (!b.dataset.confirm) { b.dataset.confirm = "1"; b.textContent = n ? `連同 ${n} 筆到崗紀錄刪除？再按一次` : "確定刪除？再按一次"; b.classList.add("armed"); return; }
+      asg.forEach(a=>{ local.assignments[a.id] = Object.assign({}, a, {deleted:true, deletedAt:iso(TODAY)}); });
+      local.people[p.name] = Object.assign({}, p, {deleted:true, deletedAt:iso(TODAY)}); logChange("刪除供應商人員", p.name, p.name); persist(); closeForm();
+      toast(`已刪除供應商人員：${p.org} ${p.name}${n?`（含 ${n} 筆到崗紀錄）`:""}`); render(); });
+  }
+}
+
+// ---------- 專案資訊 ----------
+function openProj(id){
+  const isNew = !id;
+  const p = id ? proj(id) : {name:"", country:"", city:"", owner:"", status:"規劃中", start:"", planEnd:"", note:"", milestones:[]};
+  const body = `<span class="tag wrap">專案層級資料：課長／經理級以上編輯（正式版會依登入帳號控管）</span>
+    ${fld("jName","專案名稱",inp("jName",p.name,'placeholder="例：北非項目"'))}
+    <div class="f2">${fld("jCountry","國家",inp("jCountry",p.country))}${fld("jCity","城市",inp("jCity",p.city))}</div>
+    <div class="f2">${fld("jOwner","專案負責人",inp("jOwner",p.owner,'list="dlBX"')+dl("dlBX",DB.people.filter(x=>x.orgType==="寶新").map(x=>x.name)))}${fld("jStatus","狀態",sel("jStatus",L.projectStatus,p.status))}</div>
+    <div class="f2">${fld("jStart","開始日",inp("jStart",p.start,'type="date"'))}${fld("jEnd","計畫完成",inp("jEnd",p.planEnd,'type="date"'))}</div>
+    ${fld("jNote","備註",`<textarea id="jNote">${esc(p.note)}</textarea>`)}`;
+  drawer(isNew?"新增專案":"編輯專案資訊", body, isNew?"建立專案":"儲存", ()=>{
+    const nm = val("jName"); if (!nm) return toast("請填寫專案名稱");
+    if (DB.projects.some(x=>x.name===nm && x.id!==id)) return toast(`已有專案叫「${nm}」`);
+    const pid = id || ensureProject(nm);
+    local.projects[pid] = Object.assign({}, proj(pid), {name:nm, country:val("jCountry"), city:val("jCity"), owner:val("jOwner"), status:val("jStatus"), start:val("jStart"), planEnd:val("jEnd"), note:val("jNote")});
+    logChange(isNew?"新增專案":"更新專案", pid, ""); persist(); closeForm(); toast(`${isNew?"已建立":"已更新"}專案：${nm}`);
+    if (isNew) { curProj = pid; location.hash = pid; } render();
+  });
+}
+function openTask(id, preset={}){
+  const isNew = !id;
+  const t = id ? DB.tasks.find(x=>x.id===id) : Object.assign({project:curProj, section:"", process:"", task:"", planStart:"", planEnd:"", actualStart:"", actualEnd:"", owner:"", status:"未開始", note:""}, preset);
+  const secs = [...new Set(DB.tasks.filter(x=>x.project===t.project).map(x=>x.section).filter(Boolean))];
+  const body = `<span class="tag wrap">${esc(proj(t.project).name)}</span>
+    <div class="f2">${fld("tSec","工段／階段",inp("tSec",t.section,'list="dlSec" placeholder="例：一工段、廠房建設"')+dl("dlSec",secs))}${fld("tProc","工序／項目",inp("tProc",t.process,'placeholder="例：正極合漿"'))}</div>
+    <div class="f2">${fld("tTask","任務內容",inp("tTask",t.task,'placeholder="例：設備平台安裝"'))}${fld("tOwner","負責單位",inp("tOwner",t.owner,'list="dlOrg"')+dl("dlOrg",orgNames()))}</div>
+    <fieldset class="fs"><legend>預計時程（計畫）</legend><div class="f2">${fld("tPS","預計開始",inp("tPS",t.planStart,'type="date"'))}${fld("tPE","預計完成",inp("tPE",t.planEnd,'type="date"'))}</div></fieldset>
+    <fieldset class="fs"><legend>實際時程</legend><div class="f2">${fld("tAS","實際開始",inp("tAS",t.actualStart,'type="date"'))}${fld("tAE","實際結束",inp("tAE",t.actualEnd,'type="date"'),"填寫實際結束即視為完成")}</div></fieldset>
+    ${fld("tStatus","狀態",sel("tStatus",L.taskStatus,t.status==="卡關"?"有風險":t.status),"有未結案 Issue 時，甘特圖會自動顯示為「有風險」")}
+    ${fld("tNote","說明",`<textarea id="tNote" placeholder="目前進度、卡在哪裡、下一步">${esc(t.note)}</textarea>`)}`;
+  drawer(isNew?"新增任務":"編輯任務", body, isNew?"新增任務":"儲存", ()=>{
+    if (!val("tProc") && !val("tTask")) return toast("請填寫工序或任務內容");
+    const ps=val("tPS"), pe=val("tPE"), as=val("tAS"), ae=val("tAE");
+    if (ps && pe && pe<ps) return toast("預計完成早於預計開始，請修正");
+    if (as && ae && ae<as) return toast("實際結束早於實際開始，請修正");
+    const nid = id || `T${Date.now()}`;
+    local.tasks[nid] = Object.assign({}, t, {id:nid, section:val("tSec"), process:val("tProc"), task:val("tTask"), owner:val("tOwner"),
+      planStart:ps, planEnd:pe, actualStart:as, actualEnd:ae, status: ae ? "完成" : val("tStatus"), note:val("tNote"), updated:iso(TODAY)});
+    logChange(isNew?"新增任務":"更新任務", nid, ""); persist(); closeForm(); toast(`${isNew?"已新增":"已更新"}任務：${val("tProc")} ${val("tTask")}`); render();
+  });
+}
+function openMilestone(pid, ix){
+  const p = proj(pid); const list = [...(p.milestones||[])]; const isNew = ix==null; const m = isNew ? {name:"", date:"", note:""} : list[ix];
+  const body = `<span class="tag wrap">${esc(p.name)}　項目節點會顯示在安裝任務甘特圖最上方</span>
+    <div class="f2">${fld("mName","節點名稱",inp("mName",m.name,'list="dlMs" placeholder="例：KO、PA、TT、SOP"')+dl("dlMs",L.milestone))}${fld("mDate","日期",inp("mDate",m.date,'type="date"'))}</div>
+    ${fld("mNote","說明（選填）",inp("mNote",m.note,'placeholder="例：Kick-off 會議"'))}
+    ${isNew?"":`<button type="button" class="linkbtn warnbtn" id="mDel">刪除這個節點</button>`}`;
+  drawer(isNew?"新增項目節點":"編輯項目節點", body, "儲存", ()=>{
+    if (!val("mName") || !val("mDate")) return toast("請填寫節點名稱與日期");
+    const rec = {name:val("mName"), date:val("mDate"), note:val("mNote")};
+    if (isNew) list.push(rec); else list[ix] = rec;
+    list.sort((a,b)=>a.date.localeCompare(b.date));
+    local.projects[pid] = Object.assign({}, p, {milestones:list}); persist(); closeForm(); toast(`已儲存節點：${rec.name} ${md(rec.date)}`); render();
+  });
+  if (!isNew) $("mDel").addEventListener("click", ()=>{ list.splice(ix,1); local.projects[pid] = Object.assign({}, p, {milestones:list}); persist(); closeForm(); toast(`已刪除節點：${m.name}`); render(); });
+}
+
+let tt; function toast(t){ let el=document.querySelector(".toast"); if(!el){el=document.createElement("div");el.className="toast";el.setAttribute("role","status");document.body.appendChild(el);} el.textContent=t; el.hidden=false; clearTimeout(tt); tt=setTimeout(()=>el.hidden=true,3200); }
+
+// ================= 路由 =================
+const VIEWS = {overview:viewOverview, dispatch:viewDispatch, projects:viewProject, tracker:viewTracker, people:viewPeople};
+function route(){ const h = location.hash.slice(1); if (/^P\d+$/.test(h)) { curProj = h; return "projects"; } if (h==="issues") return "overview"; return VIEWS[h] ? h : "overview"; }
+let lastRem = [];
+function render(){
+  const r = route();
+  document.querySelectorAll("#tabs a").forEach(a=>{ if(a.getAttribute("href")!=="#"+r) a.removeAttribute("aria-current"); else a.setAttribute("aria-current","page"); });
+  if (r==="overview") lastRem = reminders();
+  $("view").innerHTML = VIEWS[r]();
+}
+$("today").textContent = `${TODAY.getFullYear()}/${TODAY.getMonth()+1}/${TODAY.getDate()}（週${WK[TODAY.getDay()]}）`;
+window.addEventListener("hashchange", ()=>{ render(); if (location.hash==="#issues") $("issues")?.scrollIntoView(); else window.scrollTo(0,0); });
+
+// 篩選狀態與「清除篩選」的預設值（年度、狀態分頁、分組等不清除）
+const FS = {OV, F, PV, TF, PF};
+const FDEF = { OV:{proj:"", q:""}, F:{project:"", unit:"", country:"", status:"", q:""},
+  PV:{q:"", iss:"", co:"", role:"", sec:"", health:""}, TF:{owner:"", project:"all", kind:"", sev:"", od:"", q:""} };
+document.addEventListener("click", e=>{
+  if (e.target.closest(".totop")) return window.scrollTo({top:0, behavior: matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth"});
+  const t = e.target.closest("[data-close],[data-new],[data-edit],[data-leave],[data-issue],[data-new-issue],[data-promote],[data-person],[data-new-person],[data-new-onsite],[data-asg-for],[data-new-unit],[data-unit],[data-fill],[data-psort],[data-porg],[data-pf-clear],[data-tf],[data-quick],[data-close-issue],[data-reopen],[data-goto-tracker],[data-edit-proj],[data-new-proj],[data-new-task],[data-task],[data-raise],[data-new-ms],[data-ms],[data-range],[data-toggle-closed],[data-proj],[data-scroll],[data-fclear]"); if(!t) return;
+  const d = t.dataset;
+  if (t.hasAttribute("data-close")) return closeForm();
+  if (t.hasAttribute("data-new")) return openForm(null);
+  if (d.edit) return openForm(d.edit);
+  if (d.leave) return markLeft(d.leave);
+  if (d.issue) return openIssue(d.issue);
+  if (d.newIssue !== undefined) return openIssue(null, d.newIssue ? {project:d.newIssue} : {});
+  if (d.promote !== undefined) { const x = lastRem[+d.promote]; return openIssue(null, {project:x.proj, title:x.t, desc:x.d, category:x.cat, severity:x.sev==="crit"?"高":x.sev==="warn"?"中":"低"}); }
+  if (d.person !== undefined) return openPerson(d.person);
+  if (t.hasAttribute("data-new-person")) return openPerson(null, d.newPerson || "寶新");
+  if (t.hasAttribute("data-new-unit")) return openUnit(null);
+  if (d.unit) return openUnit(d.unit);
+  if (d.fill) { const el = $(d.fill); el.value = d.v; el.focus(); return; }
+  if (d.psort) { PF.sort = d.psort; return render(); }
+  if (d.porg) { PF.org = d.porg; return render(); }
+  if (t.hasAttribute("data-pf-clear")) { Object.assign(PF, {unit:"", st:"在職", co:"", role:"", proj:"", on:"", q:""}); return render(); }
+  if (d.fclear) { Object.assign(FS[d.fclear], FDEF[d.fclear]); return render(); }
+  if (d.tf !== undefined) { const ix = d.tf.indexOf(":"); TF[d.tf.slice(0,ix)] = d.tf.slice(ix+1); return render(); }
+  if (d.quick) return quickProgress(d.quick);
+  if (d.closeIssue) return confirmClose(d.closeIssue);
+  if (d.reopen) return confirmReopen(d.reopen);
+  if (t.hasAttribute("data-goto-tracker")) { TF.project = ""; location.hash = "tracker"; return; }
+  if (d.asgFor) { const nm = d.asgFor; closeForm(); return openForm(null, {person:nm}); }
+  if (d.newOnsite) { const pr = proj(d.newOnsite); return openForm(null, {project:pr.id, country:pr.country||"美國", city:pr.city||"", site:true}); }
+  if (d.editProj) return openProj(d.editProj);
+  if (t.hasAttribute("data-new-proj")) return openProj(null);
+  if (d.newTask) return openTask(null, {project:d.newTask});
+  if (d.task) return openTask(d.task);
+  if (d.raise) { const tk = DB.tasks.find(x=>x.id===d.raise); return openIssue(null, {project:tk.project, task:tk.id, category:"進度", severity:"中", party:tk.owner, title:`${tk.process}${tk.task}：`}); }
+  if (d.newMs) return openMilestone(d.newMs, null);
+  if (d.ms) { const [pid, ix] = d.ms.split("|"); return openMilestone(pid, +ix); }
+  if (d.range) { PV.range = d.range; return render(); }
+  if (t.hasAttribute("data-toggle-closed")) { PV.closed = !PV.closed; return render(); }
+  if (d.scroll) { e.preventDefault(); if (route()!=="overview") location.hash="overview"; setTimeout(()=>$(d.scroll)?.scrollIntoView({behavior:"smooth"}),30); return; }
+  if (d.proj) { if (d.proj!==curProj) Object.assign(PV, FDEF.PV); curProj = d.proj; if (location.hash === "#"+d.proj) render(); else location.hash = d.proj; window.scrollTo(0,0); }
+});
+document.addEventListener("keydown", e=>{ if(e.key==="Escape") { if ($("dlgRoot")) return closeDialog(); closeForm(); } });
+document.addEventListener("change", e=>{
+  const id = e.target.id;
+  if (id==="fYear") F.year = +e.target.value; else if (id==="fOrg") F.org = e.target.value; else if (id==="fProj") F.project = e.target.value;
+  else if (id==="peOrg") PF.org = e.target.value;
+  else if (id==="pfUnit") PF.unit = e.target.value; else if (id==="pfSt") PF.st = e.target.value;
+  else if (id==="pfCo") { PF.co = e.target.value; PF.role = ""; } else if (id==="pfRole") PF.role = e.target.value;
+  else if (id==="pfProj") PF.proj = e.target.value; else if (id==="pfOn") PF.on = e.target.value;
+  else if (id==="tfProj") TF.project = e.target.value;
+  else if (e.target.dataset.fk) { const [o,k] = e.target.dataset.fk.split("."); FS[o][k] = e.target.value; if (o==="PV" && k==="co") PV.role = ""; }
+  else if (id==="iPerson") return;
+  else if (e.target.dataset.projsel) { const pre = e.target.dataset.projsel; const box = $(pre+"ProjNew"); box.hidden = e.target.value!=="__new"; if (!box.hidden) box.focus(); $("dForm")?.dispatchEvent(new Event("input")); return; }
+  else if (id==="pUnit") { document.querySelector(".newunit").hidden = e.target.value!=="__new"; document.querySelector(".extdept").hidden = e.target.value!=="__ext"; if (e.target.value==="__new") $("pUnitNew").focus(); if (e.target.value==="__ext") $("pExt").focus(); return; }
+  else if (id==="pCo") { const v = e.target.value; $("pCoNew").hidden = v!=="__new"; if (v==="__new") $("pCoNew").focus();
+    const home = v===HOME_CO; $("pUnit").hidden = !home; document.querySelector(".newunit").hidden = !(home && $("pUnit").value==="__new");
+    document.querySelector(".extdept").hidden = home && $("pUnit").value!=="__ext"; return; }
+  else if (id==="pType") { const bxT = e.target.value==="寶新"; document.querySelectorAll(".bx-only").forEach(x=>x.hidden=!bxT); document.querySelectorAll(".sup-only").forEach(x=>x.hidden=bxT); return; }
+  else return;
+  render();
+});
+// 各分頁搜尋框：輸入停頓後才重新整理；中文注音／拼音組字中不觸發，避免打斷輸入法
+const QMAP = {ovQ:["OV","q"], fQ:["F","q"], pvQ:["PV","q"], tfQ:["TF","q"], pfQ:["PF","q"]};
+let qT, composing = false;
+const runSearch = el => { const m = QMAP[el.id]; if (!m) return; clearTimeout(qT); const id = el.id;
+  qT = setTimeout(()=>{ const cur = $(id); if (!cur || composing) return; FS[m[0]][m[1]] = cur.value.trim(); render(); const n = $(id); if (n) { n.focus(); n.setSelectionRange(n.value.length, n.value.length); } }, 300); };
+document.addEventListener("input", e=>{ if (e.isComposing) return; runSearch(e.target); });
+document.addEventListener("compositionstart", ()=>{ composing = true; clearTimeout(qT); });
+document.addEventListener("compositionend", e=>{ composing = false; runSearch(e.target); });
+const topBtn = document.querySelector(".totop");
+window.addEventListener("scroll", ()=>{ topBtn.hidden = window.scrollY < 400; }, {passive:true});
+render();
+};
+window.BX.boot(window.bxStart);
+</script>
