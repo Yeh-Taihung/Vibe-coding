@@ -577,11 +577,19 @@ button.ptag{font:inherit;cursor:pointer;width:100%}
   function needLogin(msg, isErr){ return new Promise(ok=>{ waiters.push(ok); showGate(msg, isErr); }); }
   BX.call = async function(action, payload, retried){
     if (!BX.token || exp(BX.token) < Date.now()+60000) await needLogin("登入已過期，請重新登入");
-    let res;
-    try {
-      const r = await fetch(BX.api, { method:"POST", headers:{"Content-Type":"text/plain;charset=utf-8"}, body: JSON.stringify(Object.assign({action, token:BX.token}, payload||{})) });
-      res = await r.json();
-    } catch(e) { return {ok:false, code:0, error:"連不上後台，請確認網路"}; }
+    let res, lastErr = "";
+    // 手機網路切換或後台冷啟動時偶爾會失敗：自動重試 2 次
+    for (let i = 0; i < 3 && !res; i++) {
+      if (i) await new Promise(ok=>setTimeout(ok, 1500*i));
+      let text = "";
+      try {
+        const r = await fetch(BX.api, { method:"POST", redirect:"follow", headers:{"Content-Type":"text/plain;charset=utf-8"}, body: JSON.stringify(Object.assign({action, token:BX.token}, payload||{})) });
+        text = await r.text();
+      } catch(e) { lastErr = `連不上後台（網路中斷或被瀏覽器阻擋）：${e.message||e}`; continue; }
+      try { res = JSON.parse(text); }
+      catch(e) { lastErr = /<html|<!doctype/i.test(text) ? "後台回傳的是網頁而不是資料：請確認 Apps Script 部署的「誰可以存取」是「所有人」" : `後台回應格式不正確：${text.slice(0,80)}`; break; }
+    }
+    if (!res) return {ok:false, code:0, error: lastErr || "連不上後台，請確認網路"};
     if (!res.ok && res.code===401 && !retried) { BX.token = ""; await needLogin(res.error); return BX.call(action, payload, true); }
     return res;
   };
