@@ -245,6 +245,7 @@ b.od,.od{color:var(--red);font-weight:900}
 .pchips{display:flex;gap:8px;flex-wrap:wrap}
 .pchips button{padding:6px 14px;border:var(--b) solid var(--ink);border-radius:999px;background:var(--card);box-shadow:var(--sh-sm);font-weight:700;color:var(--fg)}
 .pchips button.on{background:var(--chip-bg);color:var(--chip-fg)}
+.pchips button.btn{background:var(--blue);color:var(--on-blue);font-weight:900}
 .pc-n{display:inline-grid;place-items:center;min-width:20px;height:20px;padding:0 5px;border-radius:999px;background:var(--red);color:#fff;font-size:11.5px;margin-left:4px}
 .sup-cards{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:14px}
 .sup{padding:14px 16px;display:flex;flex-direction:column;gap:10px}
@@ -665,11 +666,11 @@ const merge = (arr, over, key="id") => { const m = new Map(arr.map(x=>[x[key],x]
 const DB = {
   get people(){ return merge(base.people, local.people, "name").filter(p=>!p.deleted); },
   get assignments(){ return merge(base.assignments, local.assignments).filter(a=>!a.deleted); },
-  get projects(){ return merge(base.projects, local.projects); },
+  get projects(){ return merge(base.projects, local.projects).filter(p=>!p.deleted); },
   get issues(){ return merge(base.issues, local.issues).filter(i=>!i.deleted); },
   get companies(){ return merge(base.companies||[{name:"寶新",group:"協禾集團"}], local.companies, "name"); },
   get units(){ return merge(base.units||[{name:"工程處",level:"處",parent:""}], local.units, "name").filter(u=>!u.retired); },
-  get tasks(){ return merge(base.tasks, local.tasks); }, lists: base.lists,
+  get tasks(){ return merge(base.tasks, local.tasks).filter(t=>!t.deleted); }, lists: base.lists,
 };
 const L = base.lists;
 L.issueStatus ||= ["Open","處理中","待確認","已結案"];
@@ -1135,6 +1136,7 @@ function planGantt(p, ts, keep = ()=>true){
 }
 
 function viewProject(){
+  if (DB.projects.length && !DB.projects.some(x=>x.id===curProj)) curProj = DB.projects[0].id;  // 專案已刪除或網址錯誤時回到第一個專案
   const p = proj(curProj);
   const now = onSiteNow().filter(a=>a.project===p.id);
   const allIss = DB.issues.filter(i=>i.project===p.id);
@@ -1169,7 +1171,7 @@ function viewProject(){
 
   return `<section><div class="pchips" role="tablist">${DB.projects.map(x=>{ const n = DB.issues.filter(i=>i.project===x.id&&isOpen(i)).length;
       return `<button class="${x.id===p.id?"on":""}" data-proj="${x.id}" role="tab" aria-selected="${x.id===p.id}">${esc(x.name)}${n?` <span class="pc-n">${n}</span>`:""}</button>`; }).join("")}
-    <button class="addp" data-new-proj>＋ 新增專案</button></div></section>
+    <button class="btn addp-btn" data-new-proj>＋ 新增專案</button></div></section>
   <section class="pd">
     <div class="panel pd-head"><div class="sec-h"><h2><mark>${esc(p.name)}</mark></h2><div class="sec-r"><span class="chip acc">${esc(p.status||"")}</span><button class="linkbtn" data-edit-proj="${p.id}">編輯專案資訊</button></div></div>
       <div class="pd-meta">
@@ -1691,7 +1693,7 @@ function openSupplier(name){
 function openProj(id){
   const isNew = !id;
   const p = id ? proj(id) : {name:"", country:"", city:"", owner:"", status:"規劃中", start:"", planEnd:"", note:"", milestones:[]};
-  const body = `<span class="tag wrap">專案層級資料：課長／經理級以上編輯（正式版會依登入帳號控管）</span>
+  const body = `<span class="tag wrap">專案層級資料：課長／經理級以上編輯；刪除專案僅限管理者</span>
     ${fld("jName","專案名稱",inp("jName",p.name,'placeholder="例：北非項目"'))}
     <div class="f2">${fld("jCountry","國家",inp("jCountry",p.country))}${fld("jCity","城市",inp("jCity",p.city))}</div>
     <div class="f2">${fld("jOwner","專案負責人",inp("jOwner",p.owner,'list="dlBX"')+dl("dlBX",DB.people.filter(x=>x.orgType==="寶新").map(x=>x.name)))}${fld("jStatus","狀態",sel("jStatus",L.projectStatus,p.status))}</div>
@@ -1704,6 +1706,31 @@ function openProj(id){
     local.projects[pid] = Object.assign({}, proj(pid), {name:nm, country:val("jCountry"), city:val("jCity"), owner:val("jOwner"), status:val("jStatus"), start:val("jStart"), planEnd:val("jEnd"), note:val("jNote")});
     logChange(isNew?"新增專案":"更新專案", pid, ""); persist(); closeForm(); toast(`${isNew?"已建立":"已更新"}專案：${nm}`);
     if (isNew) { curProj = pid; location.hash = pid; } render();
+  });
+  if (!isNew) addDeleteProj(p);
+}
+// 刪除專案：只有管理者可以；連同此專案的 Issue、派遣／到崗、安裝任務一起隱藏（試算表仍保留，可復原）
+function addDeleteProj(p){
+  const foot = document.querySelector(".drawer footer");
+  foot.insertAdjacentHTML("afterbegin", `<button type="button" class="btn ghost danger" id="delProj">刪除專案</button><span style="flex:1"></span>`);
+  $("delProj").addEventListener("click", ()=>{
+    const admin = !BX.online || BX.user.role==="管理";
+    if (!admin) return confirmDialog({ title:"刪除專案需要管理者", okLabel:"知道了",
+      item:`<b>${esc(p.name)}</b>`, body:`<p class="sub" style="margin:0">為避免誤刪，專案只能由中控台管理者刪除。<br>要刪除這個專案，請通知管理者，並告知專案名稱。</p>`, onOk:()=>{} });
+    const iss = DB.issues.filter(i=>i.project===p.id), asg = DB.assignments.filter(a=>a.project===p.id), tks = DB.tasks.filter(t=>t.project===p.id);
+    const n = iss.length + asg.length + tks.length;
+    confirmDialog({ title:"確定要刪除專案嗎？", okLabel:"確定刪除", okClass:"danger armed",
+      item:`<b>${esc(p.name)}</b><div class="sub">${esc([p.country,p.city].filter(Boolean).join(" · ")||"地點未填")}・${esc(p.status||"")}</div>`,
+      body: n ? `<p class="sub" style="margin:0">這個專案還有 <b>${iss.length}</b> 筆 Issue、<b>${asg.length}</b> 筆派遣／到崗、<b>${tks.length}</b> 項安裝任務，會一起隱藏。<br>資料仍保留在試算表（「已刪除」欄），需要時可以復原。</p>`
+              : `<p class="sub" style="margin:0">這個專案沒有任何 Issue、派遣或任務。資料仍保留在試算表，需要時可以復原。</p>`,
+      onOk:()=>{ const at = iso(TODAY), tag = {deleted:true, deletedAt:at, deletedWith:p.id};
+        iss.forEach(i=>local.issues[i.id] = Object.assign({}, i, tag));
+        asg.forEach(a=>local.assignments[a.id] = Object.assign({}, a, tag));
+        tks.forEach(t=>local.tasks[t.id] = Object.assign({}, t, tag));
+        local.projects[p.id] = Object.assign({}, p, {deleted:true, deletedAt:at});
+        logChange("刪除專案", p.id, p.name); persist(); closeForm();
+        curProj = DB.projects[0]?.id || ""; toast(`已刪除專案：${p.name}`);
+        if (location.hash==="#projects") render(); else location.hash = "projects"; } });
   });
 }
 function openTask(id, preset={}){

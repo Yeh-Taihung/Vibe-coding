@@ -24,6 +24,8 @@ const USERS_TAB = "使用者", LOG_TAB = "異動紀錄", LISTS_TAB = "選單";
 // 只留在試算表、不送到中控台，也不允許從中控台覆寫的欄位
 const HIDDEN = { people: ["empNo", "hireDate", "leaveDate"] };
 const JSON_KEYS = ["milestones", "log", "openings", "visaHistory"];
+// 連帶刪除時記下是跟著哪個專案一起刪的
+const EXTRA_LABELS = { deletedWith: "隨專案刪除" };
 const BOOL_KEYS = ["deleted", "dueTBD", "retired"];
 const ROLES = ["管理", "編輯", "檢視"];
 
@@ -35,12 +37,12 @@ const SCHEMA = {
   units: [["name","單位名稱"],["level","層級"],["parent","上層單位"],["openings","職缺"],["retired","已停用"],["lastAt","最後更新"],["lastBy","更新者"]],
   companies: [["name","公司"],["group","集團"],["full","全名"],["lastAt","最後更新"],["lastBy","更新者"]],
   projects: [["id","專案編號"],["name","專案名稱"],["country","國家"],["city","城市"],["status","狀態"],["owner","負責人"],["start","開始日"],["planEnd","計畫完成"],
-             ["note","備註"],["milestones","項目節點"],["lastAt","最後更新"],["lastBy","更新者"]],
+             ["note","備註"],["milestones","項目節點"],["deleted","已刪除"],["deletedAt","刪除日"],["lastAt","最後更新"],["lastBy","更新者"]],
   assignments: [["id","編號"],["person","人員"],["project","專案編號"],["country","國家"],["city","城市"],["line","產線"],["duty","派遣目的／職責"],
                 ["planStart","計畫開始"],["planEnd","計畫結束"],["actualStart","實際開始"],["actualEnd","實際結束"],["status","狀態"],["budget","預算 TWD"],["cost","實支 TWD"],
                 ["note","備註"],["source","來源"],["updated","資料更新日"],["deleted","已刪除"],["deletedAt","刪除日"],["lastAt","最後更新"],["lastBy","更新者"]],
   tasks: [["id","編號"],["project","專案編號"],["section","工段"],["process","工序"],["task","任務"],["planStart","計畫開始"],["planEnd","計畫結束"],
-          ["actualStart","實際開始"],["actualEnd","實際結束"],["owner","負責單位"],["status","狀態"],["note","備註"],["updated","資料更新日"],["lastAt","最後更新"],["lastBy","更新者"]],
+          ["actualStart","實際開始"],["actualEnd","實際結束"],["owner","負責單位"],["status","狀態"],["note","備註"],["updated","資料更新日"],["deleted","已刪除"],["deletedAt","刪除日"],["lastAt","最後更新"],["lastBy","更新者"]],
   issues: [["id","編號"],["project","專案編號"],["kind","類型"],["title","事項"],["desc","說明"],["category","類別"],["severity","嚴重度"],["owner","負責人"],
            ["party","協力單位"],["opened","啟動日"],["due","預計完成"],["dueTBD","期限未定"],["closed","實際完成"],["status","狀態"],["task","關聯任務"],["note","備註"],
            ["log","對策與進度"],["source","來源"],["deleted","已刪除"],["deletedAt","刪除日"],["lastAt","最後更新"],["lastBy","更新者"]],
@@ -122,7 +124,7 @@ function keyOf_(header) {
 }
 function label_(table, key) {
   const f = (SCHEMA[table] || []).find(x => x[0] === key);
-  return `${f ? f[1] : key} (${key})`;
+  return `${f ? f[1] : (EXTRA_LABELS[key] || key)} (${key})`;
 }
 function normDate_(v) {
   const m = String(v).match(/^(\d{4})[\/\-.](\d{1,2})[\/\-.](\d{1,2})$/);
@@ -185,6 +187,8 @@ function save_(items, user) {
       const kName = TABLES[table].key;
       const rec = Object.assign({}, it.record || {});
       (HIDDEN[table] || []).forEach(h => delete rec[h]);
+      // 刪除專案只開放管理者（中控台也會擋，這裡再確認一次）
+      if (table === "projects" && rec.deleted === true && user.role !== "管理") throw err_(403, "刪除專案需要管理者權限，請通知管理者");
       let key = String(rec[kName] || it.key || "").trim();
       if (!key) throw err_(400, `${TABLES[table].tab}：缺少 ${kName}`);
 
