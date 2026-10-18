@@ -539,8 +539,8 @@ button.ptag{font:inherit;cursor:pointer;width:100%}
     </nav>
   </div>
 </div>
-<div class="proto"><div class="wrap" id="syncBar"><span class="tag">雛形預覽・資料為 10/17 從舊試算表搬移；在這裡新增或修改的資料只會留在您這台瀏覽器</span></div></div>
-<main><div class="wrap" id="view"></div></main>
+<div class="proto"><div class="wrap" id="syncBar"></div></div>
+<main><div class="wrap" id="view"><div class="card alert-empty boot-msg">正在連線，請稍候…</div></div></main>
 
 <div id="drawerRoot"></div>
 <button class="totop" type="button" aria-label="回到頁面頂端" hidden><span aria-hidden="true">↑</span><small>頂端</small></button>
@@ -573,7 +573,8 @@ button.ptag{font:inherit;cursor:pointer;width:100%}
       document.getElementById("gSwitch")?.addEventListener("click", ()=>{ google.accounts.id.disableAutoSelect(); showGate("請選擇要登入的 Google 帳號"); });
     }).catch(e=>{ document.getElementById("gBtn").innerHTML = `<p class="gate-err">${esc(e.message)}</p>`; });
   }
-  function onCred(t){ BX.token = t; try { sessionStorage.setItem(TK, t); } catch(e) {} const w = waiters; waiters = []; w.forEach(f=>f(t)); }
+  function onCred(t){ BX.token = t; try { sessionStorage.setItem(TK, t); } catch(e) {}
+    const g = gate(); if (g && !g.hidden) { const m = g.querySelector(".gate-card p"); if (m) { m.className = "sub"; m.textContent = "登入成功，正在載入資料…"; } g.querySelector("#gBtn")?.setAttribute("hidden",""); g.querySelector("#gSwitch")?.setAttribute("hidden",""); } const w = waiters; waiters = []; w.forEach(f=>f(t)); }
   function needLogin(msg, isErr){ return new Promise(ok=>{ waiters.push(ok); showGate(msg, isErr); }); }
   BX.call = async function(action, payload, retried){
     if (!BX.token || exp(BX.token) < Date.now()+60000) await needLogin("登入已過期，請重新登入");
@@ -595,12 +596,13 @@ button.ptag{font:inherit;cursor:pointer;width:100%}
   };
   BX.logout = function(){ try { sessionStorage.removeItem(TK); } catch(e) {} try { google.accounts.id.disableAutoSelect(); } catch(e) {} location.reload(); };
   BX.boot = async function(start){
-    if (!BX.online) return start();
+    if (!BX.online) { document.getElementById("syncBar").innerHTML = '<span class="tag">雛形預覽・資料為 10/17 從舊試算表搬移；在這裡新增或修改的資料只會留在您這台瀏覽器</span>'; return start(); }
     try { const t = sessionStorage.getItem(TK); if (t && exp(t) > Date.now()+60000) BX.token = t; } catch(e) {}
     if (!BX.token) await needLogin();
     let res = await BX.call("load");
     while (!res.ok) { BX.token = ""; try { sessionStorage.removeItem(TK); } catch(e) {} await needLogin(res.error, true); res = await BX.call("load"); }
     BX.user = res.user; BX.loadedAt = Date.now(); window.DB = res.data;
+    document.getElementById("syncBar").innerHTML = "";
     gate().hidden = true; gate().innerHTML = "";
     start();
   };
