@@ -612,6 +612,10 @@ base.lists ||= {};
 let local = {assignments:{}, people:{}, projects:{}, issues:{}, tasks:{}, units:{}, companies:{}, log:[]};
 try { const s = localStorage.getItem(LS_KEY); if (s) local = Object.assign(local, JSON.parse(s)); } catch(e) {}
 ["assignments","people","projects","issues","tasks","units","companies"].forEach(k => local[k] ||= {});
+// 權限：由試算表「使用者」分頁指定（管理 > 主管 > 編輯 > 檢視），與人員名單上的職稱無關
+const ROLE_RANK = {"檢視":0, "編輯":1, "主管":2, "管理":3};
+const can = level => !BX.online || (ROLE_RANK[BX.user.role] ?? 0) >= ROLE_RANK[level];
+const denied = what => { toast(`${what}需要「主管」以上權限，請通知管理者`); return false; };
 function saveLS(){ try { localStorage.setItem(LS_KEY, JSON.stringify(local)); } catch(e) {} }
 function persist(){
   if (BX.online && BX.user.role==="檢視") { TABLES_.forEach(t=>local[t]={}); saveLS(); setTimeout(()=>{ toast("你的帳號只有檢視權限，修改不會儲存"); render(); }, 0); return; }
@@ -629,6 +633,7 @@ async function flush(){
   const sent = items.map(i=>JSON.stringify(i.record));
   const res = await BX.call("save", {items});
   flushing = false;
+  if (!res.ok && res.code===403) { TABLES_.forEach(t=>local[t]={}); saveLS(); syncErr = ""; toast(res.error || "權限不足，修改未儲存"); BX.loadedAt = 0; return reload(true); }
   if (!res.ok) { syncErr = res.error || "儲存失敗"; flushT = setTimeout(flush, 30000); return syncState(); }
   let renamed = false;
   res.saved.forEach((sv, ix) => { const it = items[ix], t = sv.table, kn = keyName(t), arr = base[t] ||= [];
@@ -947,6 +952,7 @@ function openUnit(name){
     <div class="f2">${fld("uName","單位名稱",inp("uName",u.name,`placeholder="例：品保部、系統整合課" ${u.level==="處"?"readonly":""}`))}${u.level==="處"?"":fld("uParent","上層單位",sel("uParent",parents,u.parent))}</div>
     <fieldset class="fs"><legend>職缺（TBH）</legend><div class="f2">${fld("uOpen","待補人數",inp("uOpen",u.openings?.count||"",'type="number" min="0"'))}${fld("uOpenNote","職缺說明",inp("uOpenNote",u.openings?.note||"",'placeholder="例：PLC、Robot、電控"'))}</div></fieldset>`;
   drawer(isNew?"新增單位":`編輯單位：${esc(u.name)}`, body, isNew?"建立單位":"儲存", ()=>{
+    if (!can("主管")) return denied("新增或修改單位");
     const nm = val("uName"); if (!nm) return toast("請填寫單位名稱");
     if (nm!==u.name && unitOf(nm)) return toast(`已有單位「${nm}」`);
     const parent = u.level==="處" ? "" : val("uParent"); const pu = unitOf(parent);
@@ -1182,7 +1188,7 @@ function viewProject(){
         <div>現場人數<b class="num">${now.length}</b></div>
         <div>Open Issue<b class="num ${allIss.filter(isOpen).length?"hot":""}">${allIss.filter(isOpen).length}</b></div>
       </div>
-      <p class="note">專案層級資料（名稱、負責人、開始日、計畫完成、項目節點）僅課長／經理級以上可以編輯。</p>
+      <p class="note">專案資訊（名稱、地點、負責人、日期、狀態、項目節點）：主管以上權限可以修改；刪除專案僅限管理者。權限由管理者在試算表「使用者」分頁設定，與職稱無關。</p>
     </div>
   </section>
   <section>${fb}</section>
@@ -1606,7 +1612,7 @@ function openPerson(name, newType="寶新"){
   const p = name ? personOf(name) : {name:"", enName:"", orgType:newType, org:"", unit:"", title:"", role:"", status:"在職"};
   const unitOpts = DB.units.slice().sort((a,b)=>LEVEL_RANK[a.level]-LEVEL_RANK[b.level]).map(u=>`<option value="${esc(u.name)}" ${u.name===p.unit?"selected":""}>${u.level==="課"?"　└ ":""}${esc(u.name)}（${u.level}）</option>`).join("");
   const asg = name ? DB.assignments.filter(a=>a.person===name).sort((a,b)=>aStart(b)-aStart(a)) : [];
-  const body = `
+  const body = `${can("主管")?"":'<span class="tag wrap">集團同仁資料由主管以上權限維護；你可以查看與新增派遣，修改請通知主管或管理者</span>'}
     <div class="f2">${fld("pName","中文姓名",inp("pName",p.name, isNew?"":"readonly"))}${fld("pEn","英文名",inp("pEn",p.enName,'placeholder="例：Justin Shih"'))}</div>
     <div class="f bx-only" ${p.orgType==="寶新"?"":"hidden"}><label for="pCo">公司</label><select id="pCo">${DB.companies.map(c=>`<option value="${esc(c.name)}" ${c.name===(p.company||HOME_CO)?"selected":""}>${esc(c.group?c.group+"・":"")}${esc(c.name)}</option>`).join("")}<option value="__new">＋ 新增公司…</option></select>
       <input id="pCoNew" autocomplete="off" placeholder="新公司名稱，例：協禾綠能" hidden></div>
@@ -1627,6 +1633,7 @@ function openPerson(name, newType="寶新"){
       <button type="button" class="btn sm lime" data-asg-for="${esc(p.name)}">＋ 為 ${esc(p.name)} 新增派遣</button></fieldset>`}
 `;
   drawer(isNew?"新增人員":`${esc(p.name)}　人員資料`, body, "儲存", ()=>{
+    if (!can("主管")) return denied("新增或修改集團同仁");
     const nm = val("pName"); if (!nm) return toast("請填寫姓名");
     if (isNew && personOf(nm)) return toast(`「${nm}」已經存在`);
     const type = "寶新";
@@ -1693,13 +1700,14 @@ function openSupplier(name){
 function openProj(id){
   const isNew = !id;
   const p = id ? proj(id) : {name:"", country:"", city:"", owner:"", status:"規劃中", start:"", planEnd:"", note:"", milestones:[]};
-  const body = `<span class="tag wrap">專案層級資料：課長／經理級以上編輯；刪除專案僅限管理者</span>
+  const body = `<span class="tag wrap">${isNew ? "新增專案：所有編輯權限都可以建立" : can("主管") ? "專案資訊：主管以上權限可修改；刪除專案僅限管理者" : "你的權限只能檢視專案資訊；需要修改請通知主管或管理者"}</span>
     ${fld("jName","專案名稱",inp("jName",p.name,'placeholder="例：北非項目"'))}
     <div class="f2">${fld("jCountry","國家",inp("jCountry",p.country))}${fld("jCity","城市",inp("jCity",p.city))}</div>
     <div class="f2">${fld("jOwner","專案負責人",inp("jOwner",p.owner,'list="dlBX"')+dl("dlBX",DB.people.filter(x=>x.orgType==="寶新").map(x=>x.name)))}${fld("jStatus","狀態",sel("jStatus",L.projectStatus,p.status))}</div>
     <div class="f2">${fld("jStart","開始日",inp("jStart",p.start,'type="date"'))}${fld("jEnd","計畫完成",inp("jEnd",p.planEnd,'type="date"'))}</div>
     ${fld("jNote","備註",`<textarea id="jNote">${esc(p.note)}</textarea>`)}`;
   drawer(isNew?"新增專案":"編輯專案資訊", body, isNew?"建立專案":"儲存", ()=>{
+    if (!isNew && !can("主管")) return denied("修改專案資訊");
     const nm = val("jName"); if (!nm) return toast("請填寫專案名稱");
     if (DB.projects.some(x=>x.name===nm && x.id!==id)) return toast(`已有專案叫「${nm}」`);
     const pid = id || ensureProject(nm);
@@ -1714,7 +1722,7 @@ function addDeleteProj(p){
   const foot = document.querySelector(".drawer footer");
   foot.insertAdjacentHTML("afterbegin", `<button type="button" class="btn ghost danger" id="delProj">刪除專案</button><span style="flex:1"></span>`);
   $("delProj").addEventListener("click", ()=>{
-    const admin = !BX.online || BX.user.role==="管理";
+    const admin = can("管理");
     if (!admin) return confirmDialog({ title:"刪除專案需要管理者", okLabel:"知道了",
       item:`<b>${esc(p.name)}</b>`, body:`<p class="sub" style="margin:0">為避免誤刪，專案只能由中控台管理者刪除。<br>要刪除這個專案，請通知管理者，並告知專案名稱。</p>`, onOk:()=>{} });
     const iss = DB.issues.filter(i=>i.project===p.id), asg = DB.assignments.filter(a=>a.project===p.id), tks = DB.tasks.filter(t=>t.project===p.id);
@@ -1762,13 +1770,14 @@ function openMilestone(pid, ix){
     ${fld("mNote","說明（選填）",inp("mNote",m.note,'placeholder="例：Kick-off 會議"'))}
     ${isNew?"":`<button type="button" class="linkbtn warnbtn" id="mDel">刪除這個節點</button>`}`;
   drawer(isNew?"新增項目節點":"編輯項目節點", body, "儲存", ()=>{
+    if (!can("主管")) return denied("修改項目節點");
     if (!val("mName") || !val("mDate")) return toast("請填寫節點名稱與日期");
     const rec = {name:val("mName"), date:val("mDate"), note:val("mNote")};
     if (isNew) list.push(rec); else list[ix] = rec;
     list.sort((a,b)=>a.date.localeCompare(b.date));
     local.projects[pid] = Object.assign({}, p, {milestones:list}); persist(); closeForm(); toast(`已儲存節點：${rec.name} ${md(rec.date)}`); render();
   });
-  if (!isNew) $("mDel").addEventListener("click", ()=>{ list.splice(ix,1); local.projects[pid] = Object.assign({}, p, {milestones:list}); persist(); closeForm(); toast(`已刪除節點：${m.name}`); render(); });
+  if (!isNew) $("mDel").addEventListener("click", ()=>{ if (!can("主管")) return denied("刪除項目節點"); list.splice(ix,1); local.projects[pid] = Object.assign({}, p, {milestones:list}); persist(); closeForm(); toast(`已刪除節點：${m.name}`); render(); });
 }
 
 let tt; function toast(t){ let el=document.querySelector(".toast"); if(!el){el=document.createElement("div");el.className="toast";el.setAttribute("role","status");document.body.appendChild(el);} el.textContent=t; el.hidden=false; clearTimeout(tt); tt=setTimeout(()=>el.hidden=true,3200); }
@@ -1802,8 +1811,8 @@ document.addEventListener("click", e=>{
   if (d.newIssue !== undefined) return openIssue(null, d.newIssue ? {project:d.newIssue} : {});
   if (d.promote !== undefined) { const x = lastRem[+d.promote]; return openIssue(null, {project:x.proj, title:x.t, desc:x.d, category:x.cat, severity:x.sev==="crit"?"高":x.sev==="warn"?"中":"低"}); }
   if (d.person !== undefined) return openPerson(d.person);
-  if (t.hasAttribute("data-new-person")) return openPerson(null, d.newPerson || "寶新");
-  if (t.hasAttribute("data-new-unit")) return openUnit(null);
+  if (t.hasAttribute("data-new-person")) return (d.newPerson || "寶新")==="寶新" && !can("主管") ? denied("新增集團同仁") : openPerson(null, d.newPerson || "寶新");
+  if (t.hasAttribute("data-new-unit")) return can("主管") ? openUnit(null) : denied("新增單位");
   if (d.unit) return openUnit(d.unit);
   if (d.fill) { const el = $(d.fill); el.value = d.v; el.focus(); return; }
   if (d.psort) { PF.sort = d.psort; return render(); }

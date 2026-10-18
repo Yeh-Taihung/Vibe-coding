@@ -28,7 +28,7 @@ for t, meta in S["TABLES"].items():
 # 合約：中控台暫不顯示，資料先保留在試算表
 ck = list(dict.fromkeys(k for r in db.get("contracts", []) for k in r))
 tabs["合約（暫不顯示）"] = [ck] + [[enc(k, r.get(k)) for k in ck] for r in db.get("contracts", [])]
-tabs[S["USERS_TAB"]] = [["Email", "姓名", "權限（管理／編輯／檢視）", "啟用（是／否）", "最後登入"], [admin, "葉泰宏", "管理", "是", ""]]
+tabs[S["USERS_TAB"]] = [["Email", "姓名", "權限（管理／主管／編輯／檢視）", "啟用（是／否）", "最後登入"], [admin, "葉泰宏", "管理", "是", ""]]
 keep = ["country", "assignStatus", "taskStatus", "milestone", "issueStatus", "issueSeverity", "issueCategory", "projectStatus"]
 tabs[S["LISTS_TAB"]] = [["類別 (key)", "選項（用頓號、分隔）"]] + [[k, "、".join(db["lists"][k])] for k in keep if k in db.get("lists", {})]
 tabs[S["LOG_TAB"]] = [["時間", "Email", "姓名", "分頁", "鍵", "動作", "變更內容"]]

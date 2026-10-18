@@ -27,7 +27,10 @@ const JSON_KEYS = ["milestones", "log", "openings", "visaHistory"];
 // 連帶刪除時記下是跟著哪個專案一起刪的
 const EXTRA_LABELS = { deletedWith: "隨專案刪除" };
 const BOOL_KEYS = ["deleted", "dueTBD", "retired"];
-const ROLES = ["管理", "編輯", "檢視"];
+const ROLES = ["管理", "主管", "編輯", "檢視"];
+// 權限只看「使用者」分頁的「權限」欄（由管理者設定），與人員名單上的職稱無關
+const RANK = { "檢視": 0, "編輯": 1, "主管": 2, "管理": 3 };
+const PROJECT_FIELDS = ["name", "country", "city", "owner", "status", "start", "planEnd", "note", "milestones"];
 
 // 各分頁的欄位順序與中文標題（新欄位會自動加在最右邊）
 const SCHEMA = {
@@ -180,6 +183,9 @@ function save_(items, user) {
   try {
     const ss = SpreadsheetApp.getActive(), now = Utilities.formatDate(new Date(), "Asia/Taipei", "yyyy-MM-dd HH:mm:ss");
     const logRows = [], saved = [];
+    // 先檢查整批的權限，全部通過才開始寫入（不會只寫一半）
+    const snap = {};
+    items.forEach(it => checkPerm_(ss, it, user, snap));
     items.forEach(it => {
       const table = it.table;
       if (!TABLES[table]) throw err_(400, `不能寫入「${table}」`);
@@ -187,8 +193,6 @@ function save_(items, user) {
       const kName = TABLES[table].key;
       const rec = Object.assign({}, it.record || {});
       (HIDDEN[table] || []).forEach(h => delete rec[h]);
-      // 刪除專案只開放管理者（中控台也會擋，這裡再確認一次）
-      if (table === "projects" && rec.deleted === true && user.role !== "管理") throw err_(403, "刪除專案需要管理者權限，請通知管理者");
       let key = String(rec[kName] || it.key || "").trim();
       if (!key) throw err_(400, `${TABLES[table].tab}：缺少 ${kName}`);
 
@@ -234,6 +238,38 @@ function save_(items, user) {
   } finally { lock.releaseLock(); }
 }
 
+// ---------------------------------------------------------------- 權限
+function need_(user, level, what) {
+  if ((RANK[user.role] || 0) < RANK[level]) throw err_(403, `${what}需要「${level}」以上權限，請通知管理者`);
+}
+/** 依「改了什麼」判斷需要的權限：
+ *  刪除專案＝管理；修改既有專案資訊／項目節點、新增或修改集團同仁、單位、公司＝主管；其他（新增專案、派遣、Issue、到崗、任務）＝編輯 */
+function checkPerm_(ss, it, user, snap) {
+  const t = it.table, rec = it.record || {};
+  if (!TABLES[t]) throw err_(400, `不能寫入「${t}」`);
+  if (!snap[t]) {
+    const sh = ss.getSheetByName(TABLES[t].tab);
+    const v = sh && sh.getLastRow() > 0 ? sh.getDataRange().getDisplayValues() : [[]];
+    snap[t] = { keys: v[0].map(keyOf_), rows: v.slice(1) };
+  }
+  const { keys, rows } = snap[t], kName = TABLES[t].key, kc = keys.indexOf(kName);
+  const key = String(rec[kName] || it.key || "").trim();
+  let old = null;
+  if (kc >= 0 && !(it.isNew && kName === "id")) {
+    const row = rows.find(r => String(r[kc]).trim() === key);
+    if (row) { old = {}; keys.forEach((k, i) => old[k] = row[i]); }
+  }
+  const diff = k => encode_(k, rec[k]) !== normJson_(k, old ? (old[k] || "") : "");
+  const changed = Object.keys(rec).filter(k => k !== "lastAt" && k !== "lastBy" && diff(k));
+  if (!changed.length) return;
+  if (t === "projects") {
+    if (rec.deleted === true && !(old && /^true$/i.test(old.deleted || ""))) need_(user, "管理", "刪除專案");
+    else if (old && changed.some(k => PROJECT_FIELDS.includes(k))) need_(user, "主管", "修改專案資訊或項目節點");
+  }
+  if (t === "people" && (rec.orgType === "寶新" || (old && old.orgType === "寶新"))) need_(user, "主管", "新增或修改集團同仁");
+  if (t === "units" || t === "companies") need_(user, "主管", "新增或修改單位／公司");
+}
+
 function rowObj_(table, keys, row) {
   const o = {}, hide = HIDDEN[table] || [];
   keys.forEach((k, i) => { if (k && !hide.includes(k) && k !== "lastAt" && k !== "lastBy") o[k] = decode_(k, row[i]); });
@@ -254,14 +290,17 @@ function nextId_(key, col) {
 function setup() {
   const ss = SpreadsheetApp.getActive();
   Object.keys(TABLES).forEach(t => ensureTab_(ss, t));
-  if (!ss.getSheetByName(USERS_TAB)) {
-    const u = ss.insertSheet(USERS_TAB);
-    u.getRange(1, 1, 1, 5).setValues([["Email", "姓名", "權限（管理／編輯／檢視）", "啟用（是／否）", "最後登入"]]).setFontWeight("bold");
+  let u = ss.getSheetByName(USERS_TAB);
+  if (!u) {
+    u = ss.insertSheet(USERS_TAB);
+    u.getRange(1, 1, 1, 5).setValues([["Email", "姓名", "", "啟用（是／否）", "最後登入"]]).setFontWeight("bold");
     u.getRange(2, 1, 1, 4).setValues([[Session.getEffectiveUser().getEmail(), "", "管理", "是"]]);
     u.setFrozenRows(1);
-    u.getRange("C2:C500").setDataValidation(SpreadsheetApp.newDataValidation().requireValueInList(ROLES, true).build());
-    u.getRange("D2:D500").setDataValidation(SpreadsheetApp.newDataValidation().requireValueInList(["是", "否"], true).build());
   }
+  // 每次執行都更新權限欄的標題與下拉選單（新增「主管」後重新執行即可）
+  u.getRange(1, 3).setValue("權限（管理／主管／編輯／檢視）").setFontWeight("bold");
+  u.getRange("C2:C500").setDataValidation(SpreadsheetApp.newDataValidation().requireValueInList(ROLES, true).build());
+  u.getRange("D2:D500").setDataValidation(SpreadsheetApp.newDataValidation().requireValueInList(["是", "否"], true).build());
   if (!ss.getSheetByName(LISTS_TAB)) {
     const l = ss.insertSheet(LISTS_TAB);
     l.getRange(1, 1, 1, 2).setValues([["類別 (key)", "選項（用頓號、分隔）"]]).setFontWeight("bold");
