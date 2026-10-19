@@ -1772,6 +1772,20 @@ function openTask(id, preset={}){
       planStart:ps, planEnd:pe, actualStart:as, actualEnd:ae, status: ae ? "完成" : val("tStatus"), note:val("tNote"), updated:iso(TODAY)});
     logChange(isNew?"新增任務":"更新任務", nid, ""); persist(); closeForm(); toast(`${isNew?"已新增":"已更新"}任務：${val("tProc")} ${val("tTask")}`); render();
   });
+  if (!isNew) addDeleteTask(t);
+}
+// 刪除安裝任務：確認視窗＋軟刪除（試算表保留「已刪除」欄可復原）；關聯的 Issue 保留，只是不再掛在這個工序上
+function addDeleteTask(t){
+  const foot = document.querySelector(".drawer footer");
+  foot.insertAdjacentHTML("afterbegin", `<button type="button" class="btn ghost danger" id="delTask">刪除此任務</button><span style="flex:1"></span>`);
+  $("delTask").addEventListener("click", ()=>{
+    const li = DB.issues.filter(i=>i.task===t.id), open = li.filter(isOpen);
+    confirmDialog({ title:"確定要刪除這項任務嗎？", okLabel:"確定刪除", okClass:"danger armed",
+      item:`<b>${esc(t.process||"")}</b> ${esc(t.task||"")}<div class="sub">${esc(proj(t.project).name)}・${esc(t.section||"未分段")}${t.owner?`・${esc(t.owner)}`:""}</div>`,
+      body:`<p class="sub" style="margin:0">${li.length?`這項任務有 <b>${li.length}</b> 筆關聯 Issue${open.length?`（未結案 ${open.length} 筆）`:""}，Issue 會保留，只是不再顯示「工序」標記。<br>`:""}資料仍保留在試算表（「已刪除」欄），需要時可以復原。</p>`,
+      onOk:()=>{ local.tasks[t.id] = Object.assign({}, t, {deleted:true, deletedAt:iso(TODAY)});
+        logChange("刪除任務", t.id, ""); persist(); closeForm(); toast(`已刪除任務：${t.process||""} ${t.task||""}`); render(); } });
+  });
 }
 function openMilestone(pid, ix){
   const p = proj(pid); const list = [...(p.milestones||[])]; const isNew = ix==null; const m = isNew ? {name:"", date:"", note:""} : list[ix];
