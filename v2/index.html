@@ -374,6 +374,7 @@ details.mp-list[open] summary{border-bottom:var(--b) solid var(--ink)}
 .rs-row .editbtn{grid-column:2;grid-row:1/3}
 .rs-row.gone{background:transparent;border-style:dashed;color:var(--muted)}
 .rs-row.gone .editbtn{background:var(--card);color:var(--fg)}
+.rs-row.pend{border-style:dashed;background:color-mix(in srgb,var(--yellow) 14%,var(--card))}
 tr.gone td{color:var(--muted)} tr.gone td b{color:var(--muted)}
 .asg-mini{display:flex;flex-wrap:wrap;gap:2px 8px;align-items:baseline;text-align:left;padding:6px 10px;border:1.5px solid var(--ink);border-radius:8px;background:var(--card);color:var(--fg);font-size:12.5px}
 .asg-mini .sub{color:var(--muted);font-size:11.5px}
@@ -716,6 +717,7 @@ const personOf = n => DB.people.find(p=>p.name===n);
 const isBX = n => personOf(n)?.orgType === "寶新";
 const isStaff = p => p.orgType === "寶新" && p.status !== "離職";
 const HOME_CO = "寶新";   // 工程處所在的公司
+const isPending = p => p.status === "預計到職";
 const inOrg = p => isStaff(p) && (p.company||HOME_CO)===HOME_CO && p.unit && DB.units.some(u=>u.name===p.unit);
 const isSupport = p => isStaff(p) && !inOrg(p) && (p.extDept || (p.company && p.company!==HOME_CO));
 const affil = p => !p ? "" : p.orgType!=="寶新" ? (p.org||"供應商") : inOrg(p) ? (unitPath(p.unit)||p.unit) : [p.company||HOME_CO, p.extDept].filter(Boolean).join("・");
@@ -821,7 +823,7 @@ const OV = { proj:"", q:"" };
 function viewOverview(){
   const sp = OV.proj, inP = pid => !sp || (sp==="__hq" ? !pid : pid===sp);
   const now = onSiteNow();
-  const bxAll = DB.people.filter(inOrg), pendingN = DB.people.filter(p=>isStaff(p) && !inOrg(p) && !isSupport(p)).length;
+  const bxAll = DB.people.filter(p=>inOrg(p) && !isPending(p)), arriveN = DB.people.filter(p=>inOrg(p) && isPending(p)).length, pendingN = DB.people.filter(p=>isStaff(p) && !inOrg(p) && !isSupport(p)).length;
   const outAsg = now.filter(a=>isBX(a.person) && a.country!==RULE.home);
   const outSet = new Set(outAsg.map(a=>a.person));
   const byCountry = countBy([...outSet].map(n=>outAsg.find(a=>a.person===n).country), c=>c);
@@ -901,7 +903,7 @@ function viewOverview(){
 
   return `${ovBar}
   <section class="sum">
-    <a class="card ptag" href="#people"><span class="k">工程處人數</span><span class="v">${bxAll.length}<small>人</small></span><span class="s">${(()=>{ const op = DB.units.reduce((n,u)=>n+(u.openings?.count||0),0); return (op?`計畫 ${bxAll.length+op} 人・待補 ${op} 人`:"依組織圖統計") + (pendingN?`・另 ${pendingN} 人待確認`:""); })()}</span></a>
+    <a class="card ptag" href="#people"><span class="k">工程處人數</span><span class="v">${bxAll.length}<small>人</small></span><span class="s">${(()=>{ const op = DB.units.reduce((n,u)=>n+(u.openings?.count||0),0); return (op?`計畫 ${bxAll.length+op} 人・待補 ${op} 人`:"依組織圖統計") + (arriveN?`・預計到職 ${arriveN} 人`:"") + (pendingN?`・另 ${pendingN} 人待確認`:""); })()}</span></a>
     <a class="card ptag" href="#people"><span class="k">在台灣</span><span class="v">${bxAll.length-outSet.size}<small>人</small></span><span class="s">今天未出差</span></a>
     <a class="card ptag" href="#dispatch"><span class="k">在外</span><span class="v">${outSet.size}<small>人</small></span><span class="s">${Object.entries(byCountry).map(([c,n])=>`${c} ${n}`).join("・")||"今天沒有人出差"}</span></a>
     <a class="card ptag ${od.length?"hot":""}" href="#issues" data-scroll="issues"><span class="k">Open Issue</span><span class="v">${openIss.length}<small>項</small></span><span class="s">${od.length?`<b class="od">逾期 ${od.length} 項</b>`:"沒有逾期"}</span></a>
@@ -930,16 +932,17 @@ function rosterHTML(outAsg){
   const live = bx.filter(p=>p.status!=="離職"), left = bx.filter(p=>p.status==="離職");
   const units = DB.units;
   const row = p => { const a = outMap.get(p.name); const v = visaState(p); const gone = p.status==="離職";
-    return `<div class="rs-row ${gone?"gone":""}"><div class="rs-n"><span class="rs-t"><span class="ttl">${esc(p.title||p.role||"職稱待補")}</span><b>${esc(p.name)}</b>${p.enName?`<span class="en">${esc(p.enName)}</span>`:""}</span>
+    const pend = isPending(p);
+    return `<div class="rs-row ${gone?"gone":""} ${pend?"pend":""}"><div class="rs-n"><span class="rs-t"><span class="ttl">${esc(p.title||p.role||"職稱待補")}</span><b>${esc(p.name)}</b>${p.enName?`<span class="en">${esc(p.enName)}</span>`:""}</span>
       <span class="sub"></span></div>
-      <div class="rs-s">${gone?'<span class="chip">已離職</span>':`${a?`<span class="chip acc">${esc(a.city||a.country)}</span>`:'<span class="chip">台灣</span>'}`}</div>
+      <div class="rs-s">${gone?'<span class="chip">已離職</span>':pend?`<span class="chip warn">預計到職${p.startPlan?` ${md(p.startPlan)}`:""}</span>`:`${a?`<span class="chip acc">${esc(a.city||a.country)}</span>`:'<span class="chip">台灣</span>'}`}</div>
       <button class="editbtn" data-person="${esc(p.name)}" aria-label="編輯 ${esc(p.name)}">✎ 編輯</button></div>`; };
   const tbh = u => u.openings?.count ? `<div class="rs-row tbh"><div class="rs-n"><b>TBH × ${u.openings.count}</b><span class="sub">${esc(u.openings.note||"待補人力")}</span></div><button class="editbtn ghost" data-unit="${esc(u.name)}">✎ 職缺</button></div>` : "";
   const members = n => live.filter(p=>p.unit===n).sort(byRank);
   const top = units.find(u=>u.level==="處");
   const depts = units.filter(u=>u.level==="部");  // 依組織圖順序，新增的部排在後面
   const deptCard = d => { const secs = units.filter(u=>u.level==="課" && u.parent===d.name);
-    const n = members(d.name).length + secs.reduce((k,c)=>k+members(c.name).length,0);
+    const n = members(d.name).filter(p=>!isPending(p)).length + secs.reduce((k,c)=>k+members(c.name).filter(p=>!isPending(p)).length,0);
     const head = members(d.name)[0];
     return `<div class="card rs-col"><div class="rs-h"><div><h3>${esc(d.name)}</h3>${head?`<span class="sub">主管 ${esc(head.name)}${head.enName?` ${esc(head.enName)}`:""}</span>`:""}</div><span class="rs-hr"><button class="editbtn ghost sm" data-unit="${esc(d.name)}">✎</button><span class="count">${n}<small>人</small></span></span></div>
       ${members(d.name).map(row).join("")}${tbh(d)}
@@ -949,7 +952,7 @@ function rosterHTML(outAsg){
   const support = live.filter(isSupport).sort(byRank);
   const orphan = live.filter(p=>!inOrg(p) && !isSupport(p)).sort(byRank);
   const sRow = p => row(p).replace('<span class="sub">', `<span class="sub"><span class="tag">${esc(affil(p))}</span> `);
-  return `${top?`<div class="card rs-top"><div class="rs-h"><div><h3>${esc(top.name)}</h3><span class="sub">${esc((DB.companies.find(c=>c.name===HOME_CO)||{}).group||"")} ${esc(HOME_CO)}・處級</span></div><span class="count">${live.filter(inOrg).length}<small>人在職</small></span></div><div class="rs-toprow">${members(top.name).map(row).join("")}</div></div>`:""}
+  return `${top?`<div class="card rs-top"><div class="rs-h"><div><h3>${esc(top.name)}</h3><span class="sub">${esc((DB.companies.find(c=>c.name===HOME_CO)||{}).group||"")} ${esc(HOME_CO)}・處級</span></div><span class="count">${live.filter(p=>inOrg(p)&&!isPending(p)).length}<small>人在職</small></span></div><div class="rs-toprow">${members(top.name).map(row).join("")}</div></div>`:""}
   <div class="roster">${depts.map(deptCard).join("")}
     ${support.length?`<div class="card rs-col support"><div class="rs-h"><div><h3>支援同仁（非工程處）</h3><span class="sub">集團其他公司或部門，支援工程處專案；不計入工程處人數</span></div><span class="count">${support.length}<small>人</small></span></div>${support.map(sRow).join("")}</div>`:""}
     ${orphan.length?`<div class="card rs-col pending"><div class="rs-h"><div><h3>未列入組織圖</h3><span class="sub">請按「編輯」指定工程處單位、改填其他公司／部門，或設為離職</span></div><span class="count">${orphan.length}<small>人</small></span></div>${orphan.map(row).join("")}</div>`:""}
@@ -1235,7 +1238,7 @@ function viewPeople(){
   const all = DB.people.filter(p=>p.orgType===PF.org);
   const q = PF.q;
   const ppl = all.filter(p => staff
-      ? unitMatch(p, PF.unit) && (!PF.st || (PF.st==="在職" ? p.status!=="離職" : p.status==="離職")) && (!q || (p.name+(p.enName||"")+(p.note||"")).toLowerCase().includes(q.toLowerCase()))
+      ? unitMatch(p, PF.unit) && (!PF.st || (PF.st==="在職" ? (p.status!=="離職" && !isPending(p)) : PF.st==="預計到職" ? isPending(p) : p.status==="離職")) && (!q || (p.name+(p.enName||"")+(p.note||"")).toLowerCase().includes(q.toLowerCase()))
       : (!PF.co || p.org===PF.co) && (!PF.role || p.role===PF.role)
         && (!PF.proj || DB.assignments.some(a=>a.person===p.name && a.project===PF.proj))
         && (!PF.on || (PF.on==="on" ? nowMap.has(p.name) : !nowMap.has(p.name)))
@@ -1247,7 +1250,7 @@ function viewPeople(){
   const filters = staff
     ? `<select id="pfUnit" aria-label="單位">${opt("","全部單位",PF.unit)}${DB.units.filter(u=>u.level!=="處").sort((a,b)=>LEVEL_RANK[a.level]-LEVEL_RANK[b.level]).flatMap(d=> d.level==="部" ? [d, ...DB.units.filter(c=>c.parent===d.name)] : []).map(u=>opt(u.name, `${u.level==="課"?"　└ ":""}${u.name}（${cnt(p=>p.status!=="離職"&&unitMatch(p,u.name))}）`, PF.unit)).join("")}
         ${opt("工程處","工程處（處級）",PF.unit)}${opt("__support",`支援同仁（${cnt(p=>isSupport(p))}）`,PF.unit)}${opt("__none",`未列入組織圖（${cnt(p=>p.status!=="離職"&&!inOrg(p)&&!isSupport(p))}）`,PF.unit)}</select>
-       <select id="pfSt" aria-label="在職狀態">${opt("在職","在職",PF.st)}${opt("離職","已離職",PF.st)}${opt("","在職＋離職",PF.st)}</select>`
+       <select id="pfSt" aria-label="在職狀態">${opt("在職","在職",PF.st)}${opt("預計到職",`預計到職（${cnt(p=>isPending(p))}）`,PF.st)}${opt("離職","已離職",PF.st)}${opt("","全部",PF.st)}</select>`
     : `<select id="pfCo" aria-label="公司">${opt("","全部公司",PF.co)}${[...new Set(all.map(p=>p.org).filter(Boolean))].sort().map(c=>opt(c, `${c}（${cnt(p=>p.org===c)}）`, PF.co)).join("")}</select>
        <select id="pfRole" aria-label="工種">${opt("","全部工種",PF.role)}${[...new Set(all.filter(p=>!PF.co||p.org===PF.co).map(p=>p.role).filter(Boolean))].sort().map(r=>opt(r, r, PF.role)).join("")}</select>
        <select id="pfProj" aria-label="專案">${opt("","全部專案",PF.proj)}${DB.projects.filter(x=>DB.assignments.some(a=>a.project===x.id && !isBX(a.person))).map(x=>opt(x.id, x.name, PF.proj)).join("")}</select>
@@ -1270,7 +1273,7 @@ function viewPeople(){
     const edit = `<td class="nowrap"><button class="editbtn" data-person="${esc(p.name)}">✎ 編輯</button></td>`;
     const note = `<td class="sub" style="min-width:160px">${esc(p.note||"")}</td>`;
     if (staff) return `<tr class="${p.status==="離職"?"gone":""}">${edit}
-      <td class="nowrap"><b>${esc(p.name)}</b>${p.enName?` <span class="sub">${esc(p.enName)}</span>`:""}${p.status==="離職"?' <span class="chip">已離職</span>':""}</td>
+      <td class="nowrap"><b>${esc(p.name)}</b>${p.enName?` <span class="sub">${esc(p.enName)}</span>`:""}${p.status==="離職"?' <span class="chip">已離職</span>':isPending(p)?` <span class="chip warn">預計到職${p.startPlan?` ${md(p.startPlan)}`:""}</span>`:""}</td>
       <td>${inOrg(p)||isSupport(p)?`${!inOrg(p)?'<span class="chip info">支援</span> ':""}${esc(affil(p))}`:'<i class="locked">未列入組織圖</i>'}</td><td class="nowrap">${esc(p.title||p.role||"—")}</td>
       <td class="nowrap">${a&&a.country!==RULE.home?`<span class="chip acc">${esc(a.city||a.country)}</span>`:(p.status==="離職"?"—":"台灣")}</td>${note}</tr>`;
     const la = lastAsg(p.name);
@@ -1362,7 +1365,7 @@ const projPicked = pre => { const v = val(pre+"ProjSel"); return v==="__new" ? (
 const orgNames = () => ["寶新", ...DB.people.filter(x=>x.orgType==="供應商").map(x=>x.org)];
 const supplierNames = () => [...new Set(DB.people.filter(x=>x.orgType==="供應商").map(x=>x.org).filter(Boolean))].sort();
 function closeForm(){ $("drawerRoot").innerHTML = ""; }
-function upsertPerson(name, patch){ const p = personOf(name) || {id:"H"+Date.now(), name, orgType:"寶新", company:HOME_CO, org:"", unit:"", role:"", title:"", status:"在職", note:""};
+function upsertPerson(name, patch){ const p = personOf(name) || {id:"H"+Date.now(), name, orgType:"寶新", company:HOME_CO, org:"", unit:"", role:"", title:"", status:"在職", note:"", deleted:false};
   local.people[name] = Object.assign({}, p, patch); }
 function logChange(action, id, who){ local.log.push({at:new Date().toISOString(), action, id, who}); }
 
@@ -1635,7 +1638,8 @@ function openPerson(name, newType="寶新"){
       <div class="sugg">${[...new Set([...TITLE_SUGGEST, ...DB.people.map(x=>x.title||x.role).filter(Boolean)])].slice(0,14).map(t=>`<button type="button" class="chip" data-fill="pRole" data-v="${esc(t)}">${esc(t)}</button>`).join("")}</div>
       <span class="help">可直接打字；名單依職等排序：協理 > 經理 > 課長 > 專案經理 > 工程師／專員</span></div>
     <fieldset class="fs bx-only" ${p.orgType==="寶新"?"":"hidden"}><legend>在職狀態</legend>
-      <div class="f2">${fld("pStatus","狀態",sel("pStatus",["在職","離職"],p.status||"在職"),"設為離職後會以灰色排在名單最後，不計入人數")}<div></div></div>
+      <div class="f2">${fld("pStatus","狀態",sel("pStatus",["在職","預計到職","離職"],p.status||"在職"),"預計到職：先排進組織圖，不計入目前人數；離職：灰色排在名單最後")}
+        <div class="pend-only" ${isPending(p)?"":"hidden"}>${fld("pStart","預計到職日",inp("pStart",p.startPlan||"",'type="date"'),"到職後把狀態改成「在職」")}</div></div>
     </fieldset>
     ${fld("pNote","備註（選填）",`<textarea id="pNote" placeholder="例：長駐芝加哥、英文溝通、證照資訊">${esc(p.note||"")}</textarea>`)}
     ${isNew?"":`<fieldset class="fs"><legend>派遣紀錄（${asg.length}）</legend>
@@ -1653,9 +1657,28 @@ function openPerson(name, newType="寶新"){
     const company = val("pCo")==="__new" ? (local.companies[val("pCoNew")] ||= {name:val("pCoNew"), group:"協禾集團"}).name : val("pCo");
     const ext = company!==HOME_CO || val("pUnit")==="__ext";
     const unit = ext ? "" : (val("pUnit")==="__new" ? ensureUnit(val("pUnitNew"), val("pUnitParent")) : val("pUnit"));
-    if (type==="寶新") Object.assign(patch, {company, extDept: ext ? val("pExt") : "", unit, enName:val("pEn"), status:val("pStatus")});
+    if (type==="寶新") Object.assign(patch, {company, extDept: ext ? val("pExt") : "", unit, enName:val("pEn"), status:val("pStatus"), startPlan: val("pStatus")==="預計到職" ? val("pStart") : ""});
     upsertPerson(nm, Object.assign(isNew?{name:nm}:{}, patch)); logChange(isNew?"新增人員":"更新人員", nm, nm); persist(); closeForm();
     toast(`${isNew?"已新增":"已更新"} ${nm}`); render();
+  });
+  if (!isNew) addDeleteStaff(p);
+}
+// 刪除集團同仁：主管以上；建錯資料時使用（真的離開請改「離職」保留紀錄）。連同他的派遣一起隱藏，試算表保留可復原
+function addDeleteStaff(p){
+  const foot = document.querySelector(".drawer footer");
+  foot.insertAdjacentHTML("afterbegin", `<button type="button" class="btn ghost danger" id="delStaff">刪除此人員</button><span style="flex:1"></span>`);
+  $("delStaff").addEventListener("click", ()=>{
+    if (!can("主管")) return denied("刪除集團同仁");
+    const asg = DB.assignments.filter(a=>a.person===p.name);
+    const owned = DB.issues.filter(i=>i.owner===p.name && isOpen(i)).length;
+    confirmDialog({ title:"確定要刪除這位人員嗎？", okLabel:"確定刪除", okClass:"danger armed",
+      item:`<b>${esc(p.name)}</b>${p.enName?` ${esc(p.enName)}`:""}<div class="sub">${esc([p.title||p.role, p.unit||affil(p)].filter(Boolean).join("・")||"資料未填")}</div>`,
+      body:`<p class="sub" style="margin:0">刪除用於「建錯資料」。如果是同仁離開，請改把狀態設為「離職」，保留過去的派遣紀錄。<br>
+        ${asg.length?`這位人員有 <b>${asg.length}</b> 筆派遣紀錄，會一起隱藏。<br>`:""}${owned?`另有 <b>${owned}</b> 筆未結案 Issue 的負責人是他，Issue 會保留，請記得改指派。<br>`:""}資料仍保留在試算表（「已刪除」欄），需要時可以復原。</p>`,
+      onOk:()=>{ const tag = {deleted:true, deletedAt:iso(TODAY), deletedWith:p.name};
+        asg.forEach(a=>local.assignments[a.id] = Object.assign({}, a, tag));
+        local.people[p.name] = Object.assign({}, p, {deleted:true, deletedAt:iso(TODAY)});
+        logChange("刪除人員", p.name, p.name); persist(); closeForm(); toast(`已刪除人員：${p.name}`); render(); } });
   });
 }
 function openSupplier(name){
@@ -1879,6 +1902,7 @@ document.addEventListener("change", e=>{
   else if (id==="pCo") { const v = e.target.value; $("pCoNew").hidden = v!=="__new"; if (v==="__new") $("pCoNew").focus();
     const home = v===HOME_CO; $("pUnit").hidden = !home; document.querySelector(".newunit").hidden = !(home && $("pUnit").value==="__new");
     document.querySelector(".extdept").hidden = home && $("pUnit").value!=="__ext"; return; }
+  else if (id==="pStatus") { const b = document.querySelector(".pend-only"); if (b) b.hidden = e.target.value!=="預計到職"; return; }
   else if (id==="pType") { const bxT = e.target.value==="寶新"; document.querySelectorAll(".bx-only").forEach(x=>x.hidden=!bxT); document.querySelectorAll(".sup-only").forEach(x=>x.hidden=bxT); return; }
   else return;
   render();

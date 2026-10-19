@@ -25,7 +25,7 @@ const USERS_TAB = "使用者", LOG_TAB = "異動紀錄", LISTS_TAB = "選單";
 const HIDDEN = { people: ["empNo", "hireDate", "leaveDate"] };
 const JSON_KEYS = ["milestones", "log", "openings", "visaHistory"];
 // 連帶刪除時記下是跟著哪個專案一起刪的
-const EXTRA_LABELS = { deletedWith: "隨專案刪除" };
+const EXTRA_LABELS = { deletedWith: "隨專案／人員刪除", startPlan: "預計到職日" };
 const BOOL_KEYS = ["deleted", "dueTBD", "retired"];
 const ROLES = ["管理", "主管", "編輯", "檢視"];
 // 權限只看「使用者」分頁的「權限」欄（由管理者設定），與人員名單上的職稱無關
