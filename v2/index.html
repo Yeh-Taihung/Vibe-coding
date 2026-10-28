@@ -1220,7 +1220,7 @@ function viewProject(){
       <td class="nowrap">${i.due?md(i.due):"—"}${overdue(i)?'<div><span class="chip crit">逾期</span></div>':""}</td>
       <td class="nowrap">${isOpen(i)?`<span class="chip ${STC[i.status]}">${esc(i.status)}</span>`:`<span class="chip done">✓ 已結案</span>`}</td><td class="sub" style="min-width:160px">${last?`${last.at?md(last.at):""} ${esc(last.text)}`:"—"}</td></tr>`; }).join("")}
     </tbody></table></div>`:`<div class="card alert-empty">${pvOn()?"這個篩選條件下沒有 Issue。":"這個專案目前沒有 Open Issue。"}</div>`}</section>
-  <section>${secH(nowF.length, `現場<mark>人力</mark>`, "今天實際在崗；外包／供應商人員在這裡登記，離開現場請按「登記離崗」", `<button class="btn sm" data-new-onsite="${p.id}">＋ 新增到崗人員</button>`)}
+  <section>${secH(nowF.length, `現場<mark>人力</mark>`, "今天實際在崗；離開現場請按「登記離崗」", `<button class="btn sm" data-dispatch-proj="${p.id}">＋ 派遣集團同仁</button><button class="btn sm ghost" data-new-onsite="${p.id}">＋ 登記供應商人員</button>`)}
     ${supCards?`<div class="sup-cards">${supCards}</div>`:""}
     ${manGantt(p)}
     ${nowF.length||upcoming.length?`<details class="panel mp-list" ${PV.q||PV.co||PV.role?"open":""}><summary>人員清單（在崗 ${nowF.length}・即將到崗 ${upcoming.length}）— 登記離崗、編輯</summary><div class="scroll"><table class="dt">
@@ -1270,7 +1270,7 @@ function viewPeople(){
     ? `<th></th><th>姓名</th><th>單位</th><th>職稱</th><th>目前位置</th><th>備註</th>`
     : `<th></th><th>姓名</th><th>公司</th><th>工種</th><th>目前在崗</th><th>最近到崗</th><th>備註</th>`;
   return `<section><div class="toolbar"><div class="seg-t" role="group" aria-label="名單"><button class="${staff?"on":""}" data-porg="寶新">集團同仁</button><button class="${staff?"":"on"}" data-porg="供應商">供應商現場人員</button></div>
-    <span class="hint" style="color:var(--muted);font-size:12.5px;flex:1">${staff?"每一列最左邊的「✎ 編輯」可更新公司、單位、職稱、在職狀態、備註與派遣":"每一列的「✎ 編輯」可更新公司、工種、備註與到崗紀錄；也可在各專案頁「新增到崗人員」登記"}</span>
+    <span class="hint" style="color:var(--muted);font-size:12.5px;flex:1">${staff?"每一列最左邊的「✎ 編輯」可更新公司、單位、職稱、在職狀態、備註與派遣":"每一列的「✎ 編輯」可更新公司、工種、備註與到崗紀錄；也可在各專案頁「登記供應商人員」"}</span>
     <button class="btn" data-new-person="${staff?"寶新":"供應商"}">＋ 新增${staff?"同仁":"供應商人員"}</button></div></section>
   <section>${filterBar}</section>
   <section>${secH(ppl.length, staff?`集團同仁<mark>名單</mark>`:`供應商<mark>現場人員</mark>`, staff?`依職等排序${active_?`・共 ${all.filter(p=>p.status!=="離職").length} 人中符合 ${ppl.length} 人`:""}`:(active_?`共 ${all.length} 人中符合 ${ppl.length} 人`:""), staff?"":`<div class="seg-t" role="group" aria-label="排序"><button class="${PF.sort==="company"?"on":""}" data-psort="company">依公司</button><button class="${PF.sort==="recent"?"on":""}" data-psort="recent">依最近到崗</button></div>`)}
@@ -1395,7 +1395,7 @@ function staffOptions(sel){
 function openStaffForm(id, a){
   const body = `
     <div class="f"><label for="iPerson">派遣人員</label><select id="iPerson"><option value="">— 選擇集團同仁 —</option>${staffOptions(a.person)}<option value="__new">＋ 新增同仁…</option></select>
-      ${inp("iPersonNew","",'placeholder="新同仁中文姓名" hidden')}<span class="help" id="iAffil">${a.person&&personOf(a.person)?esc(affil(personOf(a.person))):"只列集團同仁；外包／供應商人員請到專案頁「新增到崗人員」登記"}</span></div>
+      ${inp("iPersonNew","",'placeholder="新同仁中文姓名" hidden')}<span class="help" id="iAffil">${a.person&&personOf(a.person)?esc(affil(personOf(a.person))):"只列集團同仁；外包／供應商人員請到專案頁「登記供應商人員」"}</span></div>
     ${projPick("i", a.project)}
     <div class="f2">${fld("iCountry","國家",inp("iCountry",a.country,'list="dlCountry"')+dl("dlCountry",[...(L.country||[]),"台灣"]))}${fld("iCity","城市",inp("iCity",a.city))}</div>
     <div class="f2">${fld("iPS","計畫出發",inp("iPS",a.planStart,'type="date"'))}${fld("iPE","計畫回程",inp("iPE",a.planEnd,'type="date"'))}</div>
@@ -1409,7 +1409,7 @@ function openStaffForm(id, a){
   function check(){
     const out = []; const name = who(), s=P(val("iAS")||val("iPS")), e=P(val("iAE")||val("iPE")), country=val("iCountry");
     $("iPersonNew").hidden = val("iPerson")!=="__new";
-    const pp = personOf(name); $("iAffil").textContent = pp ? affil(pp) : (val("iPerson")==="__new" ? "新同仁會先放在「未列入組織圖」，之後可到人員名單指定單位" : "只列集團同仁；外包／供應商人員請到專案頁「新增到崗人員」登記");
+    const pp = personOf(name); $("iAffil").textContent = pp ? affil(pp) : (val("iPerson")==="__new" ? "新同仁會先放在「未列入組織圖」，之後可到人員名單指定單位" : "只列集團同仁；外包／供應商人員請到專案頁「登記供應商人員」");
     dayInfo("dayInfo", val("iPS"), val("iPE"), val("iAS"), val("iAE"), {plan:"計畫", go:"出發", back:"回程"}, out);
     if (val("iProjSel")==="__new") out.push(["warn", val("iProjNew") ? `將建立新專案「${val("iProjNew")}」` : "請輸入新專案名稱"]);
     if (name && s && e) DB.assignments.filter(x=>x.person===name && x.id!==id && active(x)).forEach(x=>{
@@ -1450,12 +1450,15 @@ function openSiteForm(id, a){
   function check(){ const out=[];
     dayInfo("sDayInfo", val("sPS"), val("sPE"), val("sAS"), val("sAE"), {plan:"預計", go:"到崗", back:"離崗"}, out);
     $("checks").innerHTML = out.map(([c,t])=>`<div class="check ${c}">${esc(t)}</div>`).join(""); return !out.length; }
-  drawer(id?"編輯現場人員":"新增到崗人員", body, id?"儲存":"新增", ()=>{
+  drawer(id?"編輯供應商人員":"登記供應商人員", body, id?"儲存":"登記", ()=>{
     const name = val("sName"), org = val("sOrg"), role = val("sRole");
     if (!name || !org || !(val("sPS")||val("sAS"))) return toast("請填寫姓名、所屬公司與到崗日期");
     if (!check()) return toast("離崗日期早於到崗日期，請修正");
     const ex = personOf(name);
-    if (ex && ex.orgType==="寶新") return toast(`「${name}」是集團同仁，請改用「人員派遣」登記`);
+    if (ex && ex.orgType==="寶新" && !id) { const keep = {person:name, project:a.project, country:pr.country||a.country, city:pr.city||a.city,
+        planStart:val("sPS"), planEnd:val("sPE"), actualStart:val("sAS"), actualEnd:val("sAE"), duty:val("sDuty"), line:val("sLine")};
+      closeForm(); toast(`「${name}」是集團同仁，已改用派遣表單，填好的日期已帶入`); return openForm(null, keep); }
+    if (ex && ex.orgType==="寶新") return toast(`「${name}」是集團同仁，請改用「派遣集團同仁」登記`);
     upsertPerson(name, {orgType:"供應商", org, role:val("sRole")});
     const rec = Object.assign({}, a, { id: id || "L"+Date.now(), person:name, project:a.project, country:pr.country||a.country, city:pr.city||a.city,
       planStart:val("sPS"), planEnd:val("sPE"), actualStart:val("sAS") || (val("sPS") && val("sPS")<=iso(TODAY) ? val("sPS") : ""), actualEnd:val("sAE"),
@@ -1857,7 +1860,7 @@ const FDEF = { OV:{proj:"", q:""}, F:{project:"", unit:"", country:"", status:""
   PV:{q:"", iss:"", co:"", role:"", sec:"", health:""}, TF:{owner:"", project:"all", kind:"", sev:"", od:"", q:""} };
 document.addEventListener("click", e=>{
   if (e.target.closest(".totop")) return window.scrollTo({top:0, behavior: matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth"});
-  const t = e.target.closest("[data-close],[data-new],[data-edit],[data-leave],[data-issue],[data-new-issue],[data-promote],[data-person],[data-new-person],[data-new-onsite],[data-asg-for],[data-new-unit],[data-unit],[data-fill],[data-psort],[data-porg],[data-pf-clear],[data-tf],[data-quick],[data-close-issue],[data-reopen],[data-goto-tracker],[data-edit-proj],[data-new-proj],[data-new-task],[data-task],[data-raise],[data-new-ms],[data-ms],[data-range],[data-toggle-closed],[data-proj],[data-scroll],[data-fclear],[data-ord]"); if(!t) return;
+  const t = e.target.closest("[data-close],[data-new],[data-edit],[data-leave],[data-issue],[data-new-issue],[data-promote],[data-person],[data-new-person],[data-new-onsite],[data-dispatch-proj],[data-asg-for],[data-new-unit],[data-unit],[data-fill],[data-psort],[data-porg],[data-pf-clear],[data-tf],[data-quick],[data-close-issue],[data-reopen],[data-goto-tracker],[data-edit-proj],[data-new-proj],[data-new-task],[data-task],[data-raise],[data-new-ms],[data-ms],[data-range],[data-toggle-closed],[data-proj],[data-scroll],[data-fclear],[data-ord]"); if(!t) return;
   const d = t.dataset;
   if (t.hasAttribute("data-close")) return closeForm();
   if (t.hasAttribute("data-new")) return openForm(null);
@@ -1882,6 +1885,7 @@ document.addEventListener("click", e=>{
   if (d.reopen) return confirmReopen(d.reopen);
   if (t.hasAttribute("data-goto-tracker")) { TF.project = ""; location.hash = "tracker"; return; }
   if (d.asgFor) { const nm = d.asgFor; closeForm(); return openForm(null, {person:nm}); }
+  if (d.dispatchProj) { const pr = proj(d.dispatchProj); return openForm(null, {project:pr.id, country:pr.country||"", city:pr.city||""}); }
   if (d.newOnsite) { const pr = proj(d.newOnsite); return openForm(null, {project:pr.id, country:pr.country||"美國", city:pr.city||"", site:true}); }
   if (d.editProj) return openProj(d.editProj);
   if (t.hasAttribute("data-new-proj")) return openProj(null);
