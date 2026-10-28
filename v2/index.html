@@ -245,6 +245,8 @@ b.od,.od{color:var(--red);font-weight:900}
 .pchips{display:flex;gap:8px;flex-wrap:wrap}
 .pchips button{padding:6px 14px;border:var(--b) solid var(--ink);border-radius:999px;background:var(--card);box-shadow:var(--sh-sm);font-weight:700;color:var(--fg)}
 .pchips button.on{background:var(--chip-bg);color:var(--chip-fg)}
+details.fs-more{margin:4px 0 10px}
+details.fs-more summary{cursor:pointer;font-size:13px;font-weight:700;color:var(--muted);margin-bottom:8px}
 .pchips button.btn{background:var(--blue);color:var(--on-blue);font-weight:900}
 .pc-n{display:inline-grid;place-items:center;min-width:20px;height:20px;padding:0 5px;border-radius:999px;background:var(--red);color:#fff;font-size:11.5px;margin-left:4px}
 .sup-cards{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:14px}
@@ -636,7 +638,9 @@ function persist(){
 const TABLES_ = ["assignments","people","projects","issues","tasks","units","companies"];
 const keyName = t => ({people:"name", units:"name", companies:"name"})[t] || "id";
 let flushing = false, flushT = null, syncErr = "", lastSync = BX.online ? new Date() : null;
-const pending = () => TABLES_.flatMap(t => Object.entries(local[t]).map(([k,r]) => ({table:t, key:k, record:r, isNew: !(base[t]||[]).some(x=>x[keyName(t)]===k)})));
+// isNew：試算表裡沒有這筆、或只有一筆「已刪除」的舊資料（後台會換新編號，不會蓋掉舊資料）
+const pending = () => TABLES_.flatMap(t => Object.entries(local[t]).map(([k,r]) => { const isNew = !(base[t]||[]).some(x=>x[keyName(t)]===k && !x.deleted);
+  return {table:t, key:k, record: isNew && r.deleted===undefined ? Object.assign({}, r, {deleted:false}) : r, isNew}; }));
 async function flush(){
   if (!BX.online || flushing) return;
   const items = pending(); if (!items.length) return syncState();
@@ -724,9 +728,9 @@ const affil = p => !p ? "" : p.orgType!=="寶新" ? (p.org||"供應商") : inOrg
 function ensureProject(name){
   name = (name||"").trim(); if (!name) return "";
   const hit = DB.projects.find(p=>p.name===name); if (hit) return hit.id;
-  const n = Math.max(0, ...DB.projects.map(p=>parseInt(p.id.slice(1))||0)) + 1;
+  const n = Math.max(0, ...merge(base.projects, local.projects).map(p=>parseInt(String(p.id).slice(1))||0)) + 1;  // 含已刪除的專案，編號不重複使用
   const id = "P" + String(n).padStart(2,"0");
-  local.projects[id] = {id, name, country:"", city:"", status:"規劃中", owner:"", start:"", planEnd:"", note:"由派遣或 Issue 建立，請經理補填專案資訊"};
+  local.projects[id] = {id, name, country:"", city:"", status:"規劃中", owner:"", start:"", planEnd:"", note:"由派遣或 Issue 建立，請經理補填專案資訊", milestones:[], deleted:false};
   return id;
 }
 
@@ -850,7 +854,7 @@ function viewOverview(){
       ${grp("人員", ppl, p=>`<button class="sr-item" data-person="${esc(p.name)}"><b>${esc(p.name)}</b>${p.enName?` ${esc(p.enName)}`:""}${p.status==="離職"?' <span class="chip">已離職</span>':""}<span class="sub">${esc(p.orgType==="寶新" ? [p.title, inOrg(p)?p.unit:affil(p)].filter(Boolean).join("・") : [p.org, p.role].filter(Boolean).join("・"))}</span></button>`)}
       ${grp("Issue／任務與問題點", iss, i=>`<button class="sr-item" data-issue="${i.id}"><b>${esc(i.title)}</b><span class="sub">${esc(i.id)}・${esc(i.project?proj(i.project).name:"處內事務")}・${esc(i.owner||"未指派")}・${isOpen(i)?esc(i.status):"已結案"}${overdue(i)?"・逾期":""}</span></button>`)}
       ${grp("派遣／到崗", asg, a=>{ const e=aEnd(a); return `<button class="sr-item" data-edit="${a.id}"><b>${esc(a.person)}</b> ${esc(a.city||a.country)}<span class="sub">${aStart(a)?ymd(iso(aStart(a))):"—"} – ${e?ymd(iso(e)):"未定"}・${esc(proj(a.project).name)}${a.duty?`・${esc(a.duty)}`:""}${a.status!=="確認"?`・${esc(a.status)}`:""}</span></button>`; })}
-      ${grp("安裝任務", tks, t=>`<button class="sr-item" data-task="${t.id}"><b>${esc(t.process)}</b> ${esc(t.task)}<span class="sub">${esc(proj(t.project).name)}・${esc(t.section||"未分段")}・${taskHealth(t)}</span></button>`)}
+      ${grp("專案任務", tks, t=>`<button class="sr-item" data-task="${t.id}">${taskHTML(t)}<span class="sub">${esc(proj(t.project).name)}${t.section?`・${esc(t.section)}`:""}・${taskHealth(t)}</span></button>`)}
       ${grp("專案", prj, p=>`<button class="sr-item" data-proj="${p.id}"><b>${esc(p.name)}</b><span class="sub">${esc([p.country,p.city].filter(Boolean).join(" · ")||"地點待補")}・${esc(p.status||"")}</span></button>`)}
       </div>`:`<div class="card alert-empty">找不到符合「${esc(q)}」的人員、Issue、派遣、任務或專案。</div>`}</section>`;
   }
@@ -1084,6 +1088,8 @@ const PV = { closed:false, range:"near", q:"", iss:"", co:"", role:"", sec:"", h
 const pvOn = () => PV.q||PV.iss||PV.co||PV.role||PV.sec||PV.health;
 const mpF = a => { const pp = personOf(a.person); return (!PV.co || groupOf(a)===PV.co) && (!PV.role || (pp?.role||"未填工種")===PV.role) && has(PV.q, a.person, pp?.enName, pp?.role, pp?.note, a.duty, a.line); };
 const HEALTH = {"完成":["var(--blue)","已完成"], "有風險":["var(--yellow)","進行中（有風險）"], "進行中":["var(--green)","順利進行中"], "未開始":["var(--beige)","未開始"]};
+const taskName = t => [t.process, t.task].filter(Boolean).join(" ") || "（未命名任務）";
+const taskHTML = t => t.process ? `<b>${esc(t.process)}</b> ${esc(t.task||"")}` : `<b>${esc(t.task||"（未命名任務）")}</b>`;
 const linkedIssues = t => DB.issues.filter(i=>i.task===t.id && isOpen(i));
 function taskHealth(t){
   if (t.status==="完成" || t.actualEnd) return "完成";
@@ -1135,15 +1141,16 @@ function planGantt(p, ts, keep = ()=>true){
     <div class="pg-t" style="--n:${ax.n}">${tm}${TODAY>=ax.S&&TODAY<ax.E?`<span class="now-tag" style="left:${ax.pct(TODAY)}%">現時點 ${md(iso(TODAY))}</span>`:""}
     ${ms.map((m,ix)=>`<button class="msd" data-ms="${p.id}|${ix}" style="left:${ax.pct(P(m.date))}%" title="${esc(`${m.name} ${ymd(m.date)}${m.note?`｜${m.note}`:""}`)}"><span class="dia"></span><b>${esc(m.name)}</b><small>${md(m.date)}</small></button>`).join("")}
     ${ms.length?"":`<span class="pg-hint">尚未設定節點，按「＋ 節點」加入 KO、PA、TT、SOP 等里程碑</span>`}</div></div>`;
-  const secs = [...new Set(ts.map(t=>t.section||"未分段"))];
+  const secs = [...new Set(ts.map(t=>t.section||"未分組"))];
+  const oneGroup = secs.length===1 && secs[0]==="未分組";
   let no = 0;
   const body = secs.map(sec=>{
-    const g = ts.filter(t=>(t.section||"未分段")===sec), done = g.filter(t=>taskHealth(t)==="完成").length;
+    const g = ts.filter(t=>(t.section||"未分組")===sec), done = g.filter(t=>taskHealth(t)==="完成").length;
     if (!g.some(keep)) { no += g.length; return ""; }
-    return `<div class="pg-sec"><span>${esc(sec)}</span><span class="badge">${done}/${g.length} 完成</span></div>` + g.map(t=>{ no++; if (!keep(t)) return "";
+    return (oneGroup ? "" : `<div class="pg-sec"><span>${esc(sec)}</span><span class="badge">${done}/${g.length} 完成</span></div>`) + g.map(t=>{ no++; if (!keep(t)) return "";
       const h = taskHealth(t), li = linkedIssues(t), unsched = !t.planStart && !t.actualStart;
-      return `<div class="pg-row ${h==="有風險"?"risk":""}"><div class="pg-l"><div class="pg-name"><span class="no">${no}</span><b>${esc(t.process)}</b> ${esc(t.task)}</div>
-        <div class="pg-sub">${esc(t.owner||"負責單位未定")}${unsched?' · <span class="chip">未排程</span>':""}${li.map(i=>` <button class="chip crit" data-issue="${i.id}" title="${esc(i.title)}">${i.id}</button>`).join("")}</div>
+      return `<div class="pg-row ${h==="有風險"?"risk":""}"><div class="pg-l"><div class="pg-name"><span class="no">${no}</span>${taskHTML(t)}</div>
+        <div class="pg-sub">${esc(t.owner||"負責人未定")}${unsched?' · <span class="chip">未排程</span>':""}${li.map(i=>` <button class="chip crit" data-issue="${i.id}" title="${esc(i.title)}">${i.id}</button>`).join("")}</div>
         ${t.note?`<div class="pg-note">${esc(t.note)}</div>`:""}
         <div class="pg-act"><button class="linkbtn" data-task="${t.id}">編輯</button><button class="linkbtn warnbtn" data-raise="${t.id}">回報 Issue</button></div></div>
         <div class="pg-lab"><span>計畫</span><span>實際</span></div>
@@ -1162,7 +1169,7 @@ function viewProject(){
   const issSt = i => PV.iss==="" ? isOpen(i) : PV.iss==="all" ? true : PV.iss==="已結案" ? !isOpen(i) : i.status===PV.iss;
   const iss = allIss.filter(i=>issSt(i) && has(PV.q, issueText(i))).sort(byIssNo(PV.ord));
   const ts = DB.tasks.filter(t=>t.project===p.id);
-  const tKeep = t => (!PV.sec || (t.section||"未分段")===PV.sec) && (!PV.health || taskHealth(t)===PV.health) && has(PV.q, t.process, t.task, t.owner, t.note, t.section, linkedIssues(t).map(i=>i.id));
+  const tKeep = t => (!PV.sec || (t.section||"未分組")===PV.sec) && (!PV.health || taskHealth(t)===PV.health) && has(PV.q, t.process, t.task, t.owner, t.note, t.section, linkedIssues(t).map(i=>i.id));
   const tsN = ts.filter(tKeep).length;
   const lock = '<i class="locked">待經理補填</i>';
   const pAsg = DB.assignments.filter(a=>a.project===p.id && active(a));
@@ -1171,7 +1178,7 @@ function viewProject(){
     fsel("PV","iss","Issue 狀態",[["","Issue：未結案"],["Open","Issue：Open"],["處理中","Issue：處理中"],["待確認","Issue：待確認"],["已結案","Issue：已結案"],["all","Issue：全部"]], PV.iss) +
     fsel("PV","co","公司",[["","人力：全部公司"], ...[...new Set(pAsg.map(groupOf))].sort((a,b)=>a==="寶新"?-1:b==="寶新"?1:a.localeCompare(b)).map(c=>[c,`人力：${c}`])], PV.co) +
     fsel("PV","role","工種",[["","人力：全部工種"], ...[...new Set(pAsg.filter(a=>!PV.co||groupOf(a)===PV.co).map(a=>personOf(a.person)?.role||"未填工種"))].sort().map(r=>[r,`人力：${r}`])], PV.role) +
-    (ts.length ? fsel("PV","sec","工段",[["","任務：全部工段"], ...[...new Set(ts.map(t=>t.section||"未分段"))].map(s=>[s,`任務：${s}`])], PV.sec) +
+    (ts.length ? fsel("PV","sec","階段",[["","任務：全部階段"], ...[...new Set(ts.map(t=>t.section||"未分組"))].map(s=>[s,`任務：${s}`])], PV.sec) +
       fsel("PV","health","任務狀態",[["","任務：全部狀態"], ...["未開始","進行中","有風險","完成"].map(s=>[s,`任務：${s==="完成"?"已完成":s}`])], PV.health) : ""),
     "pvQ", PV.q, "搜尋本專案的 Issue、人員、任務", "PV", pvOn());
   const g = {}; nowF.forEach(a=>(g[groupOf(a)] ||= []).push(a));
@@ -1208,7 +1215,7 @@ function viewProject(){
   <section>${secH(iss.length, PV.iss===""?`Open <mark>Issue</mark>`:`<mark>Issue</mark>`, `${PV.iss===""?"":`狀態：${PV.iss==="all"?"全部":esc(PV.iss)}・`}本專案共 ${allIss.length} 項（未結案 ${allIss.filter(isOpen).length}）・依編號`, `${ordSeg("PV", PV.ord, "Issue 編號")}<button class="btn sm" data-new-issue="${p.id}">＋ 新增 Issue</button>`)}
     ${iss.length?`<div class="panel scroll"><table class="dt"><thead><tr><th>編號</th><th>事項</th><th>類別</th><th>嚴重度</th><th>負責</th><th>期限</th><th>狀態</th><th>最新進度</th></tr></thead><tbody>
     ${iss.map(i=>{ const last = (i.log||[]).slice(-1)[0]; const t = i.task && DB.tasks.find(x=>x.id===i.task); return `<tr class="clickrow" data-issue="${i.id}"><td class="nowrap mono">${esc(i.id)}</td>
-      <td class="wide"><b>${esc(i.title)}</b>${t?` <span class="tag">工序：${esc(t.process)}</span>`:""}<div class="sub">${esc(i.desc)}</div></td><td class="nowrap">${esc(i.category)}</td>
+      <td class="wide"><b>${esc(i.title)}</b>${t?` <span class="tag">任務：${esc(taskName(t))}</span>`:""}<div class="sub">${esc(i.desc)}</div></td><td class="nowrap">${esc(i.category)}</td>
       <td><span class="chip ${SEVC[i.severity]}">${esc(i.severity)}</span></td><td class="nowrap">${esc(i.owner||"未指派")}${i.party?`<div class="sub">${esc(i.party)}</div>`:""}</td>
       <td class="nowrap">${i.due?md(i.due):"—"}${overdue(i)?'<div><span class="chip crit">逾期</span></div>':""}</td>
       <td class="nowrap">${isOpen(i)?`<span class="chip ${STC[i.status]}">${esc(i.status)}</span>`:`<span class="chip done">✓ 已結案</span>`}</td><td class="sub" style="min-width:160px">${last?`${last.at?md(last.at):""} ${esc(last.text)}`:"—"}</td></tr>`; }).join("")}
@@ -1220,9 +1227,9 @@ function viewProject(){
       <thead><tr><th>姓名</th><th>所屬</th><th>工種</th><th>職責 / 產線</th><th>到崗</th><th>預計離崗</th><th>備註</th><th></th></tr></thead>
       <tbody>${[...nowF.sort((a,b)=>groupOf(a).localeCompare(groupOf(b))), ...upcoming].map(mpRow).join("")}</tbody></table></div></details>`:""}
   </section>
-  <section>${secH(pvOn()?`${tsN}/${ts.length}`:ts.length, `安裝<mark>任務</mark>`, ts.length?["完成","進行中","有風險","未開始"].map(s=>`${HEALTH[s][1].replace("進行中（有風險）","有風險")} ${ts.filter(t=>taskHealth(t)===s).length}`).join(" · "):"", `<button class="btn sm" data-new-task="${p.id}">＋ 新增任務</button>`)}
-    <p class="note">每個項目上排「計畫」、下排「實際」。工序遇到問題時，按該項目的「回報 Issue」建立追蹤；有未結案 Issue 的項目會以黃色標示為有風險，Issue 結案後自動恢復。</p>
-    ${ts.length||(p.milestones||[]).length ? planGantt(p, ts, tKeep) : `<div class="card alert-empty">還沒有任務。按「＋ 新增任務」建立計畫時程，或先用「＋ 節點」設定 KO、SOP 等里程碑。</div>${`<div style="margin-top:8px"><button class="linkbtn" data-new-ms="${p.id}">＋ 節點</button></div>`}`}
+  <section>${secH(pvOn()?`${tsN}/${ts.length}`:ts.length, `任務<mark>進度</mark>`, ts.length?["完成","進行中","有風險","未開始"].map(s=>`${HEALTH[s][1].replace("進行中（有風險）","有風險")} ${ts.filter(t=>taskHealth(t)===s).length}`).join(" · "):"", `<button class="btn sm" data-new-task="${p.id}">＋ 新增任務</button>`)}
+    <p class="note">每項任務上排「計畫」、下排「實際」，可用來追蹤安裝工序，也可以是公司註冊、簽約等步驟。遇到問題時，按該任務的「回報 Issue」建立追蹤；有未結案 Issue 的項目會以黃色標示為有風險，Issue 結案後自動恢復。</p>
+    ${ts.length||(p.milestones||[]).length ? planGantt(p, ts, tKeep) : `<div class="card alert-empty">還沒有任務。按「＋ 新增任務」逐項建立步驟與預計／實際時程，或先用「＋ 節點」設定重要里程碑。</div>${`<div style="margin-top:8px"><button class="linkbtn" data-new-ms="${p.id}">＋ 節點</button></div>`}`}
   </section>`;
 }
 
@@ -1310,7 +1317,7 @@ function viewTracker(){
     return `<tr class="${isOpen(i)?"":"gone"} ${od?"od-row":""}">
       <td class="n">${no}<div class="iss-no">${esc(i.id)}</div></td>
       <td class="wide"><b>${esc(i.title)}</b>${updatedThisWeek(i)&&isOpen(i)?' <span class="chip acc">本週更新</span>':""}
-        <div class="tk-meta"><span class="tag">${esc(i.project?proj(i.project).name:"處內事務")}</span>${i.task?' <span class="chip">工序</span>':""}${i.note?` <span class="sub">備註：${esc(i.note)}</span>`:""}</div></td>
+        <div class="tk-meta"><span class="tag">${esc(i.project?proj(i.project).name:"處內事務")}</span>${i.task?' <span class="chip">關聯任務</span>':""}${i.note?` <span class="sub">備註：${esc(i.note)}</span>`:""}</div></td>
       <td class="nowrap">${i.opened?ymd(i.opened):"—"}</td>
       <td class="nowrap">${i.due?`${ymd(i.due)}${od?'<div><span class="chip crit">逾期</span></div>':""}`:(i.dueTBD?'<span class="chip warn">TBD</span>':"—")}</td>
       <td class="tk-log">${more>0?`<div class="sub">⋯ 更早 ${more} 筆</div>`:""}${shown.map(l=>`<div class="${l.last?"last":""}">${l.at?`<b class="num">${md(l.at)}</b> `:'<span class="nodate">・</span>'}${esc(l.text).replace(/\n/g,"<br>")}</div>`).join("") || '<span class="sub">尚無進度</span>'}</td>
@@ -1496,7 +1503,7 @@ function openIssue(id, preset={}){
   const body = `
     <div class="f2">${fld("qKind","類型",sel("qKind",["任務","問題點","其他"],i.kind==="問題"?"問題點":(i.kind||"問題點")))}${fld("qStatus","狀態",sel("qStatus",L.issueStatus,i.status))}</div>
     ${projPick("q", i.project, true)}
-    ${i.task?(()=>{ const t=DB.tasks.find(x=>x.id===i.task); return t?`<span class="tag wrap">關聯工序：${esc(t.section)}・${esc(t.process)} ${esc(t.task)}</span>`:""; })():""}
+    ${i.task?(()=>{ const t=DB.tasks.find(x=>x.id===i.task); return t?`<span class="tag wrap">關聯任務：${t.section?`${esc(t.section)}・`:""}${esc(taskName(t))}</span>`:""; })():""}
     ${fld("qTitle","任務／問題點",inp("qTitle",i.title,'placeholder="一句話說明，例：化成設備進廠日期未定"'))}
     ${fld("qDesc","說明（選填）",`<textarea id="qDesc" placeholder="背景、影響範圍、需要誰決定">${esc(i.desc)}</textarea>`)}
     <div class="f2"><div class="f"><label for="qOwner">負責人 PIC</label><select id="qOwner"><option value="">— 未指派 —</option>${bx.map(p=>`<option value="${esc(p.name)}" ${p.name===i.owner?"selected":""}>${esc(p.name)}${p.enName?` ${esc(p.enName.split(" ")[0])}`:""}</option>`).join("")}</select></div>
@@ -1533,7 +1540,7 @@ function openIssue(id, preset={}){
     $("delIssue").addEventListener("click", e=>{ const b = e.currentTarget;
       if (!b.dataset.confirm) { b.dataset.confirm = "1"; b.textContent = `確定刪除 ${i.id}？再按一次`; b.classList.add("armed"); return; }
       local.issues[i.id] = Object.assign({}, i, {deleted:true, deletedAt:iso(TODAY)}); logChange("刪除 Issue", i.id, ""); persist(); closeForm();
-      toast(`已刪除 ${i.id}：${i.title}${i.task?"（關聯工序已恢復）":""}`); render(); });
+      toast(`已刪除 ${i.id}：${i.title}${i.task?"（關聯任務已恢復）":""}`); render(); });
     ed.mount("qHist");
   }
 }
@@ -1779,21 +1786,23 @@ function openTask(id, preset={}){
   const t = id ? DB.tasks.find(x=>x.id===id) : Object.assign({project:curProj, section:"", process:"", task:"", planStart:"", planEnd:"", actualStart:"", actualEnd:"", owner:"", status:"未開始", note:""}, preset);
   const secs = [...new Set(DB.tasks.filter(x=>x.project===t.project).map(x=>x.section).filter(Boolean))];
   const body = `<span class="tag wrap">${esc(proj(t.project).name)}</span>
-    <div class="f2">${fld("tSec","工段／階段",inp("tSec",t.section,'list="dlSec" placeholder="例：一工段、廠房建設"')+dl("dlSec",secs))}${fld("tProc","工序／項目",inp("tProc",t.process,'placeholder="例：正極合漿"'))}</div>
-    <div class="f2">${fld("tTask","任務內容",inp("tTask",t.task,'placeholder="例：設備平台安裝"'))}${fld("tOwner","負責單位",inp("tOwner",t.owner,'list="dlOrg"')+dl("dlOrg",orgNames()))}</div>
+    ${fld("tTask","任務／步驟名稱",inp("tTask",t.task,'placeholder="例：與代辦公司簽約、公司註冊、設備平台安裝"'))}
+    <div class="f2">${fld("tSec","階段／分組（選填）",inp("tSec",t.section,'list="dlSec" placeholder="例：公司設立、一工段"')+dl("dlSec",secs),"同一組的任務會排在一起")}${fld("tOwner","負責人／單位（選填）",inp("tOwner",t.owner,'list="dlOrg" placeholder="例：林政曄、代辦公司、杭可"')+dl("dlOrg",[...DB.people.filter(x=>isStaff(x)).map(x=>x.name), ...orgNames()]))}</div>
+    <details class="fs-more" ${t.process?"open":""}><summary>設備安裝類專案：工序（選填）</summary>${fld("tProc","工序",inp("tProc",t.process,'placeholder="例：正極合漿"'),"有工序時，名稱會顯示成「工序＋任務」")}</details>
     <fieldset class="fs"><legend>預計時程（計畫）</legend><div class="f2">${fld("tPS","預計開始",inp("tPS",t.planStart,'type="date"'))}${fld("tPE","預計完成",inp("tPE",t.planEnd,'type="date"'))}</div></fieldset>
     <fieldset class="fs"><legend>實際時程</legend><div class="f2">${fld("tAS","實際開始",inp("tAS",t.actualStart,'type="date"'))}${fld("tAE","實際結束",inp("tAE",t.actualEnd,'type="date"'),"填寫實際結束即視為完成")}</div></fieldset>
     ${fld("tStatus","狀態",sel("tStatus",L.taskStatus,t.status==="卡關"?"有風險":t.status),"有未結案 Issue 時，甘特圖會自動顯示為「有風險」")}
     ${fld("tNote","說明",`<textarea id="tNote" placeholder="目前進度、卡在哪裡、下一步">${esc(t.note)}</textarea>`)}`;
   drawer(isNew?"新增任務":"編輯任務", body, isNew?"新增任務":"儲存", ()=>{
-    if (!val("tProc") && !val("tTask")) return toast("請填寫工序或任務內容");
+    if (!val("tProc") && !val("tTask")) return toast("請填寫任務／步驟名稱");
     const ps=val("tPS"), pe=val("tPE"), as=val("tAS"), ae=val("tAE");
     if (ps && pe && pe<ps) return toast("預計完成早於預計開始，請修正");
     if (as && ae && ae<as) return toast("實際結束早於實際開始，請修正");
     const nid = id || `T${Date.now()}`;
-    local.tasks[nid] = Object.assign({}, t, {id:nid, section:val("tSec"), process:val("tProc"), task:val("tTask"), owner:val("tOwner"),
+    local.tasks[nid] = Object.assign({}, t, isNew?{deleted:false}:{}, {id:nid, section:val("tSec"), process:val("tProc"), task:val("tTask"), owner:val("tOwner"),
       planStart:ps, planEnd:pe, actualStart:as, actualEnd:ae, status: ae ? "完成" : val("tStatus"), note:val("tNote"), updated:iso(TODAY)});
-    logChange(isNew?"新增任務":"更新任務", nid, ""); persist(); closeForm(); toast(`${isNew?"已新增":"已更新"}任務：${val("tProc")} ${val("tTask")}`); render();
+    const label = taskName(local.tasks[nid]);
+    logChange(isNew?"新增任務":"更新任務", nid, ""); persist(); closeForm(); toast(`${isNew?"已新增":"已更新"}任務：${label}`); render();
   });
   if (!isNew) addDeleteTask(t);
 }
@@ -1804,8 +1813,8 @@ function addDeleteTask(t){
   $("delTask").addEventListener("click", ()=>{
     const li = DB.issues.filter(i=>i.task===t.id), open = li.filter(isOpen);
     confirmDialog({ title:"確定要刪除這項任務嗎？", okLabel:"確定刪除", okClass:"danger armed",
-      item:`<b>${esc(t.process||"")}</b> ${esc(t.task||"")}<div class="sub">${esc(proj(t.project).name)}・${esc(t.section||"未分段")}${t.owner?`・${esc(t.owner)}`:""}</div>`,
-      body:`<p class="sub" style="margin:0">${li.length?`這項任務有 <b>${li.length}</b> 筆關聯 Issue${open.length?`（未結案 ${open.length} 筆）`:""}，Issue 會保留，只是不再顯示「工序」標記。<br>`:""}資料仍保留在試算表（「已刪除」欄），需要時可以復原。</p>`,
+      item:`<b>${esc(t.process||"")}</b> ${esc(t.task||"")}<div class="sub">${esc(proj(t.project).name)}・${esc(t.section||"未分組")}${t.owner?`・${esc(t.owner)}`:""}</div>`,
+      body:`<p class="sub" style="margin:0">${li.length?`這項任務有 <b>${li.length}</b> 筆關聯 Issue${open.length?`（未結案 ${open.length} 筆）`:""}，Issue 會保留，只是不再顯示「關聯任務」標記。<br>`:""}資料仍保留在試算表（「已刪除」欄），需要時可以復原。</p>`,
       onOk:()=>{ local.tasks[t.id] = Object.assign({}, t, {deleted:true, deletedAt:iso(TODAY)});
         logChange("刪除任務", t.id, ""); persist(); closeForm(); toast(`已刪除任務：${t.process||""} ${t.task||""}`); render(); } });
   });
@@ -1878,7 +1887,7 @@ document.addEventListener("click", e=>{
   if (t.hasAttribute("data-new-proj")) return openProj(null);
   if (d.newTask) return openTask(null, {project:d.newTask});
   if (d.task) return openTask(d.task);
-  if (d.raise) { const tk = DB.tasks.find(x=>x.id===d.raise); return openIssue(null, {project:tk.project, task:tk.id, category:"進度", severity:"中", party:tk.owner, title:`${tk.process}${tk.task}：`}); }
+  if (d.raise) { const tk = DB.tasks.find(x=>x.id===d.raise); return openIssue(null, {project:tk.project, task:tk.id, category:"進度", severity:"中", party:tk.owner, title:`${taskName(tk)}：`}); }
   if (d.newMs) return openMilestone(d.newMs, null);
   if (d.ms) { const [pid, ix] = d.ms.split("|"); return openMilestone(pid, +ix); }
   if (d.range) { PV.range = d.range; return render(); }
