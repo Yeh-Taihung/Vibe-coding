@@ -1509,6 +1509,14 @@ function markLeft(id){
 function issueSave(i, patch, msg){
   const rec = Object.assign({}, i, patch); local.issues[rec.id] = rec; logChange("更新 Issue", rec.id, ""); persist(); toast(msg || `已更新 ${rec.id}`); render();
 }
+// 專案底下的任務清單（編號與「任務進度」甘特圖一致）
+function taskOptions(pid, sel){
+  const ts = pid ? DB.tasks.filter(t=>t.project===pid) : [];
+  let no = 0; const groups = {};
+  ts.forEach(t=>{ no++; (groups[t.section||""] ||= []).push(`<option value="${esc(t.id)}" ${t.id===sel?"selected":""}>${no}. ${esc(taskName(t))}</option>`); });
+  const body = Object.entries(groups).map(([g,opts]) => g ? `<optgroup label="${esc(g)}">${opts.join("")}</optgroup>` : opts.join("")).join("");
+  return `<option value="">${ts.length?"— 不關聯任務 —":"（這個專案還沒有任務）"}</option>${body}`;
+}
 function openIssue(id, preset={}){
   const isNew = !id;
   const i = id ? DB.issues.find(x=>x.id===id) : Object.assign({project:curProjFor(), kind:"問題", title:"", desc:"", category:"其他", severity:"中", owner:"", party:"", opened:iso(TODAY), due:"", status:"Open", note:"", log:[]}, preset);
@@ -1516,7 +1524,7 @@ function openIssue(id, preset={}){
   const body = `
     <div class="f2">${fld("qKind","類型",sel("qKind",["任務","問題點","其他"],i.kind==="問題"?"問題點":(i.kind||"問題點")))}${fld("qStatus","狀態",sel("qStatus",L.issueStatus,i.status))}</div>
     ${projPick("q", i.project, true)}
-    ${i.task?(()=>{ const t=DB.tasks.find(x=>x.id===i.task); return t?`<span class="tag wrap">關聯任務：${t.section?`${esc(t.section)}・`:""}${esc(taskName(t))}</span>`:""; })():""}
+    ${fld("qTask","關聯任務（選填）",`<select id="qTask">${taskOptions(i.project, i.task)}</select>`,"選錯任務時直接改這裡，Issue 會移到新的任務列")}
     ${fld("qTitle","任務／問題點",inp("qTitle",i.title,'placeholder="一句話說明，例：化成設備進廠日期未定"'))}
     ${fld("qDesc","說明（選填）",`<textarea id="qDesc" placeholder="背景、影響範圍、需要誰決定">${esc(i.desc)}</textarea>`)}
     <div class="f2"><div class="f"><label for="qOwner">負責人 PIC</label><select id="qOwner"><option value="">— 未指派 —</option>${bx.map(p=>`<option value="${esc(p.name)}" ${p.name===i.owner?"selected":""}>${esc(p.name)}${p.enName?` ${esc(p.enName.split(" ")[0])}`:""}</option>`).join("")}</select></div>
@@ -1540,8 +1548,11 @@ function openIssue(id, preset={}){
     if (!isNew && stNew !== i.status) log.push({at:iso(TODAY), text:`狀態：${i.status} → ${stNew}`});
     if (val("qLog")) log.push({at:iso(TODAY), text:val("qLog")});
     if (isNew && !val("qLog")) log.push({at:iso(TODAY), text:"建立"});
+    const newTask = val("qTask");
+    if (!isNew && newTask !== (i.task||"")) { const nm = x => { const t = DB.tasks.find(y=>y.id===x); return t ? taskName(t) : "（無）"; };
+      log.push({at:iso(TODAY), text:`關聯任務：${i.task?nm(i.task):"（無）"} → ${newTask?nm(newTask):"（無）"}`}); }
     const nid = id || `ISS-${String(Math.max(0,...merge(base.issues, local.issues).map(x=>parseInt(x.id.slice(4))||0))+1).padStart(3,"0")}`;  // 含已刪除，編號不重複使用
-    const rec = Object.assign({}, i, {id:nid, project:pid, kind:val("qKind"), title:val("qTitle"), desc:val("qDesc"), category:val("qCat"), severity:val("qSev"),
+    const rec = Object.assign({}, i, {id:nid, project:pid, task:newTask, kind:val("qKind"), title:val("qTitle"), desc:val("qDesc"), category:val("qCat"), severity:val("qSev"),
       owner:val("qOwner"), party:val("qParty"), opened:val("qOpen"), due:val("qDue"), dueTBD: !val("qDue") && i.dueTBD, status:stNew, note:val("qNote"), log,
       closed: stNew==="已結案" ? (closedV||i.closed||iso(TODAY)) : ""});
     local.issues[nid] = rec; logChange(isNew?"新增 Issue":"更新 Issue", nid, ""); persist(); closeForm();
@@ -1920,7 +1931,8 @@ document.addEventListener("change", e=>{
   else if (id==="tfProj") TF.project = e.target.value;
   else if (e.target.dataset.fk) { const [o,k] = e.target.dataset.fk.split("."); FS[o][k] = e.target.value; if (o==="PV" && k==="co") PV.role = ""; }
   else if (id==="iPerson") return;
-  else if (e.target.dataset.projsel) { const pre = e.target.dataset.projsel; const box = $(pre+"ProjNew"); box.hidden = e.target.value!=="__new"; if (!box.hidden) box.focus(); $("dForm")?.dispatchEvent(new Event("input")); return; }
+  else if (e.target.dataset.projsel) { const pre = e.target.dataset.projsel;
+    if (pre==="q" && $("qTask")) $("qTask").innerHTML = taskOptions(e.target.value==="__new" ? "" : e.target.value, ""); const box = $(pre+"ProjNew"); box.hidden = e.target.value!=="__new"; if (!box.hidden) box.focus(); $("dForm")?.dispatchEvent(new Event("input")); return; }
   else if (id==="pUnit") { document.querySelector(".newunit").hidden = e.target.value!=="__new"; document.querySelector(".extdept").hidden = e.target.value!=="__ext"; if (e.target.value==="__new") $("pUnitNew").focus(); if (e.target.value==="__ext") $("pExt").focus(); return; }
   else if (id==="pCo") { const v = e.target.value; $("pCoNew").hidden = v!=="__new"; if (v==="__new") $("pCoNew").focus();
     const home = v===HOME_CO; $("pUnit").hidden = !home; document.querySelector(".newunit").hidden = !(home && $("pUnit").value==="__new");
