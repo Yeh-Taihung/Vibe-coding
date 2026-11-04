@@ -631,6 +631,7 @@ const can = level => !BX.online || (ROLE_RANK[BX.user.role] ?? 0) >= ROLE_RANK[l
 const denied = what => { toast(`${what}需要「主管」以上權限，請通知管理者`); return false; };
 function saveLS(){ try { localStorage.setItem(LS_KEY, JSON.stringify(local)); } catch(e) {} }
 function persist(){
+  chain = 0;
   if (BX.online && BX.user.role==="檢視") { TABLES_.forEach(t=>local[t]={}); saveLS(); setTimeout(()=>{ toast("你的帳號只有檢視權限，修改不會儲存"); render(); }, 0); return; }
   saveLS(); if (BX.online) { clearTimeout(flushT); flushT = setTimeout(flush, 400); syncState(); }
 }
@@ -639,22 +640,31 @@ const TABLES_ = ["assignments","people","projects","issues","tasks","units","com
 const keyName = t => ({people:"name", units:"name", companies:"name"})[t] || "id";
 let flushing = false, flushT = null, syncErr = "", lastSync = BX.online ? new Date() : null;
 // isNew：試算表裡沒有這筆、或只有一筆「已刪除」的舊資料（後台會換新編號，不會蓋掉舊資料）
+// 新增的資料帶一個只產生一次的 cid，後台據此判斷「同一筆」，重送也不會多建
 const pending = () => TABLES_.flatMap(t => Object.entries(local[t]).map(([k,r]) => { const isNew = !(base[t]||[]).some(x=>x[keyName(t)]===k && !x.deleted);
+  if (isNew && !r.cid) r.cid = "c" + Date.now().toString(36) + Math.random().toString(36).slice(2,8);
   return {table:t, key:k, record: isNew && r.deleted===undefined ? Object.assign({}, r, {deleted:false}) : r, isNew}; }));
+let chain = 0;  // 連續自動重送次數：異常時自動停下，不會無限送出
 async function flush(){
   if (!BX.online || flushing) return;
   const items = pending(); if (!items.length) return syncState();
+  if (++chain > 5) { syncErr = "同步異常，已暫停自動送出，請重新整理頁面"; return syncState(); }
+  saveLS();
   flushing = true; syncState();
-  const sent = items.map(i=>JSON.stringify(i.record));
+  const sent = items.map(i=>JSON.stringify(local[i.table][i.key]));  // 比對用：送出當下的本機內容
   const res = await BX.call("save", {items});
   flushing = false;
   if (!res.ok && res.code===403) { TABLES_.forEach(t=>local[t]={}); saveLS(); syncErr = ""; toast(res.error || "權限不足，修改未儲存"); BX.loadedAt = 0; return reload(true); }
-  if (!res.ok) { syncErr = res.error || "儲存失敗"; flushT = setTimeout(flush, 30000); return syncState(); }
+  if (!res.ok) { chain = 0; syncErr = res.error || "儲存失敗"; flushT = setTimeout(flush, 30000); return syncState(); }
   let renamed = false;
   res.saved.forEach((sv, ix) => { const it = items[ix], t = sv.table, kn = keyName(t), arr = base[t] ||= [];
     const j = arr.findIndex(x=>x[kn]===sv.key); if (j>=0) arr[j] = sv.record; else arr.push(sv.record);
-    if (JSON.stringify(local[t][it.key])===sent[ix]) delete local[t][it.key];
-    if (sv.oldKey) { renamed = true; toast(`編號 ${sv.oldKey} 剛被其他人使用，已改為 ${sv.key}`); } });
+    const cur = local[t][it.key];
+    if (sv.key !== it.key) {  // 後台換了編號：本機這筆一定要清掉；送出後又改過的內容搬到新編號
+      if (cur && JSON.stringify(cur)!==sent[ix]) local[t][sv.key] = Object.assign({}, cur, {[kn]: sv.key});
+      delete local[t][it.key]; renamed = true;
+      if (sv.oldKey && !sv.dup) toast(`編號 ${sv.oldKey} 剛被其他人使用，已改為 ${sv.key}`);
+    } else if (JSON.stringify(cur)===sent[ix]) delete local[t][it.key]; });
   syncErr = ""; lastSync = new Date(); saveLS(); syncState();
   if (renamed) render();
   if (pending().length) flush();

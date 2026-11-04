@@ -205,9 +205,14 @@ function save_(items, user) {
       const last = sh.getLastRow();
       const col = last > 1 ? sh.getRange(2, kc + 1, last - 1, 1).getDisplayValues().map(r => String(r[0]).trim()) : [];
       let rowIx = col.indexOf(key);
-      let oldKey = "";
+      let oldKey = "", dup = false;
+      // 防重複新增：同一筆資料被重送時，回傳已存在的那一筆，不再新建
+      if (it.isNew) {
+        const hit = findSame_(sh, keys, rec, user, kName);
+        if (hit) { oldKey = key !== hit ? key : ""; key = hit; rowIx = col.indexOf(hit); dup = true; }
+      }
       // 兩個人同時新增，編號撞到時換一個新編號（姓名類的鍵則視為同一筆）
-      if (it.isNew && rowIx >= 0 && kName === "id") {
+      if (it.isNew && !dup && rowIx >= 0 && kName === "id") {
         oldKey = key; key = nextId_(key, col); rec.id = key; rowIx = -1;
       }
       rec[kName] = key;
@@ -221,13 +226,13 @@ function save_(items, user) {
         const c = keys.indexOf(k), nv = encode_(k, rec[k]);
         if (c >= 0 && nv !== normJson_(k, cur[c])) { next[c] = nv; changed[k] = rec[k]; }
       });
-      if (!Object.keys(changed).length && rowIx >= 0) { saved.push({ table, key, oldKey, record: rowObj_(table, keys, next) }); return; }
+      if (!Object.keys(changed).length && rowIx >= 0) { saved.push({ table, key, oldKey, dup, record: rowObj_(table, keys, next) }); return; }
       next[keys.indexOf("lastAt")] = now;
       next[keys.indexOf("lastBy")] = user.email;
       range.setNumberFormat("@").setValues([next]);
       const action = rowIx < 0 ? "新增" : (changed.deleted === true ? "刪除" : "更新");
       logRows.push([now, user.email, user.name || "", TABLES[table].tab, key, action, JSON.stringify(changed).slice(0, 4000)]);
-      saved.push({ table, key, oldKey, record: rowObj_(table, keys, next) });
+      saved.push({ table, key, oldKey, dup, record: rowObj_(table, keys, next) });
     });
     if (logRows.length) {
       const lg = ss.getSheetByName(LOG_TAB) || ensureLog_(ss);
@@ -268,6 +273,44 @@ function checkPerm_(ss, it, user, snap) {
   }
   if (t === "people" && (rec.orgType === "寶新" || (old && old.orgType === "寶新"))) need_(user, "主管", "新增或修改集團同仁");
   if (t === "units" || t === "companies") need_(user, "主管", "新增或修改單位／公司");
+}
+
+/** 找「同一筆」：①相同 cid（新版中控台每筆新增資料都有）；②舊版沒有 cid 時，同一人 15 分鐘內新增、內容完全相同 */
+function findSame_(sh, keys, rec, user, kName) {
+  const last = sh.getLastRow(); if (last < 2) return "";
+  const v = sh.getRange(2, 1, last - 1, keys.length).getDisplayValues();
+  const kc = keys.indexOf(kName), cc = keys.indexOf("cid"), bc = keys.indexOf("lastBy"), ac = keys.indexOf("lastAt");
+  if (rec.cid && cc >= 0) { const r = v.find(x => x[cc] === rec.cid); if (r) return String(r[kc]).trim(); }
+  const since = Utilities.formatDate(new Date(Date.now() - 15 * 60000), "Asia/Taipei", "yyyy-MM-dd HH:mm:ss");
+  const skip = [kName, "cid", "lastAt", "lastBy", "deleted", "deletedAt"];
+  const fields = Object.keys(rec).filter(k => !skip.includes(k) && keys.includes(k));
+  if (!fields.length) return "";
+  const r = v.find(x => x[bc] === user.email && x[ac] >= since && !/^true$/i.test(x[keys.indexOf("deleted")] || "")
+    && fields.every(k => normJson_(k, x[keys.indexOf(k)]) === encode_(k, rec[k])));
+  return r ? String(r[kc]).trim() : "";
+}
+
+/** 一次性清理：把「同一人、內容完全相同、同一天」重複新增的 Issue 標成已刪除，只留編號最小的一筆。
+ *  在 Apps Script 編輯器選 cleanupDuplicateIssues → 執行；執行紀錄會列出處理了幾筆。可重複執行。 */
+function cleanupDuplicateIssues() {
+  const ss = SpreadsheetApp.getActive(), sh = ss.getSheetByName(TABLES.issues.tab);
+  const v = sh.getDataRange().getDisplayValues(), keys = v[0].map(keyOf_);
+  const c = k => keys.indexOf(k);
+  const sig = r => ["project", "title", "desc", "owner", "category", "severity", "kind", "due", "lastBy"].map(k => c(k) >= 0 ? r[c(k)] : "").join("|") + "|" + String(r[c("lastAt")]).slice(0, 10);
+  const seen = {}, now = Utilities.formatDate(new Date(), "Asia/Taipei", "yyyy-MM-dd"), logRows = [];
+  let n = 0;
+  v.slice(1).map((r, i) => ({ r, row: i + 2 })).filter(x => x.r[0] && !/^true$/i.test(x.r[c("deleted")] || ""))
+    .sort((a, b) => a.r[c("id")].localeCompare(b.r[c("id")], "en", { numeric: true }))
+    .forEach(({ r, row }) => {
+      const k = sig(r);
+      if (!seen[k]) { seen[k] = r[c("id")]; return; }
+      sh.getRange(row, c("deleted") + 1).setValue("TRUE");
+      if (c("deletedAt") >= 0) sh.getRange(row, c("deletedAt") + 1).setValue(now);
+      logRows.push([Utilities.formatDate(new Date(), "Asia/Taipei", "yyyy-MM-dd HH:mm:ss"), Session.getEffectiveUser().getEmail(), "（清理重複）", TABLES.issues.tab, r[c("id")], "刪除", `與 ${seen[k]} 重複`]);
+      n++;
+    });
+  if (logRows.length) { const lg = ss.getSheetByName(LOG_TAB) || ensureLog_(ss); lg.getRange(lg.getLastRow() + 1, 1, logRows.length, 7).setNumberFormat("@").setValues(logRows); }
+  Logger.log(`已將 ${n} 筆重複的 Issue 標成已刪除（每組保留編號最小的一筆）`);
 }
 
 function rowObj_(table, keys, row) {

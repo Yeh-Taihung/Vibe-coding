@@ -46,6 +46,7 @@ http.createServer((req, res) => {
   let body = ""; req.on("data", c => body += c); req.on("end", () => {
     res.setHeader("Access-Control-Allow-Origin", "*");
     if (req.url === "/__sheet") { res.end(JSON.stringify(Object.fromEntries(Object.entries(sheets).map(([n, s]) => [n, s.d])))); return; }
+    if (req.url.startsWith("/__run?fn=")) { const fn = req.url.split("=")[1]; const logs = []; const orig = ctx.Logger.log; ctx.Logger.log = m => logs.push(m); ctx[fn](); ctx.Logger.log = orig; res.end(JSON.stringify({ logs })); return; }
     if (req.url === "/__stats") { res.end(JSON.stringify({ fetches })); return; }
     const out = req.method === "POST" ? ctx.doPost({ postData: { contents: body } }) : ctx.doGet();
     res.setHeader("Content-Type", "application/json"); res.end(out.s);
