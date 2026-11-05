@@ -247,6 +247,7 @@ b.od,.od{color:var(--red);font-weight:900}
 .pchips button.on{background:var(--chip-bg);color:var(--chip-fg)}
 details.fs-more{margin:4px 0 10px}
 details.fs-more summary{cursor:pointer;font-size:13px;font-weight:700;color:var(--muted);margin-bottom:8px}
+.tk-bar{margin:4px 0 10px} .tk-bar select{max-width:260px}
 .co-chips{margin-top:8px} .co-chips:empty{display:none}
 .pchips button.btn{background:var(--blue);color:var(--on-blue);font-weight:900}
 .pc-n{display:inline-grid;place-items:center;min-width:20px;height:20px;padding:0 5px;border-radius:999px;background:var(--red);color:#fff;font-size:11.5px;margin-left:4px}
@@ -1103,7 +1104,13 @@ const todayMark = ax => TODAY>=ax.S && TODAY<ax.E ? `<div class="g-today" style=
 // ================= 頁面：專案 =================
 let curProj = "P02";
 const PV = { closed:false, range:"near", q:"", iss:"", co:"", role:"", sec:"", health:"", ord:"desc" };
-const pvOn = () => PV.q||PV.iss||PV.co||PV.role||PV.sec||PV.health;
+const pvOn = () => PV.q||PV.iss||PV.co||PV.role;
+// 任務進度區塊自己的篩選與排序（ord：no＝依編號，plan＝依計畫時間）
+const TK = { sec:"", owner:"", task:"", health:"", ord:"no" };
+const tkOn = () => TK.sec||TK.owner||TK.task||TK.health;
+const ownersOf = t => { const a = String(t.owner||"").split(/[、,，／/;；]+/).map(x=>x.trim()).filter(Boolean); return a.length ? a : ["（未指定）"]; };
+const tStart = t => t.planStart || t.actualStart || "", tEnd = t => t.planEnd || t.actualEnd || "";
+const byPlan = num => (a,b) => (tStart(a)?0:1)-(tStart(b)?0:1) || tStart(a).localeCompare(tStart(b)) || tEnd(a).localeCompare(tEnd(b)) || num.get(a.id)-num.get(b.id);
 const mpF = a => { const pp = personOf(a.person); return (!PV.co || groupOf(a)===PV.co) && (!PV.role || (pp?.role||"未填工種")===PV.role) && has(PV.q, a.person, pp?.enName, pp?.role, pp?.note, a.duty, a.line); };
 const HEALTH = {"完成":["var(--blue)","已完成"], "有風險":["var(--yellow)","進行中（有風險）"], "進行中":["var(--green)","順利進行中"], "未開始":["var(--beige)","未開始"]};
 const taskName = t => [t.process, t.task].filter(Boolean).join(" ") || "（未命名任務）";
@@ -1145,7 +1152,7 @@ function manGantt(p){
   <div class="panel scroll"><div class="mg" style="min-width:${180+ax.n*64}px"><div class="mg-row mg-head"><div class="mg-l">人員</div><div class="mg-ax">${ax.head}</div></div>${rows}</div></div>`;
 }
 
-function planGantt(p, ts, keep = ()=>true){
+function planGantt(p, ts, keep = ()=>true, o = {}){
   const ms = p.milestones || [];
   const ds = [...ts.flatMap(t=>[t.planStart,t.planEnd,t.actualStart,t.actualEnd]), ...ms.map(m=>m.date)].filter(Boolean).map(P);
   ds.push(TODAY);
@@ -1159,13 +1166,15 @@ function planGantt(p, ts, keep = ()=>true){
     <div class="pg-t" style="--n:${ax.n}">${tm}${TODAY>=ax.S&&TODAY<ax.E?`<span class="now-tag" style="left:${ax.pct(TODAY)}%">現時點 ${md(iso(TODAY))}</span>`:""}
     ${ms.map((m,ix)=>`<button class="msd" data-ms="${p.id}|${ix}" style="left:${ax.pct(P(m.date))}%" title="${esc(`${m.name} ${ymd(m.date)}${m.note?`｜${m.note}`:""}`)}"><span class="dia"></span><b>${esc(m.name)}</b><small>${md(m.date)}</small></button>`).join("")}
     ${ms.length?"":`<span class="pg-hint">尚未設定節點，按「＋ 節點」加入 KO、PA、TT、SOP 等里程碑</span>`}</div></div>`;
-  const secs = [...new Set(ts.map(t=>t.section||"未分組"))];
+  let secs = [...new Set(ts.map(t=>t.section||"未分組"))];
   const oneGroup = secs.length===1 && secs[0]==="未分組";
-  let no = 0;
+  const num = o.num || new Map(); if (!o.num) { let n = 0; secs.forEach(sec => ts.filter(t=>(t.section||"未分組")===sec).forEach(t => num.set(t.id, ++n))); }
+  const grp = sec => { const g = ts.filter(t=>(t.section||"未分組")===sec); return o.ord==="plan" ? g.sort(byPlan(num)) : g.sort((a,b)=>num.get(a.id)-num.get(b.id)); };
+  if (o.ord==="plan") { const first = sec => grp(sec).map(tStart).find(Boolean) || "9999"; secs = secs.sort((a,b)=>first(a).localeCompare(first(b))); }
   const body = secs.map(sec=>{
-    const g = ts.filter(t=>(t.section||"未分組")===sec), done = g.filter(t=>taskHealth(t)==="完成").length;
-    if (!g.some(keep)) { no += g.length; return ""; }
-    return (oneGroup ? "" : `<div class="pg-sec"><span>${esc(sec)}</span><span class="badge">${done}/${g.length} 完成</span></div>`) + g.map(t=>{ no++; if (!keep(t)) return "";
+    const g = grp(sec), done = g.filter(t=>taskHealth(t)==="完成").length;
+    if (!g.some(keep)) return "";
+    return (oneGroup ? "" : `<div class="pg-sec"><span>${esc(sec)}</span><span class="badge">${done}/${g.length} 完成</span></div>`) + g.map(t=>{ const no = num.get(t.id); if (!keep(t)) return "";
       const h = taskHealth(t), li = linkedIssues(t), unsched = !t.planStart && !t.actualStart;
       return `<div class="pg-row ${h==="有風險"?"risk":""}"><div class="pg-l"><div class="pg-name"><span class="no">${no}</span>${taskHTML(t)}</div>
         <div class="pg-sub">${esc(t.owner||"負責人未定")}${unsched?' · <span class="chip">未排程</span>':""}${li.map(i=>` <button class="chip crit" data-issue="${i.id}" title="${esc(i.title)}">${i.id}</button>`).join("")}</div>
@@ -1174,7 +1183,7 @@ function planGantt(p, ts, keep = ()=>true){
         <div class="pg-lab"><span>計畫</span><span>實際</span></div>
         <div class="pg-t" style="--n:${ax.n}">${tm}<div class="lane">${bar(t.planStart, t.planEnd, "plan")}</div><div class="lane">${bar(t.actualStart, t.actualEnd, "act", HEALTH[h][0], true)}</div></div></div>`;
     }).join("");
-  }).join("") || (pvOn() ? `<div class="alert-empty" style="padding:14px">這個篩選條件下沒有任務。</div>` : "");
+  }).join("") || (o.filtered ? `<div class="alert-empty" style="padding:14px">這個篩選條件下沒有任務。</div>` : "");
   return `<div class="legend pg-legend">${["進行中","有風險","完成"].map(k=>`<span><i class="lg-line" style="--c:${HEALTH[k][0]}"></i>${HEALTH[k][1]}</span>`).join("")}<span><i class="lg-line plan"></i>計畫</span><span><i class="today-ic"></i>現時點</span></div>
   <div class="panel scroll"><div class="pg" style="min-width:${300+ax.n*72}px"><div class="pg-row pg-head"><div class="pg-l">內容</div><div class="pg-lab"></div><div class="pg-ax">${ax.head}</div></div>${msRow}${body}</div></div>`;
 }
@@ -1187,8 +1196,26 @@ function viewProject(){
   const issSt = i => PV.iss==="" ? isOpen(i) : PV.iss==="all" ? true : PV.iss==="已結案" ? !isOpen(i) : i.status===PV.iss;
   const iss = allIss.filter(i=>issSt(i) && has(PV.q, issueText(i))).sort(byIssNo(PV.ord));
   const ts = DB.tasks.filter(t=>t.project===p.id);
-  const tKeep = t => (!PV.sec || (t.section||"未分組")===PV.sec) && (!PV.health || taskHealth(t)===PV.health) && has(PV.q, t.process, t.task, t.owner, t.note, t.section, linkedIssues(t).map(i=>i.id));
-  const tsN = ts.filter(tKeep).length;
+  // 編號固定依原本順序（階段分組 → 建立順序），排序方式改變時編號不變
+  const tNum = new Map(); { let n = 0; [...new Set(ts.map(t=>t.section||"未分組"))].forEach(sec => ts.filter(t=>(t.section||"未分組")===sec).forEach(t => tNum.set(t.id, ++n))); }
+  const secOpts = [...new Set(ts.map(t=>t.section||"未分組"))];
+  if (TK.sec && !secOpts.includes(TK.sec)) TK.sec = "";
+  const inSec = t => !TK.sec || (t.section||"未分組")===TK.sec;
+  const ownOpts = [...new Set(ts.filter(inSec).flatMap(ownersOf))].sort((a,b)=>a==="（未指定）"?1:b==="（未指定）"?-1:a.localeCompare(b,"zh-Hant"));
+  if (TK.owner && !ownOpts.includes(TK.owner)) TK.owner = "";
+  const inOwn = t => !TK.owner || ownersOf(t).includes(TK.owner);
+  const nameOpts = ts.filter(t=>inSec(t) && inOwn(t)).sort((a,b)=>tNum.get(a.id)-tNum.get(b.id));
+  if (TK.task && !nameOpts.some(t=>t.id===TK.task)) TK.task = "";
+  const tKeep = t => inSec(t) && inOwn(t) && (!TK.task || t.id===TK.task) && (!TK.health || taskHealth(t)===TK.health)
+    && has(PV.q, t.process, t.task, t.owner, t.note, t.section, linkedIssues(t).map(i=>i.id));
+  const tsN = ts.filter(tKeep).length, tFilt = tkOn() || PV.q;
+  const tkBar = ts.length ? `<div class="toolbar pf-bar tk-bar"><span class="pf-l">顯示</span>
+    <div class="seg-t" role="group" aria-label="任務排序"><button type="button" class="${TK.ord!=="plan"?"on":""}" data-ord="TK:no">依編號</button><button type="button" class="${TK.ord==="plan"?"on":""}" data-ord="TK:plan">依計畫時間</button></div>
+    ${secOpts.length>1 || secOpts[0]!=="未分組" ? fsel("TK","sec","階段／分組",[["","全部階段／分組"], ...secOpts.map(x=>[x,x])], TK.sec) : ""}
+    ${fsel("TK","owner","負責人",[["","全部負責人"], ...ownOpts.map(x=>[x,x])], TK.owner)}
+    ${fsel("TK","task","任務名稱",[["","全部任務"], ...nameOpts.map(t=>[t.id,`${tNum.get(t.id)}. ${taskName(t)}`])], TK.task)}
+    ${fsel("TK","health","任務狀態",[["","全部狀態"], ...["未開始","進行中","有風險","完成"].map(x=>[x,x==="完成"?"已完成":x])], TK.health)}
+    ${tkOn()?'<button class="linkbtn" data-fclear="TK">清除篩選</button>':""}</div>` : "";
   const lock = '<i class="locked">待經理補填</i>';
   const pAsg = DB.assignments.filter(a=>a.project===p.id && active(a));
   const nowF = now.filter(mpF);
@@ -1196,9 +1223,7 @@ function viewProject(){
     fsel("PV","iss","Issue 狀態",[["","Issue：未結案"],["Open","Issue：Open"],["處理中","Issue：處理中"],["待確認","Issue：待確認"],["已結案","Issue：已結案"],["all","Issue：全部"]], PV.iss) +
     fsel("PV","co","公司",[["","人力：全部公司"], ...[...new Set(pAsg.map(groupOf))].sort((a,b)=>a==="寶新"?-1:b==="寶新"?1:a.localeCompare(b)).map(c=>[c,`人力：${c}`])], PV.co) +
     fsel("PV","role","工種",[["","人力：全部工種"], ...[...new Set(pAsg.filter(a=>!PV.co||groupOf(a)===PV.co).map(a=>personOf(a.person)?.role||"未填工種"))].sort().map(r=>[r,`人力：${r}`])], PV.role) +
-    (ts.length ? fsel("PV","sec","階段",[["","任務：全部階段"], ...[...new Set(ts.map(t=>t.section||"未分組"))].map(s=>[s,`任務：${s}`])], PV.sec) +
-      fsel("PV","health","任務狀態",[["","任務：全部狀態"], ...["未開始","進行中","有風險","完成"].map(s=>[s,`任務：${s==="完成"?"已完成":s}`])], PV.health) : ""),
-    "pvQ", PV.q, "搜尋本專案的 Issue、人員、任務", "PV", pvOn());
+    "", "pvQ", PV.q, "搜尋本專案的 Issue、人員、任務", "PV", pvOn());
   const g = {}; nowF.forEach(a=>(g[groupOf(a)] ||= []).push(a));
   const supCards = Object.entries(g).sort((a,b)=>(a[0]==="寶新"?-1:b[0]==="寶新"?1:b[1].length-a[1].length)).map(([org,list])=>{
     const roles = countBy(list, a=>personOf(a.person)?.role||"未填工種");
@@ -1245,9 +1270,10 @@ function viewProject(){
       <thead><tr><th>姓名</th><th>所屬</th><th>工種</th><th>職責 / 產線</th><th>到崗</th><th>預計離崗</th><th>備註</th><th></th></tr></thead>
       <tbody>${[...nowF.sort((a,b)=>groupOf(a).localeCompare(groupOf(b))), ...upcoming].map(mpRow).join("")}</tbody></table></div></details>`:""}
   </section>
-  <section>${secH(pvOn()?`${tsN}/${ts.length}`:ts.length, `任務<mark>進度</mark>`, ts.length?["完成","進行中","有風險","未開始"].map(s=>`${HEALTH[s][1].replace("進行中（有風險）","有風險")} ${ts.filter(t=>taskHealth(t)===s).length}`).join(" · "):"", `<button class="btn sm" data-new-task="${p.id}">＋ 新增任務</button>`)}
+  <section>${secH(tFilt?`${tsN}/${ts.length}`:ts.length, `任務<mark>進度</mark>`, ts.length?["完成","進行中","有風險","未開始"].map(s=>`${HEALTH[s][1].replace("進行中（有風險）","有風險")} ${ts.filter(t=>taskHealth(t)===s).length}`).join(" · "):"", `<button class="btn sm" data-new-task="${p.id}">＋ 新增任務</button>`)}
     <p class="note">每項任務上排「計畫」、下排「實際」，可用來追蹤安裝工序，也可以是公司註冊、簽約等步驟。遇到問題時，按該任務的「回報 Issue」建立追蹤；有未結案 Issue 的項目會以黃色標示為有風險，Issue 結案後自動恢復。</p>
-    ${ts.length||(p.milestones||[]).length ? planGantt(p, ts, tKeep) : `<div class="card alert-empty">還沒有任務。按「＋ 新增任務」逐項建立步驟與預計／實際時程，或先用「＋ 節點」設定重要里程碑。</div>${`<div style="margin-top:8px"><button class="linkbtn" data-new-ms="${p.id}">＋ 節點</button></div>`}`}
+    ${tkBar}
+    ${ts.length||(p.milestones||[]).length ? planGantt(p, ts, tKeep, {num:tNum, ord:TK.ord, filtered:tFilt}) : `<div class="card alert-empty">還沒有任務。按「＋ 新增任務」逐項建立步驟與預計／實際時程，或先用「＋ 節點」設定重要里程碑。</div>${`<div style="margin-top:8px"><button class="linkbtn" data-new-ms="${p.id}">＋ 節點</button></div>`}`}
   </section>`;
 }
 
@@ -1910,9 +1936,9 @@ $("today").textContent = `${TODAY.getFullYear()}/${TODAY.getMonth()+1}/${TODAY.g
 window.addEventListener("hashchange", ()=>{ render(); if (location.hash==="#issues") $("issues")?.scrollIntoView(); else window.scrollTo(0,0); });
 
 // 篩選狀態與「清除篩選」的預設值（年度、狀態分頁、分組等不清除）
-const FS = {OV, F, PV, TF, PF};
+const FS = {OV, F, PV, TF, PF, TK};
 const FDEF = { OV:{proj:"", q:""}, F:{project:"", unit:"", country:"", status:"", q:""},
-  PV:{q:"", iss:"", co:"", role:"", sec:"", health:""}, TF:{owner:"", project:"all", kind:"", sev:"", od:"", q:""} };
+  PV:{q:"", iss:"", co:"", role:""}, TK:{sec:"", owner:"", task:"", health:""}, TF:{owner:"", project:"all", kind:"", sev:"", od:"", q:""} };
 document.addEventListener("click", e=>{
   if (e.target.closest(".totop")) return window.scrollTo({top:0, behavior: matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth"});
   const t = e.target.closest("[data-more],[data-close],[data-new],[data-edit],[data-leave],[data-issue],[data-new-issue],[data-promote],[data-person],[data-new-person],[data-new-onsite],[data-dispatch-proj],[data-asg-for],[data-new-unit],[data-unit],[data-fill],[data-psort],[data-porg],[data-pf-clear],[data-tf],[data-quick],[data-close-issue],[data-reopen],[data-goto-tracker],[data-edit-proj],[data-new-proj],[data-new-task],[data-task],[data-raise],[data-new-ms],[data-ms],[data-range],[data-toggle-closed],[data-proj],[data-scroll],[data-fclear],[data-ord]"); if(!t) return;
@@ -1954,7 +1980,7 @@ document.addEventListener("click", e=>{
   if (d.range) { PV.range = d.range; return render(); }
   if (t.hasAttribute("data-toggle-closed")) { PV.closed = !PV.closed; return render(); }
   if (d.scroll) { e.preventDefault(); if (route()!=="overview") location.hash="overview"; setTimeout(()=>$(d.scroll)?.scrollIntoView({behavior:"smooth"}),30); return; }
-  if (d.proj) { if (d.proj!==curProj) Object.assign(PV, FDEF.PV); curProj = d.proj; if (location.hash === "#"+d.proj) render(); else location.hash = d.proj; window.scrollTo(0,0); }
+  if (d.proj) { if (d.proj!==curProj) { Object.assign(PV, FDEF.PV); Object.assign(TK, FDEF.TK); } curProj = d.proj; if (location.hash === "#"+d.proj) render(); else location.hash = d.proj; window.scrollTo(0,0); }
 });
 document.addEventListener("keydown", e=>{ if(e.key==="Escape") { if ($("dlgRoot")) return closeDialog(); closeForm(); } });
 document.addEventListener("change", e=>{
