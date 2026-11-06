@@ -281,8 +281,8 @@ function checkPerm_(ss, it, user, snap) {
   if (t === "people" && (rec.orgType === "寶新" || (old && old.orgType === "寶新"))) need_(user, "主管", "新增或修改集團同仁");
   if (t === "units" || t === "companies") need_(user, "主管", "新增或修改單位／公司");
   if (t === "leaves") {
-    // 全處活動＝主管；其他假勤：編輯以上可替任何人登記，檢視只能登記／修改自己的
-    if (rec.type === ALL_HANDS || (old && old.type === ALL_HANDS)) need_(user, "主管", "登記全處活動");
+    // 活動（處內行事曆）＝編輯以上；其他假勤：編輯以上可替任何人登記，檢視只能登記／修改自己的
+    if (rec.type === ALL_HANDS || (old && old.type === ALL_HANDS)) need_(user, "編輯", "新增或修改活動");
     else if ((RANK[user.role] || 0) < RANK["編輯"]) {
       const me = String(user.name || "").trim();
       if (!me || String(rec.person || "").trim() !== me || (old && String(old.person || "").trim() !== me))

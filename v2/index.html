@@ -583,6 +583,10 @@ button.ptag{font:inherit;cursor:pointer;width:100%}
 .cd.off{background:color-mix(in srgb,var(--red) 7%,transparent)}
 .cd.out{opacity:.45}
 .cd.sel{box-shadow:inset 0 0 0 3px var(--blue)}
+.cd.today,.cd.today.off{background:color-mix(in srgb,var(--lime) 32%,var(--card))}
+.cd.today .cd-h::after{content:"今天";font-size:11px;font-weight:900;color:var(--fg);margin-left:auto}
+.asg-t{display:inline-flex;align-items:center;gap:6px;font-weight:800;font-size:13px;margin-left:8px;cursor:pointer}
+.asg-t input{width:auto;margin:0}
 .cd-h{display:flex;align-items:baseline;gap:6px;min-width:0}
 .cd .dn{font-family:var(--f-head);font-weight:800;font-size:15px}
 .cd.off .dn,.cd .hn{color:var(--red)}
@@ -608,6 +612,7 @@ button.ptag{font:inherit;cursor:pointer;width:100%}
   .at-sum>div{min-width:70px;padding:4px 8px} .at-sum .num{font-size:24px}
   .ah{width:calc(100% + 6px);margin:0 -3px;font-size:10.5px;padding:1px 4px}
   .cal-w div{padding:6px 4px;text-align:center}
+  .cd.today .cd-h::after{display:none}
 }
 </style>
 
@@ -2039,7 +2044,7 @@ const LV_C = {"特休":"var(--green)","事假":"var(--yellow)","病假":"var(--p
   "補休":"var(--mint)","外出":"var(--p2)","出差":"var(--blue)","居家辦公":"var(--sky)"};
 const lvColor = t => LV_C[t] || "var(--beige)";
 const PERIODS = ["全天","上午","下午","指定時間"];
-const lvTime = l => l.period==="指定時間" ? `${l.timeFrom||"?"}–${l.timeTo||"?"}` : (l.period && l.period!=="全天" ? l.period : "");
+const lvTime = l => l.period==="指定時間" ? (l.timeTo ? `${l.timeFrom||"?"}–${l.timeTo}` : `${l.timeFrom||"?"} 起`) : (l.period && l.period!=="全天" ? l.period : "");
 const lvRange = l => (l.end && l.end!==l.start) ? `${md(l.start)}–${md(l.end)}` : md(l.start);
 const lvOn = (l, s) => l.start && l.start <= s && (l.end || l.start) >= s;
 const asgOn = (a, d) => { if (!active(a)) return false; const s = aStart(a), e = aEnd(a); return !!s && s <= d && (!e || e >= d); };
@@ -2050,7 +2055,7 @@ const fullName = p => p.enName ? `<b>${esc((p.enName||"").split(/\s+/)[0])}</b> 
 const myName = () => BX.online ? String(BX.user.name||"").trim() : "";
 const canLeave = person => can("編輯") || (!!myName() && person===myName());
 
-const AT = { day: iso(TODAY), month: iso(new Date(TODAY.getFullYear(), TODAY.getMonth(), 1)), person:"", unit:"", type:"", q:"" };
+const AT = { day: iso(TODAY), month: iso(new Date(TODAY.getFullYear(), TODAY.getMonth(), 1)), person:"", unit:"", type:"", q:"", showAsg:false };
 const atOn = () => AT.person || AT.unit || AT.type || AT.q;
 const atStaff = () => DB.people.filter(p => isStaff(p) && !isPending(p)).sort(byRank);
 const atPeople = () => atStaff().filter(p => (!AT.person || p.name===AT.person)
@@ -2067,7 +2072,8 @@ function statusOf(p, d){
   return off ? {kind:"off"} : {kind:"ok"};
 }
 const typeOk = st => !AT.type || (AT.type==="__loc" ? st.kind==="loc" : AT.type==="__ok" ? st.kind==="ok" : st.l && st.l.type===AT.type);
-const allHandsOn = s => DB.leaves.filter(l => l.type===ALL_HANDS && lvOn(l, s));
+const allHandsOn = s => DB.leaves.filter(l => l.type===ALL_HANDS && lvOn(l, s)).sort((a,b)=>(a.timeFrom||"").localeCompare(b.timeFrom||""));
+const evTitle = l => `${l.period==="指定時間" && l.timeFrom ? `${l.timeFrom} ` : ""}${l.note || "活動"}`;
 
 function viewAttendance(){
   const D = P(AT.day), s = AT.day, M = P(AT.month);
@@ -2110,10 +2116,10 @@ function viewAttendance(){
         <div class="tot"><span class="num">${people.length}</span><small>${atOn()?"篩選後同仁":"集團同仁"}</small></div>
       </div>
     </div>
-    ${ah.map(l=>`<button type="button" class="at-ah" data-lv="${l.id}">🎉 ${esc(l.note||"全處活動")}<span>${lvRange(l)}${l.place?`・${esc(l.place)}`:""}</span></button>`).join("")}
+    ${ah.map(l=>`<button type="button" class="at-ah" data-lv="${l.id}">📅 ${esc(l.note||"活動")}<span>${[lvRange(l), lvTime(l), l.place].filter(Boolean).map(esc).join("・")}</span></button>`).join("")}
     <div class="at-grid">${gs.length ? gs.map(card).join("") : `<div class="alert-empty" style="padding:14px">${atOn()?"這個篩選條件下沒有同仁。":"人員名單裡還沒有集團同仁。"}</div>`}</div>
   </section>
-  <section>${secH(null, `出勤<mark>月曆</mark>`, "派遣依「人員派遣」自動顯示；假勤由同仁登記", `<button class="btn sm" data-new-lv>＋ 登記假勤</button>`)}
+  <section>${secH(null, `出勤<mark>月曆</mark>`, "請假、外出、出差登記與處內活動；派遣人員見上方", `${can("編輯")?'<button class="btn sm ghost" data-new-ev>＋ 新增活動</button>':""}<button class="btn sm" data-new-lv>＋ 登記假勤</button>`)}
     ${fb}
     ${monthCal(M, people)}
     <p class="note src">國定假日依人事行政總處「政府行政機關辦公日曆表」（政府資料開放平台）。${HOL.years.includes(M.getFullYear())?"":`${M.getFullYear()} 年的辦公日曆尚未取得，暫時只標示週末。`}</p>
@@ -2132,7 +2138,7 @@ function monthCal(M, people){
     const d = addD(start, i), s = iso(d), inM = d.getMonth()===m, off = isOff(d), hn = holName(s);
     const ev = [];
     // 派遣：同一地點合併成一列「芝加哥 Mike、Frank」；同一人同一天只算一次
-    if (!AT.type || AT.type==="__loc") {
+    if (AT.showAsg && (!AT.type || AT.type==="__loc")) {
       const byLoc = {}, seen = new Set();
       asg.filter(a => asgOn(a, d)).sort((a,b)=>aStart(a)-aStart(b)).forEach(a => { if (seen.has(a.person)) return; seen.add(a.person); (byLoc[asgPlace(a)] ||= []).push(pp[a.person]); });
       Object.entries(byLoc).sort((a,b)=>b[1].length-a[1].length).forEach(([loc, ps]) => {
@@ -2140,20 +2146,21 @@ function monthCal(M, people){
         ev.push(`<span class="ev loc-ev" style="--c:var(--blue)" title="${esc(`${loc}：${ps.map(p=>p.name).join("、")}`)}"><b>${esc(loc)}</b><b class="evs">${esc([...loc].slice(0,2).join(""))}</b><span class="evn">${esc(shown)}${rest>0?` +${rest}`:""}</span><i class="evc">${ps.length}</i></span>`); });
     }
     lvs.filter(l => lvOn(l, s) && (!off || l.type==="出差") && (!AT.type || AT.type===l.type || (AT.type==="__loc" && l.type==="出差"))).forEach(l => { const p = pp[l.person];
-      ev.push(`<button type="button" class="ev" style="--c:${lvColor(l.type)}" data-lv="${l.id}" title="${esc([p.name, l.type, lvTime(l), l.place, l.note].filter(Boolean).join("・"))}"><b>${esc(shortName(p))}</b><span class="evn">${esc(l.type)}${lvTime(l)?` ${esc(lvTime(l))}`:""}</span></button>`); });
-    const ah = allHandsOn(s).map(l => `<button type="button" class="ah" data-lv="${l.id}" title="${esc(l.note||ALL_HANDS)}">${(l.start===s || d.getDay()===0) ? esc(l.note||ALL_HANDS) : "&nbsp;"}</button>`).join("");
+      ev.push(`<button type="button" class="ev" style="--c:${lvColor(l.type)}" data-lv="${l.id}" title="${esc([p.name, l.type, lvTime(l), l.place, l.note].filter(Boolean).join("・"))}"><b>${esc(shortName(p))}</b><span class="evn">${esc(l.type)}${l.place && (l.type==="出差"||l.type==="外出")?`・${esc(l.place)}`:""}${lvTime(l)?` ${esc(lvTime(l))}`:""}</span></button>`); });
+    const ah = allHandsOn(s).map(l => `<button type="button" class="ah" data-lv="${l.id}" title="${esc([l.note||"活動", lvTime(l), l.place].filter(Boolean).join("・"))}">${(l.start===s || d.getDay()===0) ? esc(evTitle(l)) : "&nbsp;"}</button>`).join("");
     const MAX = 4, more = ev.length - MAX;
     cells.push(`<div class="cd ${inM?"":"out"} ${off?"off":""} ${s===iso(TODAY)?"today":""} ${s===AT.day?"sel":""}" data-at-day="${s}">
       <div class="cd-h"><span class="dn num">${d.getDate()}</span>${hn?`<span class="hn">${esc(hn)}</span>`:""}${isMakeup(d)?'<span class="hn mk">補班</span>':""}</div>
       ${ah}${ev.slice(0, MAX).join("")}${more>0?`<span class="ev more">+${more} 項</span>`:""}</div>`);
   }
   const ys = []; for (let yy = TODAY.getFullYear()-2; yy <= TODAY.getFullYear()+2; yy++) ys.push(yy);
-  const legend = [["派遣地點","var(--blue)"], ...L.leaveType.filter(t=>t!=="出差").map(t=>[t, lvColor(t)])];
+  const legend = [...(AT.showAsg ? [["派遣地點","var(--blue)"]] : []), ...L.leaveType.map(t=>[t, lvColor(t)])];
   return `<div class="cal-bar"><div class="cal-nav"><button type="button" class="navb" data-at-m="-1" aria-label="上個月">‹</button>
       <select id="atY" aria-label="年份">${ys.map(v=>optH(v, `${v} 年`, y)).join("")}</select><select id="atM" aria-label="月份">${[...Array(12)].map((_,i)=>optH(i, `${i+1} 月`, m)).join("")}</select>
       <button type="button" class="navb" data-at-m="1" aria-label="下個月">›</button>
-      ${y===TODAY.getFullYear() && m===TODAY.getMonth() ? "" : '<button type="button" class="btn sm ghost" data-at-m="0">本月</button>'}</div>
-    <div class="legend cal-lg">${legend.map(([t,c])=>`<span><i class="lg-dot" style="--c:${c}"></i>${t}</span>`).join("")}<span><i class="lg-ah"></i>全處活動</span><span class="redt">紅色日期＝放假日</span></div></div>
+      ${y===TODAY.getFullYear() && m===TODAY.getMonth() ? "" : '<button type="button" class="btn sm ghost" data-at-m="0">本月</button>'}
+      <label class="asg-t"><input type="checkbox" id="atAsg" ${AT.showAsg?"checked":""}> 顯示派遣地點</label></div>
+    <div class="legend cal-lg">${legend.map(([t,c])=>`<span><i class="lg-dot" style="--c:${c}"></i>${t}</span>`).join("")}<span><i class="lg-ah"></i>活動</span><span class="redt">紅色日期＝放假日</span></div></div>
   <div class="panel cal"><div class="cal-w">${[..."日一二三四五六"].map((w,i)=>`<div class="${i===0||i===6?"we":""}">${w}</div>`).join("")}</div>
     <div class="cal-g">${cells.join("")}</div></div>`;
 }
@@ -2161,17 +2168,17 @@ function monthCal(M, people){
 function openLeave(id, preset={}){
   const l = id ? DB.leaves.find(x=>x.id===id) : Object.assign({person: can("編輯") ? (AT.person||"") : myName(), type:"特休", start:AT.day, end:AT.day, period:"全天", timeFrom:"", timeTo:"", place:"", note:""}, preset);
   if (!l) return;
-  const edit = !!id, mine = l.type===ALL_HANDS ? can("主管") : canLeave(l.person||myName());
-  if (!mine && edit) { toast(l.type===ALL_HANDS ? "全處活動由主管以上權限維護" : "只能修改自己的假勤；需要修改請通知主管或管理者"); return; }
+  const edit = !!id, mine = l.type===ALL_HANDS ? can("編輯") : canLeave(l.person||myName());
+  if (!mine && edit) { toast(l.type===ALL_HANDS ? "活動由編輯以上權限維護" : "只能修改自己的假勤；需要修改請通知主管或管理者"); return; }
   if (!can("編輯") && !myName()) { toast("你的帳號只有檢視權限，且「使用者」分頁沒有填姓名，無法登記假勤，請通知管理者"); return; }
-  const types = [...L.leaveType, ...(can("主管") ? [ALL_HANDS] : [])];
+  const types = [...(can("編輯") ? [ALL_HANDS] : []), ...L.leaveType];
   const body = `
     ${can("編輯") ? "" : `<span class="tag wrap">檢視權限可以登記與修改自己的假勤（${esc(myName())}）</span>`}
     ${fld("lvType","假別",sel("lvType", types, l.type))}
     <div class="f" id="lvWho"><label for="lvPerson">同仁</label>${can("編輯")
       ? `<select id="lvPerson"><option value="">— 選擇同仁 —</option>${staffOptions(l.person)}</select>`
       : `<select id="lvPerson"><option>${esc(myName())}</option></select>`}</div>
-    <div class="f" id="lvTitleF" hidden>${`<label for="lvTitle">活動名稱</label>${inp("lvTitle", l.type===ALL_HANDS ? l.note : "", 'placeholder="例：員工旅遊、尾牙、教育訓練"')}`}</div>
+    <div class="f" id="lvTitleF" hidden>${`<label for="lvTitle">活動名稱</label>${inp("lvTitle", l.type===ALL_HANDS ? l.note : "", 'placeholder="例：處內聚餐、員工旅遊、尾牙、教育訓練"')}`}</div>
     <div class="f2">${fld("lvStart","開始日",inp("lvStart",l.start,'type="date"'))}${fld("lvEnd","結束日",inp("lvEnd",l.end||l.start,'type="date"'))}</div>
     <div class="f" id="lvPeriodF"><label for="lvPeriod">時段</label>${sel("lvPeriod", PERIODS, l.period||"全天")}</div>
     <div class="f2" id="lvTimeF">${fld("lvFrom","開始時間",inp("lvFrom",l.timeFrom,'type="time" step="900"'))}${fld("lvTo","結束時間",inp("lvTo",l.timeTo,'type="time" step="900"'))}</div>
@@ -2180,8 +2187,8 @@ function openLeave(id, preset={}){
     <div class="f" id="lvNoteF">${`<label for="lvNote">備註（選填）</label>${inp("lvNote", l.type===ALL_HANDS ? "" : l.note, 'placeholder="例：代理人 Kenny"')}`}</div>`;
   function check(){
     const t = val("lvType"), ah = t===ALL_HANDS, per = val("lvPeriod");
-    $("lvWho").hidden = ah; $("lvTitleF").hidden = !ah; $("lvNoteF").hidden = ah; $("lvPeriodF").hidden = ah;
-    $("lvTimeF").hidden = ah || per!=="指定時間";
+    $("lvWho").hidden = ah; $("lvTitleF").hidden = !ah; $("lvNoteF").hidden = ah;
+    $("lvTimeF").hidden = per!=="指定時間";
     $("lvPlaceF").hidden = !(ah || ["外出","出差","公假"].includes(t)); $("lvPlaceL").textContent = ah ? "地點（選填）" : t==="外出" ? "外出地點" : "地點";
     if (val("lvStart") && (!val("lvEnd") || val("lvEnd") < val("lvStart"))) $("lvEnd").value = val("lvStart");   // 開始日移到結束日之後，結束日跟著移
     const s = P(val("lvStart")), e = P(val("lvEnd")) || s, out = [];
@@ -2199,20 +2206,21 @@ function openLeave(id, preset={}){
     $("checks").innerHTML = out.map(([c,t])=>`<div class="check ${c}">${esc(t)}</div>`).join("");
     return !out.some(o=>o[0]==="crit");
   }
-  drawer(edit ? "編輯假勤" : "登記假勤", body, edit ? "儲存" : "登記", ()=>{
+  const isEv = l.type===ALL_HANDS;
+  drawer(edit ? (isEv ? "編輯活動" : "編輯假勤") : (isEv ? "新增活動" : "登記假勤"), body, edit ? "儲存" : (isEv ? "新增" : "登記"), ()=>{
     if (!check()) return;
     const t = val("lvType"), ah = t===ALL_HANDS, who = ah ? "" : val("lvPerson");
     if (!ah && !who) return toast("請選擇同仁");
     if (ah && !val("lvTitle")) return toast("請填活動名稱");
     if (!val("lvStart")) return toast("請填開始日");
     if (!ah && !canLeave(who)) return toast("只能登記自己的假勤");
-    const per = ah ? "全天" : val("lvPeriod");
-    if (per==="指定時間" && (!val("lvFrom") || !val("lvTo"))) return toast("請填開始與結束時間");
+    const per = val("lvPeriod");
+    if (per==="指定時間" && (!val("lvFrom") || (!ah && !val("lvTo")))) return toast(ah ? "請填開始時間" : "請填開始與結束時間");
     const rec = Object.assign({}, l, { id: id || "V"+Date.now(), person: who, type: t, start: val("lvStart"), end: val("lvEnd") || val("lvStart"), period: per,
       timeFrom: per==="指定時間" ? val("lvFrom") : "", timeTo: per==="指定時間" ? val("lvTo") : "",
       place: ah || ["外出","出差","公假"].includes(t) ? val("lvPlace") : "", note: ah ? val("lvTitle") : val("lvNote") });
     local.leaves[rec.id] = rec; logChange(edit ? "編輯假勤" : "登記假勤", rec.id, who || rec.note); persist(); closeForm();
-    toast(`${edit?"已更新":"已登記"}：${ah ? rec.note : `${who} ${t}`}・${lvRange(rec)}${lvTime(rec)?` ${lvTime(rec)}`:""}`); render();
+    toast(`${edit?"已更新":ah?"已新增":"已登記"}：${ah ? rec.note : `${who} ${t}`}・${lvRange(rec)}${lvTime(rec)?` ${lvTime(rec)}`:""}`); render();
   }, check);
   if (edit) { const foot = document.querySelector(".drawer footer");
     foot.insertAdjacentHTML("afterbegin", `<button type="button" class="btn ghost danger" id="delLv">刪除這筆</button><span style="flex:1"></span>`);
@@ -2222,18 +2230,20 @@ function openLeave(id, preset={}){
       toast(`已刪除：${l.person || l.note} ${l.type}・${lvRange(l)}`); render(); }); }
 }
 document.addEventListener("click", e=>{
-  const t = e.target.closest("[data-at-d],[data-at-m],[data-new-lv],[data-lv],[data-at-person],[data-at-day]"); if (!t || e.defaultPrevented) return;
+  const t = e.target.closest("[data-at-d],[data-at-m],[data-new-lv],[data-new-ev],[data-lv],[data-at-person],[data-at-day]"); if (!t || e.defaultPrevented) return;
   const d = t.dataset;
   if (d.atD !== undefined) { AT.day = d.atD==="0" ? iso(TODAY) : iso(addD(P(AT.day), +d.atD)); const D = P(AT.day); AT.month = iso(new Date(D.getFullYear(), D.getMonth(), 1)); return render(); }
   if (d.atM !== undefined) { const M = P(AT.month); AT.month = d.atM==="0" ? iso(new Date(TODAY.getFullYear(), TODAY.getMonth(), 1)) : iso(new Date(M.getFullYear(), M.getMonth() + +d.atM, 1)); if (d.atM==="0") AT.day = iso(TODAY); return render(); }
   if (t.hasAttribute("data-new-lv")) return openLeave(null);
+  if (t.hasAttribute("data-new-ev")) return openLeave(null, {type:ALL_HANDS, person:"", period:"指定時間", timeFrom:"18:00", timeTo:""});
   if (d.atPerson !== undefined) { AT.person = AT.person===d.atPerson ? "" : d.atPerson; return render(); }
-  if (d.lv) { const l = DB.leaves.find(x=>x.id===d.lv); if (l && (l.type===ALL_HANDS ? can("主管") : canLeave(l.person))) return openLeave(d.lv);
+  if (d.lv) { const l = DB.leaves.find(x=>x.id===d.lv); if (l && (l.type===ALL_HANDS ? can("編輯") : canLeave(l.person))) return openLeave(d.lv);
     if (!t.closest("[data-at-day]")) return toast(l ? `${l.person || l.note}・${l.type}・${lvRange(l)}${lvTime(l)?` ${lvTime(l)}`:""}` : "找不到這筆假勤"); }
   const day = t.closest("[data-at-day]"); if (day) { AT.day = day.dataset.atDay; render(); window.scrollTo({top:0, behavior:"smooth"}); }
 });
 document.addEventListener("change", e=>{
   if (e.target.id==="atDate" && e.target.value) { AT.day = e.target.value; const D = P(AT.day); AT.month = iso(new Date(D.getFullYear(), D.getMonth(), 1)); render(); }
+  if (e.target.id==="atAsg") { AT.showAsg = e.target.checked; return render(); }
   if (e.target.id==="atY" || e.target.id==="atM") { AT.month = iso(new Date(+$("atY").value, +$("atM").value, 1)); render(); }
 });
 
