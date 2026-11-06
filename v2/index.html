@@ -570,35 +570,41 @@ button.ptag{font:inherit;cursor:pointer;width:100%}
 .cal-bar{display:flex;justify-content:space-between;align-items:center;gap:10px 20px;flex-wrap:wrap;margin:12px 0 10px}
 .cal-nav{display:flex;align-items:center;gap:8px}
 .cal-nav select{width:auto;font-weight:800}
-.cal-lg .lg-dot{width:10px;height:10px;border-radius:50%;background:var(--c);border:1.5px solid var(--ink);display:inline-block}
+.cal-lg .lg-dot{width:16px;height:11px;border-radius:3px;background:color-mix(in srgb,var(--c) 16%,var(--card));border-left:3px solid var(--c);display:inline-block}
 .cal-lg .lg-ah{width:22px;height:10px;border-radius:3px;background:color-mix(in srgb,var(--yellow) 55%,var(--card));border:1.5px solid var(--ink);display:inline-block}
 .cal-lg .redt{color:var(--red);font-weight:800}
 .cal{overflow:hidden;padding:0}
 .cal-w,.cal-g{display:grid;grid-template-columns:repeat(7,minmax(0,1fr))}
 .cal-w div{padding:8px 10px;font-weight:900;font-size:13px;background:var(--soft);border-bottom:var(--b) solid var(--ink)}
 .cal-w .we{color:var(--red)}
-.cd{min-height:118px;padding:6px 6px 8px;border-right:1.5px solid color-mix(in srgb,var(--ink) 18%,transparent);border-bottom:1.5px solid color-mix(in srgb,var(--ink) 18%,transparent);display:flex;flex-direction:column;gap:3px;cursor:pointer;min-width:0}
+.cd{min-height:96px;padding:5px 6px 6px;border-right:1.5px solid color-mix(in srgb,var(--ink) 18%,transparent);border-bottom:1.5px solid color-mix(in srgb,var(--ink) 18%,transparent);display:flex;flex-direction:column;gap:2px;cursor:pointer;min-width:0}
 .cd:nth-child(7n){border-right:0}
 .cd:hover{background:color-mix(in srgb,var(--blue) 6%,transparent)}
 .cd.off{background:color-mix(in srgb,var(--red) 7%,transparent)}
 .cd.out{opacity:.45}
 .cd.sel{box-shadow:inset 0 0 0 3px var(--blue)}
 .cd-h{display:flex;align-items:baseline;gap:6px;min-width:0}
-.cd .dn{font-family:var(--f-head);font-weight:800;font-size:17px}
+.cd .dn{font-family:var(--f-head);font-weight:800;font-size:15px}
 .cd.off .dn,.cd .hn{color:var(--red)}
 .cd .hn{font-size:11.5px;font-weight:800;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .cd .hn.mk{color:var(--muted)}
-.cd.today .dn{background:var(--chip-bg);color:var(--chip-fg);border-radius:50%;width:28px;height:28px;display:inline-grid;place-items:center;font-size:15px}
-.ev{display:flex;align-items:center;gap:5px;font-size:12px;line-height:1.35;color:var(--fg);background:none;border:0;padding:0;text-align:left;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0;cursor:pointer;font-family:inherit}
-.ev i{flex:none;width:8px;height:8px;border-radius:50%;background:var(--c);border:1.2px solid var(--ink)}
-.ev small{color:var(--muted);font-size:11px;margin-left:2px}
-.ev.more{color:var(--muted);font-weight:700;padding-left:13px}
+.cd.today .dn{background:var(--chip-bg);color:var(--chip-fg);border-radius:50%;width:24px;height:24px;display:inline-grid;place-items:center;font-size:13px}
+.ev{display:flex;align-items:baseline;gap:5px;font-size:12px;line-height:1.3;color:var(--fg);padding:2px 6px;border:0;border-left:3px solid var(--c);border-radius:4px;
+  background:color-mix(in srgb,var(--c) 16%,var(--card));text-align:left;white-space:nowrap;overflow:hidden;min-width:0;cursor:pointer;font-family:inherit}
+.ev b{font-weight:800;flex:none}
+.ev .evn{color:var(--muted);overflow:hidden;text-overflow:ellipsis;min-width:0}
+.ev.loc-ev .evn{color:var(--fg)}
+.ev .evc,.ev .evs{display:none;font-style:normal;font-weight:800}
+.ev .evc{margin-left:auto}
+.ev.more{background:none;border:0;color:var(--muted);font-weight:700;padding:0 6px;cursor:pointer}
 .ah{display:block;width:calc(100% + 12px);margin:0 -6px;padding:1px 8px;font-size:12px;font-weight:900;text-align:left;border:0;background:color-mix(in srgb,var(--yellow) 55%,var(--card));color:var(--fg);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;cursor:pointer;font-family:inherit}
 .note.src{margin-top:8px}
 @media (max-width:760px){
   .at-big{font-size:40px}
   .cd{min-height:78px;padding:4px 3px} .cd .hn{display:none}
-  .ev{font-size:10.5px;gap:3px} .ev i{width:6px;height:6px} .ev small,.ev .loc{display:none}
+  .ev{font-size:10.5px;padding:1px 3px;border-left-width:2px;gap:2px} .ev .evn{display:none} .ev b{flex:1 1 auto;overflow:hidden;text-overflow:clip}
+  .ev.loc-ev b{display:none} .ev.loc-ev .evs,.ev .evc{display:inline} .ev.loc-ev .evs{flex:none}
+  .ev.more{font-size:10px;padding:0 2px}
   .at-sum>div{min-width:70px;padding:4px 8px} .at-sum .num{font-size:24px}
   .ah{width:calc(100% + 6px);margin:0 -3px;font-size:10.5px;padding:1px 4px}
   .cal-w div{padding:6px 4px;text-align:center}
@@ -2116,18 +2122,21 @@ function monthCal(M, people){
   for (let i = 0; i < weeks*7; i++) {
     const d = addD(start, i), s = iso(d), inM = d.getMonth()===m, off = isOff(d), hn = holName(s);
     const ev = [];
-    const byLoc = {};
-    asg.filter(a => asgOn(a, d)).forEach(a => { if (AT.type && AT.type!=="__loc") return; (byLoc[asgPlace(a)] ||= []).push(pp[a.person]); });
-    Object.entries(byLoc).forEach(([loc, ps]) => {
-      if (ps.length <= 2) ps.forEach(p => ev.push(`<span class="ev" style="--c:var(--blue)" title="${esc(`${p.name}・${loc}`)}"><i></i>${esc(shortName(p))}<span class="loc"> ${esc(loc)}</span></span>`));
-      else ev.push(`<span class="ev" style="--c:var(--blue)" title="${esc(ps.map(p=>p.name).join("、"))}"><i></i>${esc(loc)} ${ps.length} 人</span>`); });
+    // 派遣：同一地點合併成一列「芝加哥 Mike、Frank」；同一人同一天只算一次
+    if (!AT.type || AT.type==="__loc") {
+      const byLoc = {}, seen = new Set();
+      asg.filter(a => asgOn(a, d)).sort((a,b)=>aStart(a)-aStart(b)).forEach(a => { if (seen.has(a.person)) return; seen.add(a.person); (byLoc[asgPlace(a)] ||= []).push(pp[a.person]); });
+      Object.entries(byLoc).sort((a,b)=>b[1].length-a[1].length).forEach(([loc, ps]) => {
+        const shown = ps.slice(0, 3).map(shortName).join("、"), rest = ps.length - 3;
+        ev.push(`<span class="ev loc-ev" style="--c:var(--blue)" title="${esc(`${loc}：${ps.map(p=>p.name).join("、")}`)}"><b>${esc(loc)}</b><b class="evs">${esc([...loc].slice(0,2).join(""))}</b><span class="evn">${esc(shown)}${rest>0?` +${rest}`:""}</span><i class="evc">${ps.length}</i></span>`); });
+    }
     lvs.filter(l => lvOn(l, s) && (!off || l.type==="出差") && (!AT.type || AT.type===l.type || (AT.type==="__loc" && l.type==="出差"))).forEach(l => { const p = pp[l.person];
-      ev.push(`<button type="button" class="ev" style="--c:${lvColor(l.type)}" data-lv="${l.id}" title="${esc([p.name, l.type, lvTime(l), l.place, l.note].filter(Boolean).join("・"))}"><i></i>${esc(shortName(p))}<span class="loc"> ${esc(l.type)}</span>${lvTime(l)?`<small>${esc(lvTime(l))}</small>`:""}</button>`); });
+      ev.push(`<button type="button" class="ev" style="--c:${lvColor(l.type)}" data-lv="${l.id}" title="${esc([p.name, l.type, lvTime(l), l.place, l.note].filter(Boolean).join("・"))}"><b>${esc(shortName(p))}</b><span class="evn">${esc(l.type)}${lvTime(l)?` ${esc(lvTime(l))}`:""}</span></button>`); });
     const ah = allHandsOn(s).map(l => `<button type="button" class="ah" data-lv="${l.id}" title="${esc(l.note||ALL_HANDS)}">${(l.start===s || d.getDay()===0) ? esc(l.note||ALL_HANDS) : "&nbsp;"}</button>`).join("");
     const MAX = 4, more = ev.length - MAX;
     cells.push(`<div class="cd ${inM?"":"out"} ${off?"off":""} ${s===iso(TODAY)?"today":""} ${s===AT.day?"sel":""}" data-at-day="${s}">
       <div class="cd-h"><span class="dn num">${d.getDate()}</span>${hn?`<span class="hn">${esc(hn)}</span>`:""}${isMakeup(d)?'<span class="hn mk">補班</span>':""}</div>
-      ${ah}${ev.slice(0, MAX).join("")}${more>0?`<span class="ev more">還有 ${more} 項</span>`:""}</div>`);
+      ${ah}${ev.slice(0, MAX).join("")}${more>0?`<span class="ev more">+${more} 項</span>`:""}</div>`);
   }
   const ys = []; for (let yy = TODAY.getFullYear()-2; yy <= TODAY.getFullYear()+2; yy++) ys.push(yy);
   const legend = [["派遣地點","var(--blue)"], ...L.leaveType.filter(t=>t!=="出差").map(t=>[t, lvColor(t)])];
