@@ -692,7 +692,7 @@ button.ptag{font:inherit;cursor:pointer;width:100%}
   };
 })();
 </script>
-<script src="data/holidays.js" onerror="void 0"></script>
+<script src="holidays.js" onerror="void 0"></script>
 <script src="data/db.js" onerror="void 0"></script>
 <script>
 window.bxStart = () => {
@@ -2002,7 +2002,7 @@ let tt; function toast(t){ let el=document.querySelector(".toast"); if(!el){el=d
 
 // ================= 路由 =================
 // ================= 出勤（假勤登記＋派遣狀態） =================
-// 國定假日：內嵌 data/holidays.js（人事行政總處辦公日曆）；沒有內嵌的年份再從公開資料補抓
+// 國定假日：內嵌 holidays.js（人事行政總處辦公日曆）；沒有內嵌的年份再從公開資料補抓
 const HOL = window.BX_HOLIDAYS || {years:[], off:{}, work:[]};
 const holTried = new Set(HOL.years);
 function ensureHolidays(y){
