@@ -551,8 +551,13 @@ button.ptag{font:inherit;cursor:pointer;width:100%}
 .at-sum .num{font-family:var(--f-head);font-size:30px;font-weight:800;line-height:1.1}
 .at-sum small{font-weight:800;color:var(--muted);font-size:12px}
 .at-sum .tot{background:var(--chip-bg);color:var(--chip-fg)} .at-sum .tot small{color:inherit;opacity:.8}
-.at-ah{display:flex;gap:10px;align-items:baseline;width:100%;margin-top:12px;padding:8px 14px;border:2px solid var(--ink);border-radius:10px;background:color-mix(in srgb,var(--yellow) 45%,var(--card));color:var(--fg);font-weight:900;text-align:left;cursor:pointer}
-.at-ah span{font-weight:600;font-size:12.5px;color:var(--muted)}
+#lvEvF:not([hidden]){display:flex;flex-direction:column;gap:14px}
+.at-ah{margin-top:12px;padding:8px 14px;border:2px solid var(--ink);border-radius:10px;background:color-mix(in srgb,var(--yellow) 40%,var(--card))}
+.at-ah-t{display:flex;gap:10px;align-items:baseline;background:none;border:0;padding:0;color:var(--fg);font-weight:900;font-size:15px;text-align:left;cursor:pointer;font-family:inherit}
+.at-ah-t span{font-weight:700;font-size:13px;color:var(--muted)}
+.at-ah-d{display:flex;flex-wrap:wrap;gap:4px 16px;margin-top:6px;font-size:13px}
+.at-ah-d a{color:var(--fg);text-decoration:underline;text-underline-offset:2px}
+.at-ah-d p{flex-basis:100%;margin:2px 0 0;color:var(--muted)}
 .at-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(270px,1fr));gap:14px;margin-top:16px}
 .at-g{padding:12px 14px;border-top:8px solid var(--c)}
 .at-g.at-ok,.at-g.at-off{grid-column:1/-1}
@@ -2057,7 +2062,7 @@ const fullName = p => p.enName ? `<b>${esc((p.enName||"").split(/\s+/)[0])}</b> 
 const myName = () => BX.online ? String(BX.user.name||"").trim() : "";
 const canLeave = person => can("編輯") || (!!myName() && person===myName());
 
-const AT = { day: iso(TODAY), month: iso(new Date(TODAY.getFullYear(), TODAY.getMonth(), 1)), person:"", unit:"", type:"", q:"", showAsg:false };
+const AT = { day: iso(TODAY), month: iso(new Date(TODAY.getFullYear(), TODAY.getMonth(), 1)), person:"", unit:"", type:"", q:"", showAsg:true };
 const atOn = () => AT.person || AT.unit || AT.type || AT.q;
 const atStaff = () => DB.people.filter(p => isStaff(p) && !isPending(p)).sort(byRank);
 const atPeople = () => atStaff().filter(p => (!AT.person || p.name===AT.person)
@@ -2075,6 +2080,14 @@ function statusOf(p, d){
 }
 const typeOk = st => !AT.type || (AT.type==="__loc" ? st.kind==="loc" : AT.type==="__ok" ? st.kind==="ok" : st.l && st.l.type===AT.type);
 const allHandsOn = s => DB.leaves.filter(l => l.type===ALL_HANDS && lvOn(l, s)).sort((a,b)=>(a.timeFrom||"").localeCompare(b.timeFrom||""));
+const safeUrl = u => { u = String(u||"").trim(); if (!u) return ""; if (!/^https?:\/\//i.test(u)) u = "https://" + u; return /^https?:\/\/[^\s"'<>]+$/i.test(u) ? u : ""; };
+const evDetail = l => [
+  l.place && `<span>📍 ${esc(l.place)}</span>`,
+  l.address && `<a href="https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(l.address)}" target="_blank" rel="noopener">🗺 ${esc(l.address)}</a>`,
+  l.phone && `<a href="tel:${esc(String(l.phone).replace(/[^\d+#,]/g,""))}">☎ ${esc(l.phone)}</a>`,
+  l.contact && `<span>👤 聯絡人：${esc(l.contact)}</span>`,
+  safeUrl(l.url) && `<a href="${esc(safeUrl(l.url))}" target="_blank" rel="noopener">🔗 ${esc(String(l.url).replace(/^https?:\/\//,"").slice(0,48))}</a>`,
+].filter(Boolean).join("") + (l.desc ? `<p>${esc(l.desc).replace(/\n/g,"<br>")}</p>` : "");
 const evTitle = l => `${l.period==="指定時間" && l.timeFrom ? `${l.timeFrom} ` : ""}${l.note || "活動"}`;
 
 function viewAttendance(){
@@ -2118,7 +2131,7 @@ function viewAttendance(){
         <div class="tot"><span class="num">${people.length}</span><small>${atOn()?"篩選後同仁":"集團同仁"}</small></div>
       </div>
     </div>
-    ${ah.map(l=>`<button type="button" class="at-ah" data-lv="${l.id}">📅 ${esc(l.note||"活動")}<span>${[lvRange(l), lvTime(l), l.place].filter(Boolean).map(esc).join("・")}</span></button>`).join("")}
+    ${ah.map(l=>{ const d = evDetail(l); return `<div class="at-ah"><button type="button" class="at-ah-t" data-lv="${l.id}" title="${can("編輯")?"按這裡修改活動":""}">📅 ${esc(l.note||"活動")}<span>${[lvRange(l), lvTime(l)].filter(Boolean).map(esc).join("・")}</span></button>${d?`<div class="at-ah-d">${d}</div>`:""}</div>`; }).join("")}
     <div class="at-grid">${gs.length ? gs.map(card).join("") : `<div class="alert-empty" style="padding:14px">${atOn()?"這個篩選條件下沒有同仁。":"人員名單裡還沒有集團同仁。"}</div>`}</div>
   </section>
   <section>${secH(null, `出勤<mark>月曆</mark>`, "請假、外出、出差登記與處內活動；派遣人員見上方", `${can("編輯")?'<button class="btn sm ghost" data-new-ev>＋ 新增活動</button>':""}<button class="btn sm" data-new-lv>＋ 登記假勤</button>`)}
@@ -2149,7 +2162,7 @@ function monthCal(M, people){
     }
     lvs.filter(l => lvOn(l, s) && (!off || l.type==="出差") && (!AT.type || AT.type===l.type || (AT.type==="__loc" && l.type==="出差"))).forEach(l => { const p = pp[l.person];
       ev.push(`<button type="button" class="ev" style="--c:${lvColor(l.type)}" data-lv="${l.id}" title="${esc([p.name, l.type, lvTime(l), l.place, l.note].filter(Boolean).join("・"))}"><b>${esc(shortName(p))}</b><span class="evn">${esc(l.type)}${l.place && (l.type==="出差"||l.type==="外出")?`・${esc(l.place)}`:""}${lvTime(l)?` ${esc(lvTime(l))}`:""}</span></button>`); });
-    const ah = allHandsOn(s).map(l => `<button type="button" class="ah" data-lv="${l.id}" title="${esc([l.note||"活動", lvTime(l), l.place].filter(Boolean).join("・"))}">${(l.start===s || d.getDay()===0) ? esc(evTitle(l)) : "&nbsp;"}</button>`).join("");
+    const ah = allHandsOn(s).map(l => `<button type="button" class="ah" data-lv="${l.id}" title="${esc([l.note||"活動", lvTime(l), l.place, l.address].filter(Boolean).join("・"))}">${(l.start===s || d.getDay()===0) ? esc(evTitle(l)) : "&nbsp;"}</button>`).join("");
     const MAX = 4, more = ev.length - MAX;
     cells.push(`<div class="cd ${inM?"":"out"} ${off?"off":""} ${s===iso(TODAY)?"today":""} ${s===AT.day?"sel":""}" data-at-day="${s}">
       <div class="cd-h"><span class="dn num">${d.getDate()}</span>${hn?`<span class="hn">${esc(hn)}</span>`:""}${isMakeup(d)?'<span class="hn mk">補班</span>':""}</div>
@@ -2176,22 +2189,29 @@ function openLeave(id, preset={}){
   const types = [...(can("編輯") ? [ALL_HANDS] : []), ...L.leaveType];
   const body = `
     ${can("編輯") ? "" : `<span class="tag wrap">檢視權限可以登記與修改自己的假勤（${esc(myName())}）</span>`}
-    ${fld("lvType","假別",sel("lvType", types, l.type))}
+    <div class="f"><label for="lvType" id="lvTypeL">假別</label>${sel("lvType", types, l.type)}</div>
     <div class="f" id="lvWho"><label for="lvPerson">同仁</label>${can("編輯")
       ? `<select id="lvPerson"><option value="">— 選擇同仁 —</option>${staffOptions(l.person)}</select>`
       : `<select id="lvPerson"><option>${esc(myName())}</option></select>`}</div>
-    <div class="f" id="lvTitleF" hidden>${`<label for="lvTitle">活動名稱</label>${inp("lvTitle", l.type===ALL_HANDS ? l.note : "", 'placeholder="例：處內聚餐、員工旅遊、尾牙、教育訓練"')}`}</div>
+    <div class="f" id="lvTitleF" hidden>${`<label for="lvTitle">活動主旨／名稱</label>${inp("lvTitle", l.type===ALL_HANDS ? l.note : "", 'placeholder="例：處內聚餐、員工旅遊、尾牙、教育訓練"')}`}</div>
     <div class="f2">${fld("lvStart","開始日",inp("lvStart",l.start,'type="date"'))}${fld("lvEnd","結束日",inp("lvEnd",l.end||l.start,'type="date"'))}</div>
     <div class="f" id="lvPeriodF"><label for="lvPeriod">時段</label>${sel("lvPeriod", PERIODS, l.period||"全天")}</div>
     <div class="f2" id="lvTimeF">${fld("lvFrom","開始時間",inp("lvFrom",l.timeFrom,'type="time" step="900"'))}${fld("lvTo","結束時間",inp("lvTo",l.timeTo,'type="time" step="900"'))}</div>
     <div id="lvDays" class="dayinfo" aria-live="polite"></div>
     <div class="f" id="lvPlaceF"><label for="lvPlace" id="lvPlaceL">地點</label>${inp("lvPlace", l.place, 'placeholder="例：平鎮工廠、客戶端、新竹"')}</div>
+    <div id="lvEvF" hidden>
+      ${fld("lvAddr","活動地址（選填）",inp("lvAddr", l.address, 'placeholder="例：台北市中山區…（會連到 Google 地圖）"'))}
+      <div class="f2">${fld("lvPhone","店家電話（選填）",inp("lvPhone", l.phone, 'type="tel" placeholder="例：02-2345-6789"'))}${fld("lvContact","聯絡人（選填）",inp("lvContact", l.contact, 'placeholder="例：Kenny"'))}</div>
+      ${fld("lvUrl","網址（選填）",inp("lvUrl", l.url, 'type="url" placeholder="例：訂位頁、菜單、報名表連結"'))}
+      ${fld("lvDesc","說明（選填）",`<textarea id="lvDesc" placeholder="例：每人預算、是否攜伴、報名截止日">${esc(l.desc||"")}</textarea>`)}
+    </div>
     <div class="f" id="lvNoteF">${`<label for="lvNote">備註（選填）</label>${inp("lvNote", l.type===ALL_HANDS ? "" : l.note, 'placeholder="例：代理人 Kenny"')}`}</div>`;
   function check(){
     const t = val("lvType"), ah = t===ALL_HANDS, per = val("lvPeriod");
     $("lvWho").hidden = ah; $("lvTitleF").hidden = !ah; $("lvNoteF").hidden = ah;
     $("lvTimeF").hidden = per!=="指定時間";
-    $("lvPlaceF").hidden = !(ah || ["外出","出差","公假"].includes(t)); $("lvPlaceL").textContent = ah ? "地點（選填）" : t==="外出" ? "外出地點" : "地點";
+    $("lvPlaceF").hidden = !(ah || ["外出","出差","公假"].includes(t)); $("lvEvF").hidden = !ah; $("lvTypeL").textContent = ah ? "類型" : "假別";
+    $("lvPlaceL").textContent = ah ? "店家名稱／活動地點（選填）" : t==="外出" ? "外出地點" : "地點";
     if (val("lvStart") && (!val("lvEnd") || val("lvEnd") < val("lvStart"))) $("lvEnd").value = val("lvStart");   // 開始日移到結束日之後，結束日跟著移
     const s = P(val("lvStart")), e = P(val("lvEnd")) || s, out = [];
     if (s && e && e < s) out.push(["crit","結束日早於開始日"]);
@@ -2220,7 +2240,8 @@ function openLeave(id, preset={}){
     if (per==="指定時間" && (!val("lvFrom") || (!ah && !val("lvTo")))) return toast(ah ? "請填開始時間" : "請填開始與結束時間");
     const rec = Object.assign({}, l, { id: id || "V"+Date.now(), person: who, type: t, start: val("lvStart"), end: val("lvEnd") || val("lvStart"), period: per,
       timeFrom: per==="指定時間" ? val("lvFrom") : "", timeTo: per==="指定時間" ? val("lvTo") : "",
-      place: ah || ["外出","出差","公假"].includes(t) ? val("lvPlace") : "", note: ah ? val("lvTitle") : val("lvNote") });
+      place: ah || ["外出","出差","公假"].includes(t) ? val("lvPlace") : "", note: ah ? val("lvTitle") : val("lvNote"),
+      address: ah ? val("lvAddr") : "", phone: ah ? val("lvPhone") : "", contact: ah ? val("lvContact") : "", url: ah ? val("lvUrl") : "", desc: ah ? val("lvDesc") : "" });
     local.leaves[rec.id] = rec; logChange(edit ? "編輯假勤" : "登記假勤", rec.id, who || rec.note); persist(); closeForm();
     toast(`${edit?"已更新":ah?"已新增":"已登記"}：${ah ? rec.note : `${who} ${t}`}・${lvRange(rec)}${lvTime(rec)?` ${lvTime(rec)}`:""}`); render();
   }, check);
@@ -2346,7 +2367,7 @@ $("themeT").addEventListener("click", ()=>{ const n = themeNow()==="dark" ? "lig
 matchMedia("(prefers-color-scheme: dark)").addEventListener?.("change", themeLabel);
 themeLabel();
 // 版本：網頁更新後，提醒還開著舊版的人重新載入（GitHub Pages 與瀏覽器會快取約 10 分鐘）
-const APP_VER = "3.11.1";
+const APP_VER = "3.12.0";
 document.querySelector(".brand h1 small").title = `中控台版本 v${APP_VER}`;
 document.body.insertAdjacentHTML("beforeend", `<div class="appver">v${APP_VER}</div>`);
 async function checkVer(){

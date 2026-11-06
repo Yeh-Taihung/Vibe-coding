@@ -51,7 +51,7 @@ const SCHEMA = {
            ["party","協力單位"],["opened","啟動日"],["due","預計完成"],["dueTBD","期限未定"],["closed","實際完成"],["status","狀態"],["task","關聯任務"],["note","備註"],
            ["log","對策與進度"],["source","來源"],["deleted","已刪除"],["deletedAt","刪除日"],["lastAt","最後更新"],["lastBy","更新者"]],
   leaves: [["id","編號"],["person","人員"],["type","假別"],["start","開始日"],["end","結束日"],["period","時段"],["timeFrom","開始時間"],["timeTo","結束時間"],
-           ["place","地點"],["note","備註"],["deleted","已刪除"],["deletedAt","刪除日"],["lastAt","最後更新"],["lastBy","更新者"]],
+           ["place","地點"],["note","備註／活動名稱"],["address","活動地址"],["phone","店家電話"],["contact","聯絡人"],["url","網址"],["desc","活動說明"],["deleted","已刪除"],["deletedAt","刪除日"],["lastAt","最後更新"],["lastBy","更新者"]],
 };
 const DEFAULT_LISTS = {
   country: "中國、印尼、印度、摩洛哥、斯洛伐克、美國", assignStatus: "暫定、確認、取消", taskStatus: "未開始、進行中、有風險、完成",
