@@ -19,6 +19,7 @@ const TABLES = {
   assignments: { tab: "派遣與到崗",   key: "id" },
   tasks:       { tab: "安裝任務",     key: "id" },
   issues:      { tab: "任務與問題點", key: "id" },
+  leaves:      { tab: "假勤",         key: "id" },
 };
 const USERS_TAB = "使用者", LOG_TAB = "異動紀錄", LISTS_TAB = "選單";
 // 只留在試算表、不送到中控台，也不允許從中控台覆寫的欄位
@@ -49,12 +50,17 @@ const SCHEMA = {
   issues: [["id","編號"],["project","專案編號"],["kind","類型"],["title","事項"],["desc","說明"],["category","類別"],["severity","嚴重度"],["owner","負責人"],
            ["party","協力單位"],["opened","啟動日"],["due","預計完成"],["dueTBD","期限未定"],["closed","實際完成"],["status","狀態"],["task","關聯任務"],["note","備註"],
            ["log","對策與進度"],["source","來源"],["deleted","已刪除"],["deletedAt","刪除日"],["lastAt","最後更新"],["lastBy","更新者"]],
+  leaves: [["id","編號"],["person","人員"],["type","假別"],["start","開始日"],["end","結束日"],["period","時段"],["timeFrom","開始時間"],["timeTo","結束時間"],
+           ["place","地點"],["note","備註"],["deleted","已刪除"],["deletedAt","刪除日"],["lastAt","最後更新"],["lastBy","更新者"]],
 };
 const DEFAULT_LISTS = {
   country: "中國、印尼、印度、摩洛哥、斯洛伐克、美國", assignStatus: "暫定、確認、取消", taskStatus: "未開始、進行中、有風險、完成",
   milestone: "KO、PA、TT、SOP、開工、設備進廠、驗收、量產", issueStatus: "Open、處理中、待確認、已結案", issueSeverity: "高、中、低",
   issueCategory: "進度、人力、設備、物料、品質、安全、合約、其他", projectStatus: "規劃中、評估中、進行中、暫停、結案、未啟動",
+  leaveType: "特休、事假、病假、婚假、喪假、公假、產假、陪產假、補休、外出、出差、居家辦公",
 };
+// 假勤裡不屬於個人的「全處活動」（員工旅遊、尾牙…）
+const ALL_HANDS = "全處活動";
 
 // ---------------------------------------------------------------- 入口
 function doGet() { return ContentService.createTextOutput("寶新工程處中控台後台運作中"); }
@@ -68,7 +74,8 @@ function doPost(e) {
       touchUser_(user.email);
       out = { ok: true, user: { email: user.email, name: user.name, role: user.role }, data: loadAll_(), at: new Date().toISOString() };
     } else if (req.action === "save") {
-      if (user.role === "檢視") throw err_(403, "你的帳號只有檢視權限，無法修改資料");
+      if (user.role === "檢視" && !(req.items || []).every(it => it.table === "leaves"))
+        throw err_(403, "你的帳號只有檢視權限，無法修改資料（可以登記自己的假勤）");
       out = { ok: true, saved: save_(req.items || [], user), at: new Date().toISOString() };
     } else throw err_(400, "未知的動作");
   } catch (x) {
@@ -273,6 +280,15 @@ function checkPerm_(ss, it, user, snap) {
   }
   if (t === "people" && (rec.orgType === "寶新" || (old && old.orgType === "寶新"))) need_(user, "主管", "新增或修改集團同仁");
   if (t === "units" || t === "companies") need_(user, "主管", "新增或修改單位／公司");
+  if (t === "leaves") {
+    // 全處活動＝主管；其他假勤：編輯以上可替任何人登記，檢視只能登記／修改自己的
+    if (rec.type === ALL_HANDS || (old && old.type === ALL_HANDS)) need_(user, "主管", "登記全處活動");
+    else if ((RANK[user.role] || 0) < RANK["編輯"]) {
+      const me = String(user.name || "").trim();
+      if (!me || String(rec.person || "").trim() !== me || (old && String(old.person || "").trim() !== me))
+        throw err_(403, `檢視權限只能登記自己的假勤（使用者分頁上的姓名：${me || "未填"}）`);
+    }
+  }
 }
 
 /** 找「同一筆」：①相同 cid（新版中控台每筆新增資料都有）；②舊版沒有 cid 時，同一人 15 分鐘內新增、內容完全相同 */
@@ -349,6 +365,11 @@ function setup() {
     l.getRange(1, 1, 1, 2).setValues([["類別 (key)", "選項（用頓號、分隔）"]]).setFontWeight("bold");
     const rows = Object.entries(DEFAULT_LISTS);
     l.getRange(2, 1, rows.length, 2).setNumberFormat("@").setValues(rows);
+  } else {
+    // 舊的選單分頁：補上新版才有的類別（例如假別），已存在的不動
+    const l = ss.getSheetByName(LISTS_TAB), have = l.getDataRange().getDisplayValues().map(r => keyOf_(r[0]));
+    const add = Object.entries(DEFAULT_LISTS).filter(([k]) => !have.includes(k));
+    if (add.length) l.getRange(l.getLastRow() + 1, 1, add.length, 2).setNumberFormat("@").setValues(add);
   }
   ensureLog_(ss);
   ScriptApp.getProjectTriggers().filter(t => t.getHandlerFunction() === "backupDaily").forEach(t => ScriptApp.deleteTrigger(t));

@@ -4,6 +4,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>工程處數據中控台</title>
 <meta name="claude:viewport-fit-sides" content="cover">
+<script>/* 日間／夜間模式：記住使用者的選擇；沒選過就跟著系統 */try{var th=localStorage.getItem("bx-theme");if(th==="dark"||th==="light")document.documentElement.setAttribute("data-theme",th)}catch(e){}</script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@500;700;800&family=Noto+Sans+TC:wght@400;500;700;900&family=JetBrains+Mono:wght@400;500&display=swap">
 <style>
@@ -533,6 +534,75 @@ button.ptag{font:inherit;cursor:pointer;width:100%}
 }
 @media (prefers-reduced-motion:no-preference){.drawer{animation:slide .18s ease-out}@keyframes slide{from{transform:translateX(24px);opacity:.6}}}
 @media (prefers-reduced-motion:reduce){*{transition:none!important}}
+/* v3.10 出勤、日夜模式 */
+.theme-t{border:var(--b) solid var(--ink);border-radius:999px;background:var(--card);color:var(--fg);padding:6px 12px;font-weight:800;font-size:13px;box-shadow:var(--sh-sm);white-space:nowrap;cursor:pointer}
+.theme-t:hover{transform:translate(-1px,-1px)}
+.navb{width:38px;height:38px;border-radius:50%;border:var(--b) solid var(--ink);background:var(--card);color:var(--fg);font-size:20px;font-weight:900;line-height:1;box-shadow:var(--sh-sm);cursor:pointer;flex:none}
+.navb:hover{transform:translate(-1px,-1px)}
+.at-top{padding:18px 20px;margin-bottom:22px}
+.at-head{display:flex;justify-content:space-between;align-items:center;gap:14px 24px;flex-wrap:wrap;padding-bottom:14px;border-bottom:2px dashed color-mix(in srgb,var(--ink) 25%,transparent)}
+.at-date{display:flex;align-items:center;gap:12px;flex-wrap:wrap}
+.at-date input[type=date]{width:auto}
+.at-big{font-family:var(--f-head);font-size:52px;font-weight:800;line-height:1}
+.at-wk{font-weight:700;color:var(--muted);margin-top:4px}
+.at-wk .hol{color:var(--red);font-weight:900}
+.at-sum{display:flex;gap:10px;flex-wrap:wrap}
+.at-sum>div{display:flex;flex-direction:column;align-items:center;min-width:86px;padding:6px 12px;border:2px solid var(--ink);border-radius:12px;background:var(--soft)}
+.at-sum .num{font-family:var(--f-head);font-size:30px;font-weight:800;line-height:1.1}
+.at-sum small{font-weight:800;color:var(--muted);font-size:12px}
+.at-sum .tot{background:var(--chip-bg);color:var(--chip-fg)} .at-sum .tot small{color:inherit;opacity:.8}
+.at-ah{display:flex;gap:10px;align-items:baseline;width:100%;margin-top:12px;padding:8px 14px;border:2px solid var(--ink);border-radius:10px;background:color-mix(in srgb,var(--yellow) 45%,var(--card));color:var(--fg);font-weight:900;text-align:left;cursor:pointer}
+.at-ah span{font-weight:600;font-size:12.5px;color:var(--muted)}
+.at-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(270px,1fr));gap:14px;margin-top:16px}
+.at-g{padding:12px 14px;border-top:8px solid var(--c)}
+.at-g.at-ok,.at-g.at-off{grid-column:1/-1}
+.at-gh{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px}
+.at-gh h3{font-size:18px;font-weight:900;display:flex;align-items:center;gap:8px;margin:0}
+.at-gh .dot{width:12px;height:12px;border-radius:50%;background:var(--c);border:2px solid var(--ink)}
+.at-gh .count{font-family:var(--f-head);font-size:30px;font-weight:800;line-height:1}
+.at-gh .count small{font-family:var(--f-body);font-size:13px;font-weight:900;margin-left:2px}
+.at-ppl{display:flex;flex-wrap:wrap;gap:6px}
+.at-p{display:inline-flex;align-items:baseline;gap:5px;padding:4px 11px;border:2px solid var(--ink);border-radius:999px;background:var(--soft);color:var(--fg);font-size:13.5px;cursor:pointer;text-align:left}
+.at-p small{color:var(--muted);font-size:12px}
+.at-p.rich{flex-direction:column;align-items:flex-start;gap:0;border-radius:10px;width:100%;padding:6px 11px}
+.at-p.rich .sub{font-size:12px}
+.at-off .at-p{opacity:.75}
+.cal-bar{display:flex;justify-content:space-between;align-items:center;gap:10px 20px;flex-wrap:wrap;margin:12px 0 10px}
+.cal-nav{display:flex;align-items:center;gap:8px}
+.cal-nav select{width:auto;font-weight:800}
+.cal-lg .lg-dot{width:10px;height:10px;border-radius:50%;background:var(--c);border:1.5px solid var(--ink);display:inline-block}
+.cal-lg .lg-ah{width:22px;height:10px;border-radius:3px;background:color-mix(in srgb,var(--yellow) 55%,var(--card));border:1.5px solid var(--ink);display:inline-block}
+.cal-lg .redt{color:var(--red);font-weight:800}
+.cal{overflow:hidden;padding:0}
+.cal-w,.cal-g{display:grid;grid-template-columns:repeat(7,minmax(0,1fr))}
+.cal-w div{padding:8px 10px;font-weight:900;font-size:13px;background:var(--soft);border-bottom:var(--b) solid var(--ink)}
+.cal-w .we{color:var(--red)}
+.cd{min-height:118px;padding:6px 6px 8px;border-right:1.5px solid color-mix(in srgb,var(--ink) 18%,transparent);border-bottom:1.5px solid color-mix(in srgb,var(--ink) 18%,transparent);display:flex;flex-direction:column;gap:3px;cursor:pointer;min-width:0}
+.cd:nth-child(7n){border-right:0}
+.cd:hover{background:color-mix(in srgb,var(--blue) 6%,transparent)}
+.cd.off{background:color-mix(in srgb,var(--red) 7%,transparent)}
+.cd.out{opacity:.45}
+.cd.sel{box-shadow:inset 0 0 0 3px var(--blue)}
+.cd-h{display:flex;align-items:baseline;gap:6px;min-width:0}
+.cd .dn{font-family:var(--f-head);font-weight:800;font-size:17px}
+.cd.off .dn,.cd .hn{color:var(--red)}
+.cd .hn{font-size:11.5px;font-weight:800;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.cd .hn.mk{color:var(--muted)}
+.cd.today .dn{background:var(--chip-bg);color:var(--chip-fg);border-radius:50%;width:28px;height:28px;display:inline-grid;place-items:center;font-size:15px}
+.ev{display:flex;align-items:center;gap:5px;font-size:12px;line-height:1.35;color:var(--fg);background:none;border:0;padding:0;text-align:left;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0;cursor:pointer;font-family:inherit}
+.ev i{flex:none;width:8px;height:8px;border-radius:50%;background:var(--c);border:1.2px solid var(--ink)}
+.ev small{color:var(--muted);font-size:11px;margin-left:2px}
+.ev.more{color:var(--muted);font-weight:700;padding-left:13px}
+.ah{display:block;width:calc(100% + 12px);margin:0 -6px;padding:1px 8px;font-size:12px;font-weight:900;text-align:left;border:0;background:color-mix(in srgb,var(--yellow) 55%,var(--card));color:var(--fg);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;cursor:pointer;font-family:inherit}
+.note.src{margin-top:8px}
+@media (max-width:760px){
+  .at-big{font-size:40px}
+  .cd{min-height:78px;padding:4px 3px} .cd .hn{display:none}
+  .ev{font-size:10.5px;gap:3px} .ev i{width:6px;height:6px} .ev small,.ev .loc{display:none}
+  .at-sum>div{min-width:70px;padding:4px 8px} .at-sum .num{font-size:24px}
+  .ah{width:calc(100% + 6px);margin:0 -3px;font-size:10.5px;padding:1px 4px}
+  .cal-w div{padding:6px 4px;text-align:center}
+}
 </style>
 
 <div class="bgfx" aria-hidden="true"></div>
@@ -544,11 +614,13 @@ button.ptag{font:inherit;cursor:pointer;width:100%}
     </div>
     <nav class="tabs" id="tabs">
       <a href="#overview">總覽</a>
+      <a href="#attendance">出勤</a>
       <a href="#dispatch">人員派遣</a>
       <a href="#projects">專案</a>
       <a href="#tracker">追蹤清單</a>
       <a href="#people">人員名單</a>
     </nav>
+    <button type="button" class="theme-t" id="themeT" aria-label="切換日間／夜間模式"></button>
   </div>
 </div>
 <div class="proto"><div class="wrap" id="syncBar"></div></div>
@@ -620,6 +692,7 @@ button.ptag{font:inherit;cursor:pointer;width:100%}
   };
 })();
 </script>
+<script src="data/holidays.js" onerror="void 0"></script>
 <script src="data/db.js" onerror="void 0"></script>
 <script>
 window.bxStart = () => {
@@ -629,11 +702,11 @@ window.bxStart = () => {
 const BX = window.BX || {online:false};
 const LS_KEY = BX.online ? `bx-dash-v2-outbox:${BX.user.email}` : "bx-dash-v2-local";
 const base = window.DB || {};
-["people","projects","assignments","tasks","issues"].forEach(k => base[k] ||= []);
+["people","projects","assignments","tasks","issues","leaves"].forEach(k => base[k] ||= []);
 base.lists ||= {};
-let local = {assignments:{}, people:{}, projects:{}, issues:{}, tasks:{}, units:{}, companies:{}, log:[]};
+let local = {assignments:{}, people:{}, projects:{}, issues:{}, tasks:{}, units:{}, companies:{}, leaves:{}, log:[]};
 try { const s = localStorage.getItem(LS_KEY); if (s) local = Object.assign(local, JSON.parse(s)); } catch(e) {}
-["assignments","people","projects","issues","tasks","units","companies"].forEach(k => local[k] ||= {});
+["assignments","people","projects","issues","tasks","units","companies","leaves"].forEach(k => local[k] ||= {});
 // 權限：由試算表「使用者」分頁指定（管理 > 主管 > 編輯 > 檢視），與人員名單上的職稱無關
 const ROLE_RANK = {"檢視":0, "編輯":1, "主管":2, "管理":3};
 const can = level => !BX.online || (ROLE_RANK[BX.user.role] ?? 0) >= ROLE_RANK[level];
@@ -641,11 +714,15 @@ const denied = what => { toast(`${what}需要「主管」以上權限，請通�
 function saveLS(){ try { localStorage.setItem(LS_KEY, JSON.stringify(local)); } catch(e) {} }
 function persist(){
   chain = 0;
-  if (BX.online && BX.user.role==="檢視") { TABLES_.forEach(t=>local[t]={}); saveLS(); setTimeout(()=>{ toast("你的帳號只有檢視權限，修改不會儲存"); render(); }, 0); return; }
+  // 檢視權限：只有自己的假勤會送出，其他修改直接捨棄
+  if (BX.online && BX.user.role==="檢視") { const other = TABLES_.some(t=>t!=="leaves" && Object.keys(local[t]).length);
+    TABLES_.forEach(t=>{ if (t!=="leaves") local[t]={}; }); saveLS();
+    if (other) setTimeout(()=>{ toast("你的帳號只有檢視權限，修改不會儲存（可以登記自己的假勤）"); render(); }, 0);
+    if (!Object.keys(local.leaves).length) return; }
   saveLS(); if (BX.online) { clearTimeout(flushT); flushT = setTimeout(flush, 400); syncState(); }
 }
 // ---------- 與試算表同步 ----------
-const TABLES_ = ["assignments","people","projects","issues","tasks","units","companies"];
+const TABLES_ = ["assignments","people","projects","issues","tasks","units","companies","leaves"];
 const keyName = t => ({people:"name", units:"name", companies:"name"})[t] || "id";
 let flushing = false, flushT = null, syncErr = "", lastSync = BX.online ? new Date() : null;
 // isNew：試算表裡沒有這筆、或只有一筆「已刪除」的舊資料（後台會換新編號，不會蓋掉舊資料）
@@ -709,7 +786,8 @@ const DB = {
   get issues(){ return merge(base.issues, local.issues).filter(i=>!i.deleted); },
   get companies(){ return merge(base.companies||[{name:"寶新",group:"協禾集團"}], local.companies, "name"); },
   get units(){ return merge(base.units||[{name:"工程處",level:"處",parent:""}], local.units, "name").filter(u=>!u.retired); },
-  get tasks(){ return merge(base.tasks, local.tasks).filter(t=>!t.deleted); }, lists: base.lists,
+  get tasks(){ return merge(base.tasks, local.tasks).filter(t=>!t.deleted); },
+  get leaves(){ return merge(base.leaves, local.leaves).filter(l=>!l.deleted); }, lists: base.lists,
 };
 const L = base.lists;
 L.issueStatus ||= ["Open","處理中","待確認","已結案"];
@@ -1923,7 +2001,225 @@ function openMilestone(pid, ix){
 let tt; function toast(t){ let el=document.querySelector(".toast"); if(!el){el=document.createElement("div");el.className="toast";el.setAttribute("role","status");document.body.appendChild(el);} el.textContent=t; el.hidden=false; clearTimeout(tt); tt=setTimeout(()=>el.hidden=true,3200); }
 
 // ================= 路由 =================
-const VIEWS = {overview:viewOverview, dispatch:viewDispatch, projects:viewProject, tracker:viewTracker, people:viewPeople};
+// ================= 出勤（假勤登記＋派遣狀態） =================
+// 國定假日：內嵌 data/holidays.js（人事行政總處辦公日曆）；沒有內嵌的年份再從公開資料補抓
+const HOL = window.BX_HOLIDAYS || {years:[], off:{}, work:[]};
+const holTried = new Set(HOL.years);
+function ensureHolidays(y){
+  if (holTried.has(y)) return; holTried.add(y);
+  fetch(`https://cdn.jsdelivr.net/gh/ruyut/TaiwanCalendar/data/${y}.json`).then(r=>r.ok?r.json():null).then(arr=>{
+    if (!Array.isArray(arr)) return;
+    arr.forEach(x=>{ const s = `${x.date.slice(0,4)}-${x.date.slice(4,6)}-${x.date.slice(6)}`, wk = "六日".includes(x.week);
+      if (x.isHoliday && (!wk || x.description)) HOL.off[s] = x.description || "放假"; if (!x.isHoliday && wk) HOL.work.push(s); });
+    HOL.years.push(y); if (route()==="attendance" && !document.querySelector("#drawerRoot .drawer")) render();
+  }).catch(()=>{});
+}
+const holName = s => HOL.off[s] && HOL.off[s]!=="放假" ? HOL.off[s] : "";
+const isOff = d => { const s = iso(d); if (HOL.off[s] !== undefined) return true; if (HOL.work.includes(s)) return false; return d.getDay()===0 || d.getDay()===6; };
+const isMakeup = d => HOL.work.includes(iso(d));
+
+const ALL_HANDS = "全處活動";
+L.leaveType ||= ["特休","事假","病假","婚假","喪假","公假","產假","陪產假","補休","外出","出差","居家辦公"];
+const LV_C = {"特休":"var(--green)","事假":"var(--yellow)","病假":"var(--pink)","婚假":"var(--lav)","喪假":"var(--grey)","公假":"var(--sky)","產假":"var(--peach)","陪產假":"var(--peach)",
+  "補休":"var(--mint)","外出":"var(--p2)","出差":"var(--blue)","居家辦公":"var(--sky)"};
+const lvColor = t => LV_C[t] || "var(--beige)";
+const PERIODS = ["全天","上午","下午","指定時間"];
+const lvTime = l => l.period==="指定時間" ? `${l.timeFrom||"?"}–${l.timeTo||"?"}` : (l.period && l.period!=="全天" ? l.period : "");
+const lvRange = l => (l.end && l.end!==l.start) ? `${md(l.start)}–${md(l.end)}` : md(l.start);
+const lvOn = (l, s) => l.start && l.start <= s && (l.end || l.start) >= s;
+const asgOn = (a, d) => { if (!active(a)) return false; const s = aStart(a), e = aEnd(a); return !!s && s <= d && (!e || e >= d); };
+const asgPlace = a => a.city || a.country || proj(a.project).city || proj(a.project).name;
+const shortName = p => (p.enName || "").split(/\s+/)[0] || p.name;
+const fullName = p => p.enName ? `<b>${esc((p.enName||"").split(/\s+/)[0])}</b> <small>${esc(p.name)}</small>` : `<b>${esc(p.name)}</b>`;
+// 檢視權限的同仁可以登記自己的假勤（以「使用者」分頁上的姓名比對）
+const myName = () => BX.online ? String(BX.user.name||"").trim() : "";
+const canLeave = person => can("編輯") || (!!myName() && person===myName());
+
+const AT = { day: iso(TODAY), month: iso(new Date(TODAY.getFullYear(), TODAY.getMonth(), 1)), person:"", unit:"", type:"", q:"" };
+const atOn = () => AT.person || AT.unit || AT.type || AT.q;
+const atStaff = () => DB.people.filter(p => isStaff(p) && !isPending(p)).sort(byRank);
+const atPeople = () => atStaff().filter(p => (!AT.person || p.name===AT.person)
+  && (!AT.unit || p.unit===AT.unit || deptOf(p.unit)===AT.unit) && has(AT.q, p.name, p.enName, p.title, p.unit));
+// 某人某天的狀態：派遣（依派遣地點）> 全天假 > 部分時段 > 放假日 > 正常出勤
+function statusOf(p, d){
+  const s = iso(d);
+  const a = DB.assignments.find(x => x.person===p.name && asgOn(x, d));
+  if (a) return {kind:"loc", key:asgPlace(a), a};
+  const off = isOff(d);   // 放假日不算請假（出差照常顯示）
+  const lv = DB.leaves.filter(l => l.person===p.name && l.type!==ALL_HANDS && lvOn(l, s) && (!off || l.type==="出差"));
+  const full = lv.find(l => !l.period || l.period==="全天") || lv[0];
+  if (full) return full.type==="出差" && full.place ? {kind:"loc", key:full.place, l:full, part: lv.length>1 || !!lvTime(full)} : {kind:"lv", key:full.type, l:full, part: !!lvTime(full)};
+  return off ? {kind:"off"} : {kind:"ok"};
+}
+const typeOk = st => !AT.type || (AT.type==="__loc" ? st.kind==="loc" : AT.type==="__ok" ? st.kind==="ok" : st.l && st.l.type===AT.type);
+const allHandsOn = s => DB.leaves.filter(l => l.type===ALL_HANDS && lvOn(l, s));
+
+function viewAttendance(){
+  const D = P(AT.day), s = AT.day, M = P(AT.month);
+  [D.getFullYear(), M.getFullYear()].forEach(ensureHolidays);
+  const people = atPeople();
+  const groups = new Map();
+  const put = (k, label, color, cls, row) => { if (!groups.has(k)) groups.set(k, {label, color, cls, rows:[]}); groups.get(k).rows.push(row); };
+  people.forEach(p => { const st = statusOf(p, D); if (!typeOk(st)) return;
+    if (st.kind==="ok") put("ok", "正常出勤", "var(--green)", "ok", {p});
+    else if (st.kind==="off") put("off", holName(s) || "休假日", "var(--grey)", "off", {p});
+    else if (st.kind==="loc") { const e = st.a ? aEnd(st.a) : P(st.l.end||st.l.start);
+      put("loc:"+st.key, st.key, "var(--blue)", "loc", {p, sub: st.a ? `${proj(st.a.project).name}・${e ? `至 ${md(iso(e))}` : "回程未定"}` : `出差・${lvRange(st.l)}${lvTime(st.l)?`・${lvTime(st.l)}`:""}`, lv: st.l?.id}); }
+    else put("lv:"+st.key, st.key, lvColor(st.key), "lv", {p, sub: [lvRange(st.l), lvTime(st.l), st.l.place, st.l.note].filter(Boolean).join("・"), lv: st.l.id});
+  });
+  const order = g => g[0]==="ok" ? 0 : g[0].startsWith("loc:") ? 1 : g[0].startsWith("lv:") ? 2 + L.leaveType.indexOf(g[0].slice(3)) / 100 : 3;
+  const gs = [...groups.entries()].sort((a,b) => order(a)-order(b) || b[1].rows.length - a[1].rows.length);
+  const cnt = k => gs.filter(([g])=>g.startsWith(k)).reduce((n,[,g])=>n+g.rows.length, 0);
+  const off = isOff(D), hn = holName(s), ah = allHandsOn(s);
+  const wkLabel = `星期${WK[D.getDay()]}${s===iso(TODAY) ? "（今天）" : ""}`;
+  const card = ([k, g]) => `<div class="card at-g at-${g.cls}" style="--c:${g.color}"><div class="at-gh"><h3><i class="dot"></i>${esc(g.label)}</h3><span class="count">${g.rows.length}<small>人</small></span></div>
+    <div class="at-ppl">${g.rows.map(r => r.sub !== undefined
+      ? `<button type="button" class="at-p rich" ${r.lv?`data-lv="${r.lv}"`:`data-at-person="${esc(r.p.name)}"`}>${fullName(r.p)}<span class="sub">${esc(r.sub)}</span></button>`
+      : `<button type="button" class="at-p" data-at-person="${esc(r.p.name)}" title="只看這位同仁">${fullName(r.p)}</button>`).join("")}</div></div>`;
+  const staffSel = atStaff();
+  const fb = fbar(
+    fsel("AT","person","同仁",[["","全部同仁"], ...staffSel.map(p=>[p.name, `${p.name}${p.enName?` ${p.enName}`:""}`])], AT.person) +
+    fsel("AT","unit","單位",[["","全部單位"], ...DB.units.filter(u=>u.level!=="處").map(u=>[u.name, u.level==="課" ? `　${u.name}` : u.name])], AT.unit) +
+    fsel("AT","type","狀態",[["","全部狀態"],["__ok","正常出勤"],["__loc","派外／出差地點"], ...L.leaveType.filter(t=>t!=="出差").map(t=>[t,t])], AT.type),
+    "atQ", AT.q, "輸入姓名或英文名", "AT", atOn());
+  return `<section class="card at-top">
+    <div class="at-head">
+      <div class="at-date"><button type="button" class="navb" data-at-d="-1" aria-label="前一天">‹</button>
+        <div><div class="at-big num">${D.getMonth()+1}/${D.getDate()}</div><div class="at-wk">${D.getFullYear()} 年・${wkLabel}${hn?` <span class="hol">${esc(hn)}</span>`:off&&!isMakeup(D)?' <span class="hol">週末</span>':""}${isMakeup(D)?' <span class="chip warn">補班日</span>':""}</div></div>
+        <button type="button" class="navb" data-at-d="1" aria-label="後一天">›</button>
+        <input type="date" id="atDate" value="${s}" aria-label="選擇日期">${s!==iso(TODAY)?'<button type="button" class="btn sm ghost" data-at-d="0">今天</button>':""}</div>
+      <div class="at-sum">
+        <div><span class="num">${off ? cnt("off") : cnt("ok")}</span><small>${off ? "休假" : "正常出勤"}</small></div>
+        <div><span class="num">${cnt("loc:")}</span><small>派外／出差</small></div>
+        <div><span class="num">${cnt("lv:")}</span><small>請假／外出</small></div>
+        <div class="tot"><span class="num">${people.length}</span><small>${atOn()?"篩選後同仁":"集團同仁"}</small></div>
+      </div>
+    </div>
+    ${ah.map(l=>`<button type="button" class="at-ah" data-lv="${l.id}">🎉 ${esc(l.note||"全處活動")}<span>${lvRange(l)}${l.place?`・${esc(l.place)}`:""}</span></button>`).join("")}
+    <div class="at-grid">${gs.length ? gs.map(card).join("") : `<div class="alert-empty" style="padding:14px">${atOn()?"這個篩選條件下沒有同仁。":"人員名單裡還沒有集團同仁。"}</div>`}</div>
+  </section>
+  <section>${secH(null, `出勤<mark>月曆</mark>`, "派遣依「人員派遣」自動顯示；假勤由同仁登記", `<button class="btn sm" data-new-lv>＋ 登記假勤</button>`)}
+    ${fb}
+    ${monthCal(M, people)}
+    <p class="note src">國定假日依人事行政總處「政府行政機關辦公日曆表」（政府資料開放平台）。${HOL.years.includes(M.getFullYear())?"":`${M.getFullYear()} 年的辦公日曆尚未取得，暫時只標示週末。`}</p>
+  </section>`;
+}
+
+function monthCal(M, people){
+  const y = M.getFullYear(), m = M.getMonth(), first = new Date(y, m, 1), start = addD(first, -first.getDay());
+  const last = new Date(y, m+1, 0), weeks = Math.ceil((first.getDay() + last.getDate()) / 7);
+  const names = new Set(people.map(p=>p.name));
+  const pp = Object.fromEntries(people.map(p=>[p.name, p]));
+  const asg = DB.assignments.filter(a => names.has(a.person) && active(a));
+  const lvs = DB.leaves.filter(l => l.type!==ALL_HANDS && names.has(l.person));
+  const cells = [];
+  for (let i = 0; i < weeks*7; i++) {
+    const d = addD(start, i), s = iso(d), inM = d.getMonth()===m, off = isOff(d), hn = holName(s);
+    const ev = [];
+    const byLoc = {};
+    asg.filter(a => asgOn(a, d)).forEach(a => { if (AT.type && AT.type!=="__loc") return; (byLoc[asgPlace(a)] ||= []).push(pp[a.person]); });
+    Object.entries(byLoc).forEach(([loc, ps]) => {
+      if (ps.length <= 2) ps.forEach(p => ev.push(`<span class="ev" style="--c:var(--blue)" title="${esc(`${p.name}・${loc}`)}"><i></i>${esc(shortName(p))}<span class="loc"> ${esc(loc)}</span></span>`));
+      else ev.push(`<span class="ev" style="--c:var(--blue)" title="${esc(ps.map(p=>p.name).join("、"))}"><i></i>${esc(loc)} ${ps.length} 人</span>`); });
+    lvs.filter(l => lvOn(l, s) && (!off || l.type==="出差") && (!AT.type || AT.type===l.type || (AT.type==="__loc" && l.type==="出差"))).forEach(l => { const p = pp[l.person];
+      ev.push(`<button type="button" class="ev" style="--c:${lvColor(l.type)}" data-lv="${l.id}" title="${esc([p.name, l.type, lvTime(l), l.place, l.note].filter(Boolean).join("・"))}"><i></i>${esc(shortName(p))}<span class="loc"> ${esc(l.type)}</span>${lvTime(l)?`<small>${esc(lvTime(l))}</small>`:""}</button>`); });
+    const ah = allHandsOn(s).map(l => `<button type="button" class="ah" data-lv="${l.id}" title="${esc(l.note||ALL_HANDS)}">${(l.start===s || d.getDay()===0) ? esc(l.note||ALL_HANDS) : "&nbsp;"}</button>`).join("");
+    const MAX = 4, more = ev.length - MAX;
+    cells.push(`<div class="cd ${inM?"":"out"} ${off?"off":""} ${s===iso(TODAY)?"today":""} ${s===AT.day?"sel":""}" data-at-day="${s}">
+      <div class="cd-h"><span class="dn num">${d.getDate()}</span>${hn?`<span class="hn">${esc(hn)}</span>`:""}${isMakeup(d)?'<span class="hn mk">補班</span>':""}</div>
+      ${ah}${ev.slice(0, MAX).join("")}${more>0?`<span class="ev more">還有 ${more} 項</span>`:""}</div>`);
+  }
+  const ys = []; for (let yy = TODAY.getFullYear()-2; yy <= TODAY.getFullYear()+2; yy++) ys.push(yy);
+  const legend = [["派遣地點","var(--blue)"], ...L.leaveType.filter(t=>t!=="出差").map(t=>[t, lvColor(t)])];
+  return `<div class="cal-bar"><div class="cal-nav"><button type="button" class="navb" data-at-m="-1" aria-label="上個月">‹</button>
+      <select id="atY" aria-label="年份">${ys.map(v=>optH(v, `${v} 年`, y)).join("")}</select><select id="atM" aria-label="月份">${[...Array(12)].map((_,i)=>optH(i, `${i+1} 月`, m)).join("")}</select>
+      <button type="button" class="navb" data-at-m="1" aria-label="下個月">›</button>
+      ${y===TODAY.getFullYear() && m===TODAY.getMonth() ? "" : '<button type="button" class="btn sm ghost" data-at-m="0">本月</button>'}</div>
+    <div class="legend cal-lg">${legend.map(([t,c])=>`<span><i class="lg-dot" style="--c:${c}"></i>${t}</span>`).join("")}<span><i class="lg-ah"></i>全處活動</span><span class="redt">紅色日期＝放假日</span></div></div>
+  <div class="panel cal"><div class="cal-w">${[..."日一二三四五六"].map((w,i)=>`<div class="${i===0||i===6?"we":""}">${w}</div>`).join("")}</div>
+    <div class="cal-g">${cells.join("")}</div></div>`;
+}
+
+function openLeave(id, preset={}){
+  const l = id ? DB.leaves.find(x=>x.id===id) : Object.assign({person: can("編輯") ? (AT.person||"") : myName(), type:"特休", start:AT.day, end:AT.day, period:"全天", timeFrom:"", timeTo:"", place:"", note:""}, preset);
+  if (!l) return;
+  const edit = !!id, mine = l.type===ALL_HANDS ? can("主管") : canLeave(l.person||myName());
+  if (!mine && edit) { toast(l.type===ALL_HANDS ? "全處活動由主管以上權限維護" : "只能修改自己的假勤；需要修改請通知主管或管理者"); return; }
+  if (!can("編輯") && !myName()) { toast("你的帳號只有檢視權限，且「使用者」分頁沒有填姓名，無法登記假勤，請通知管理者"); return; }
+  const types = [...L.leaveType, ...(can("主管") ? [ALL_HANDS] : [])];
+  const body = `
+    ${can("編輯") ? "" : `<span class="tag wrap">檢視權限可以登記與修改自己的假勤（${esc(myName())}）</span>`}
+    ${fld("lvType","假別",sel("lvType", types, l.type))}
+    <div class="f" id="lvWho"><label for="lvPerson">同仁</label>${can("編輯")
+      ? `<select id="lvPerson"><option value="">— 選擇同仁 —</option>${staffOptions(l.person)}</select>`
+      : `<select id="lvPerson"><option>${esc(myName())}</option></select>`}</div>
+    <div class="f" id="lvTitleF" hidden>${`<label for="lvTitle">活動名稱</label>${inp("lvTitle", l.type===ALL_HANDS ? l.note : "", 'placeholder="例：員工旅遊、尾牙、教育訓練"')}`}</div>
+    <div class="f2">${fld("lvStart","開始日",inp("lvStart",l.start,'type="date"'))}${fld("lvEnd","結束日",inp("lvEnd",l.end||l.start,'type="date"'))}</div>
+    <div class="f" id="lvPeriodF"><label for="lvPeriod">時段</label>${sel("lvPeriod", PERIODS, l.period||"全天")}</div>
+    <div class="f2" id="lvTimeF">${fld("lvFrom","開始時間",inp("lvFrom",l.timeFrom,'type="time" step="900"'))}${fld("lvTo","結束時間",inp("lvTo",l.timeTo,'type="time" step="900"'))}</div>
+    <div id="lvDays" class="dayinfo" aria-live="polite"></div>
+    <div class="f" id="lvPlaceF"><label for="lvPlace" id="lvPlaceL">地點</label>${inp("lvPlace", l.place, 'placeholder="例：平鎮工廠、客戶端、新竹"')}</div>
+    <div class="f" id="lvNoteF">${`<label for="lvNote">備註（選填）</label>${inp("lvNote", l.type===ALL_HANDS ? "" : l.note, 'placeholder="例：代理人 Kenny"')}`}</div>`;
+  function check(){
+    const t = val("lvType"), ah = t===ALL_HANDS, per = val("lvPeriod");
+    $("lvWho").hidden = ah; $("lvTitleF").hidden = !ah; $("lvNoteF").hidden = ah; $("lvPeriodF").hidden = ah;
+    $("lvTimeF").hidden = ah || per!=="指定時間";
+    $("lvPlaceF").hidden = !(ah || ["外出","出差","公假"].includes(t)); $("lvPlaceL").textContent = ah ? "地點（選填）" : t==="外出" ? "外出地點" : "地點";
+    if (val("lvStart") && (!val("lvEnd") || val("lvEnd") < val("lvStart"))) $("lvEnd").value = val("lvStart");   // 開始日移到結束日之後，結束日跟著移
+    const s = P(val("lvStart")), e = P(val("lvEnd")) || s, out = [];
+    if (s && e && e < s) out.push(["crit","結束日早於開始日"]);
+    if (s && e && e >= s) { let wd = 0, hd = 0; for (let d = s; d <= e; d = addD(d,1)) isOff(d) ? hd++ : wd++;
+      const f = per==="上午"||per==="下午" ? 0.5 : 1;
+      $("lvDays").innerHTML = ah ? `<b>${days(s,e)} 天</b>（${md(iso(s))}–${md(iso(e))}）` : `<b>${wd*f} 個工作天</b>${hd?`（另含 ${hd} 天假日，不計入）`:""}`; }
+    else $("lvDays").innerHTML = "";
+    const who = val("lvPerson");
+    if (!ah && who && s && e && e >= s) {
+      DB.assignments.filter(a=>a.person===who && active(a)).forEach(a=>{ const as = aStart(a), ae = aEnd(a);
+        if (as && as <= e && (!ae || ae >= s)) out.push(["warn",`這段期間派遣在${asgPlace(a)}（${md(iso(as))}–${ae?md(iso(ae)):"未定"}），月曆會以派遣地點顯示`]); });
+      DB.leaves.filter(x=>x.person===who && x.id!==id && x.type!==ALL_HANDS && x.start && x.start <= iso(e) && (x.end||x.start) >= iso(s))
+        .forEach(x=>out.push(["warn",`已登記${x.type}：${lvRange(x)}${lvTime(x)?` ${lvTime(x)}`:""}`])); }
+    $("checks").innerHTML = out.map(([c,t])=>`<div class="check ${c}">${esc(t)}</div>`).join("");
+    return !out.some(o=>o[0]==="crit");
+  }
+  drawer(edit ? "編輯假勤" : "登記假勤", body, edit ? "儲存" : "登記", ()=>{
+    if (!check()) return;
+    const t = val("lvType"), ah = t===ALL_HANDS, who = ah ? "" : val("lvPerson");
+    if (!ah && !who) return toast("請選擇同仁");
+    if (ah && !val("lvTitle")) return toast("請填活動名稱");
+    if (!val("lvStart")) return toast("請填開始日");
+    if (!ah && !canLeave(who)) return toast("只能登記自己的假勤");
+    const per = ah ? "全天" : val("lvPeriod");
+    if (per==="指定時間" && (!val("lvFrom") || !val("lvTo"))) return toast("請填開始與結束時間");
+    const rec = Object.assign({}, l, { id: id || "V"+Date.now(), person: who, type: t, start: val("lvStart"), end: val("lvEnd") || val("lvStart"), period: per,
+      timeFrom: per==="指定時間" ? val("lvFrom") : "", timeTo: per==="指定時間" ? val("lvTo") : "",
+      place: ah || ["外出","出差","公假"].includes(t) ? val("lvPlace") : "", note: ah ? val("lvTitle") : val("lvNote") });
+    local.leaves[rec.id] = rec; logChange(edit ? "編輯假勤" : "登記假勤", rec.id, who || rec.note); persist(); closeForm();
+    toast(`${edit?"已更新":"已登記"}：${ah ? rec.note : `${who} ${t}`}・${lvRange(rec)}${lvTime(rec)?` ${lvTime(rec)}`:""}`); render();
+  }, check);
+  if (edit) { const foot = document.querySelector(".drawer footer");
+    foot.insertAdjacentHTML("afterbegin", `<button type="button" class="btn ghost danger" id="delLv">刪除這筆</button><span style="flex:1"></span>`);
+    $("delLv").addEventListener("click", e=>{ const b = e.currentTarget;
+      if (!b.dataset.confirm) { b.dataset.confirm = "1"; b.textContent = "確定刪除？再按一次"; b.classList.add("armed"); return; }
+      local.leaves[id] = Object.assign({}, l, {deleted:true, deletedAt:iso(TODAY)}); logChange("刪除假勤", id, l.person || l.note); persist(); closeForm();
+      toast(`已刪除：${l.person || l.note} ${l.type}・${lvRange(l)}`); render(); }); }
+}
+document.addEventListener("click", e=>{
+  const t = e.target.closest("[data-at-d],[data-at-m],[data-new-lv],[data-lv],[data-at-person],[data-at-day]"); if (!t || e.defaultPrevented) return;
+  const d = t.dataset;
+  if (d.atD !== undefined) { AT.day = d.atD==="0" ? iso(TODAY) : iso(addD(P(AT.day), +d.atD)); const D = P(AT.day); AT.month = iso(new Date(D.getFullYear(), D.getMonth(), 1)); return render(); }
+  if (d.atM !== undefined) { const M = P(AT.month); AT.month = d.atM==="0" ? iso(new Date(TODAY.getFullYear(), TODAY.getMonth(), 1)) : iso(new Date(M.getFullYear(), M.getMonth() + +d.atM, 1)); if (d.atM==="0") AT.day = iso(TODAY); return render(); }
+  if (t.hasAttribute("data-new-lv")) return openLeave(null);
+  if (d.atPerson !== undefined) { AT.person = AT.person===d.atPerson ? "" : d.atPerson; return render(); }
+  if (d.lv) { const l = DB.leaves.find(x=>x.id===d.lv); if (l && (l.type===ALL_HANDS ? can("主管") : canLeave(l.person))) return openLeave(d.lv);
+    if (!t.closest("[data-at-day]")) return toast(l ? `${l.person || l.note}・${l.type}・${lvRange(l)}${lvTime(l)?` ${lvTime(l)}`:""}` : "找不到這筆假勤"); }
+  const day = t.closest("[data-at-day]"); if (day) { AT.day = day.dataset.atDay; render(); window.scrollTo({top:0, behavior:"smooth"}); }
+});
+document.addEventListener("change", e=>{
+  if (e.target.id==="atDate" && e.target.value) { AT.day = e.target.value; const D = P(AT.day); AT.month = iso(new Date(D.getFullYear(), D.getMonth(), 1)); render(); }
+  if (e.target.id==="atY" || e.target.id==="atM") { AT.month = iso(new Date(+$("atY").value, +$("atM").value, 1)); render(); }
+});
+
+const VIEWS = {attendance:viewAttendance, overview:viewOverview, dispatch:viewDispatch, projects:viewProject, tracker:viewTracker, people:viewPeople};
 function route(){ const h = location.hash.slice(1); if (/^P\d+$/.test(h)) { curProj = h; return "projects"; } if (h==="issues") return "overview"; return VIEWS[h] ? h : "overview"; }
 let lastRem = [];
 function render(){
@@ -1936,9 +2232,9 @@ $("today").textContent = `${TODAY.getFullYear()}/${TODAY.getMonth()+1}/${TODAY.g
 window.addEventListener("hashchange", ()=>{ render(); if (location.hash==="#issues") $("issues")?.scrollIntoView(); else window.scrollTo(0,0); });
 
 // 篩選狀態與「清除篩選」的預設值（年度、狀態分頁、分組等不清除）
-const FS = {OV, F, PV, TF, PF, TK};
+const FS = {OV, F, PV, TF, PF, TK, AT};
 const FDEF = { OV:{proj:"", q:""}, F:{project:"", unit:"", country:"", status:"", q:""},
-  PV:{q:"", iss:"", co:"", role:""}, TK:{sec:"", owner:"", task:"", health:""}, TF:{owner:"", project:"all", kind:"", sev:"", od:"", q:""} };
+  AT:{person:"", unit:"", type:"", q:""}, PV:{q:"", iss:"", co:"", role:""}, TK:{sec:"", owner:"", task:"", health:""}, TF:{owner:"", project:"all", kind:"", sev:"", od:"", q:""} };
 document.addEventListener("click", e=>{
   if (e.target.closest(".totop")) return window.scrollTo({top:0, behavior: matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth"});
   const t = e.target.closest("[data-more],[data-close],[data-new],[data-edit],[data-leave],[data-issue],[data-new-issue],[data-promote],[data-person],[data-new-person],[data-new-onsite],[data-dispatch-proj],[data-asg-for],[data-new-unit],[data-unit],[data-fill],[data-psort],[data-porg],[data-pf-clear],[data-tf],[data-quick],[data-close-issue],[data-reopen],[data-goto-tracker],[data-edit-proj],[data-new-proj],[data-new-task],[data-task],[data-raise],[data-new-ms],[data-ms],[data-range],[data-toggle-closed],[data-proj],[data-scroll],[data-fclear],[data-ord]"); if(!t) return;
@@ -2005,13 +2301,20 @@ document.addEventListener("change", e=>{
   render();
 });
 // 各分頁搜尋框：輸入停頓後才重新整理；中文注音／拼音組字中不觸發，避免打斷輸入法
-const QMAP = {ovQ:["OV","q"], fQ:["F","q"], pvQ:["PV","q"], tfQ:["TF","q"], pfQ:["PF","q"]};
+const QMAP = {atQ:["AT","q"], ovQ:["OV","q"], fQ:["F","q"], pvQ:["PV","q"], tfQ:["TF","q"], pfQ:["PF","q"]};
 let qT, composing = false;
 const runSearch = el => { const m = QMAP[el.id]; if (!m) return; clearTimeout(qT); const id = el.id;
   qT = setTimeout(()=>{ const cur = $(id); if (!cur || composing) return; FS[m[0]][m[1]] = cur.value.trim(); render(); const n = $(id); if (n) { n.focus(); n.setSelectionRange(n.value.length, n.value.length); } }, 300); };
 document.addEventListener("input", e=>{ if (e.isComposing) return; runSearch(e.target); });
 document.addEventListener("compositionstart", ()=>{ composing = true; clearTimeout(qT); });
 document.addEventListener("compositionend", e=>{ composing = false; runSearch(e.target); });
+// 日間／夜間模式切換（存在這台瀏覽器）
+const themeNow = () => document.documentElement.getAttribute("data-theme") || (matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light");
+const themeLabel = () => { $("themeT").textContent = themeNow()==="dark" ? "☀ 日間模式" : "☾ 夜間模式"; };
+$("themeT").addEventListener("click", ()=>{ const n = themeNow()==="dark" ? "light" : "dark"; document.documentElement.setAttribute("data-theme", n);
+  try { localStorage.setItem("bx-theme", n); } catch(e) {} themeLabel(); });
+matchMedia("(prefers-color-scheme: dark)").addEventListener?.("change", themeLabel);
+themeLabel();
 const topBtn = document.querySelector(".totop");
 window.addEventListener("scroll", ()=>{ topBtn.hidden = window.scrollY < 400; }, {passive:true});
 render();
