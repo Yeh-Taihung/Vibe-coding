@@ -851,6 +851,8 @@ const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt
 const aStart = a => P(a.actualStart || a.planStart);
 const aEnd = a => P(a.actualEnd || a.planEnd);
 const active = a => a.status !== "取消";
+// 兩段行程是否重疊（沒有回程日＝還在當地，視為一直延續）
+const asgOverlap = (s1, e1, s2, e2) => !!s1 && !!s2 && s1 <= (e2 || new Date(9e15)) && s2 <= (e1 || new Date(9e15));
 
 // ================= 規則（沿用舊版看板） =================
 const RULE = { rollingCountries:["美國","印度"], rollingWarn:150, workDays:240, visaSoon:60, staleDays:60, home:"台灣" };
@@ -892,6 +894,12 @@ function reminders(){
     if (gap <= 30) out.push({sev: gap<=0?"crit":"warn", proj:a.project, cat:"人力", t:`${a.person} 的${a.city||a.country}行程仍是「暫定」`,
       d:`${ymd(a.planStart)} – ${ymd(a.planEnd)}　${gap<=0?"已過出發日，請確認是否成行":`距出發 ${Math.round(gap)} 天`}`});
   });
+  // 既有資料裡同一人重疊的派遣（新增時已會擋，這裡抓舊資料）
+  const byP = {}; DB.assignments.filter(a=>active(a) && isBX(a.person)).forEach(a=>(byP[a.person] ||= []).push(a));
+  Object.values(byP).forEach(list => { list.sort((a,b)=>(aStart(a)||0)-(aStart(b)||0));
+    for (let i = 0; i < list.length; i++) for (let j = i+1; j < list.length; j++) { const a = list[i], b = list[j];
+      if (asgOverlap(aStart(a), aEnd(a), aStart(b), aEnd(b)) && (!aEnd(a) || aEnd(a) >= addD(TODAY,-30)))
+        out.push({sev:"warn", proj:b.project, cat:"人力", t:`${a.person} 有兩筆派遣時間重疊`, d:`${a.city||a.country} ${md(a.actualStart||a.planStart)}–${aEnd(a)?md(iso(aEnd(a))):"未定"} 與 ${b.city||b.country} ${md(b.actualStart||b.planStart)}–${aEnd(b)?md(iso(aEnd(b))):"未定"}，請到人員派遣修正其中一筆的日期或改為取消`}); } });
   // 簽證屬於各公司與個人自行管理，中控台不監控
   DB.assignments.filter(a=>active(a)&&RULE.rollingCountries.includes(a.country)&&isBX(a.person)).forEach(a=>{
     const e=aEnd(a); if(!e || e<TODAY) return;
@@ -1558,19 +1566,20 @@ function openStaffForm(id, a){
     if (val("iProjSel")==="__new") out.push(["warn", val("iProjNew") ? `將建立新專案「${val("iProjNew")}」` : "請輸入新專案名稱"]);
     const many = everyone().length > 1;
     everyone().forEach(nm => { const who_ = many ? `${nm}：` : "";
-    if (s && e) DB.assignments.filter(x=>x.person===nm && x.id!==id && active(x)).forEach(x=>{
-      const xs=aStart(x), xe=aEnd(x); if (xs && xe && xs<=e && xe>=s) out.push(["warn",`${who_}與既有行程重疊：${x.city||x.country} ${md(iso(xs))}–${md(iso(xe))}`]); });
+    if (s && val("iStatus")!=="取消") DB.assignments.filter(x=>x.person===nm && x.id!==id && active(x)).forEach(x=>{
+      const xs=aStart(x), xe=aEnd(x); if (asgOverlap(s, e, xs, xe))
+        out.push(["crit",`${who_}與既有派遣重疊：${proj(x.project).name}・${x.city||x.country} ${md(iso(xs))}–${xe?md(iso(xe)):"回程未定"}\n同一人同一段時間不能有兩筆派遣，請調整日期，或先修改原本那筆的回程日／改為「取消」`]); });
     if (e && s && RULE.rollingCountries.includes(country)) { const from=addD(e,-365); const r = rollingDays(nm,country,e) + (id?0:days(s<from?from:s,e));
       if (r>=RULE.rollingWarn) out.push([r>=180?"crit":"warn",`${who_}回程時近 365 天在${country}停留約 ${r} 天，已超過 ${RULE.rollingWarn} 天警戒線`]); }
     });
     $("checks").innerHTML = out.map(([c,t])=>`<div class="check ${c}">${esc(t).replace(/\n/g,"<br>")}</div>`).join("");
-    return !out.some(x=>x[0]==="crit" && /早於/.test(x[1]));
+    return !out.some(x=>x[0]==="crit" && /早於|重疊/.test(x[1]));
   }
   drawer(id?"編輯派遣":"新增派遣", body, id?"儲存變更":"新增派遣", ()=>{
     const name = who();
     if (!name || !(val("iPS")||val("iAS"))) return toast("請選擇派遣人員並填寫出發日期");
     if (!val("iProjSel") || (val("iProjSel")==="__new" && !val("iProjNew"))) return toast("請選擇專案，或輸入新專案名稱");
-    if (!check()) return toast("回程日期早於出發日期，請修正");
+    if (!check()) return toast($("checks").textContent.includes("重疊") ? "派遣日期與既有行程重疊，無法儲存，請先調整日期" : "回程日期早於出發日期，請修正");
     if (!personOf(name)) upsertPerson(name, {orgType:"寶新", company:HOME_CO});
     const pid = projPicked("i"), names = id ? [name] : everyone(), t0 = Date.now();
     let rec;
