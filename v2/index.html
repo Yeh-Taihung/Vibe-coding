@@ -587,6 +587,8 @@ button.ptag{font:inherit;cursor:pointer;width:100%}
 .cd.today .cd-h::after{content:"今天";font-size:11px;font-weight:900;color:var(--fg);margin-left:auto}
 .asg-t{display:inline-flex;align-items:center;gap:6px;font-weight:800;font-size:13px;margin-left:8px;cursor:pointer}
 .asg-t input{width:auto;margin:0}
+.appver{text-align:center;font-size:11px;color:var(--muted);padding:18px 0 28px;font-family:var(--f-mono)}
+.newver{position:sticky;top:0;z-index:30;display:block;width:100%;padding:10px 16px;border:0;border-bottom:var(--b) solid var(--ink);background:var(--lime);color:#17171B;font-weight:900;font-size:14px;cursor:pointer}
 .cd-h{display:flex;align-items:baseline;gap:6px;min-width:0}
 .cd .dn{font-family:var(--f-head);font-weight:800;font-size:15px}
 .cd.off .dn,.cd .hn{color:var(--red)}
@@ -2108,7 +2110,7 @@ function viewAttendance(){
       <div class="at-date"><button type="button" class="navb" data-at-d="-1" aria-label="前一天">‹</button>
         <div><div class="at-big num">${D.getMonth()+1}/${D.getDate()}</div><div class="at-wk">${D.getFullYear()} 年・${wkLabel}${hn?` <span class="hol">${esc(hn)}</span>`:off&&!isMakeup(D)?' <span class="hol">週末</span>':""}${isMakeup(D)?' <span class="chip warn">補班日</span>':""}</div></div>
         <button type="button" class="navb" data-at-d="1" aria-label="後一天">›</button>
-        <input type="date" id="atDate" value="${s}" aria-label="選擇日期">${s!==iso(TODAY)?'<button type="button" class="btn sm ghost" data-at-d="0">今天</button>':""}</div>
+        <input type="date" id="atDate" value="${s}" aria-label="選擇日期"><button type="button" class="btn sm ${s===iso(TODAY)?"ghost":""}" data-at-d="0">回到今天</button></div>
       <div class="at-sum">
         <div><span class="num">${off ? cnt("off") : cnt("ok")}</span><small>${off ? "休假" : "正常出勤"}</small></div>
         <div><span class="num">${cnt("loc:")}</span><small>派外／出差</small></div>
@@ -2158,7 +2160,7 @@ function monthCal(M, people){
   return `<div class="cal-bar"><div class="cal-nav"><button type="button" class="navb" data-at-m="-1" aria-label="上個月">‹</button>
       <select id="atY" aria-label="年份">${ys.map(v=>optH(v, `${v} 年`, y)).join("")}</select><select id="atM" aria-label="月份">${[...Array(12)].map((_,i)=>optH(i, `${i+1} 月`, m)).join("")}</select>
       <button type="button" class="navb" data-at-m="1" aria-label="下個月">›</button>
-      ${y===TODAY.getFullYear() && m===TODAY.getMonth() ? "" : '<button type="button" class="btn sm ghost" data-at-m="0">本月</button>'}
+      <button type="button" class="btn sm ${y===TODAY.getFullYear() && m===TODAY.getMonth() && AT.day===iso(TODAY) ? "ghost" : ""}" data-at-m="0">回到今天</button>
       <label class="asg-t"><input type="checkbox" id="atAsg" ${AT.showAsg?"checked":""}> 顯示派遣地點</label></div>
     <div class="legend cal-lg">${legend.map(([t,c])=>`<span><i class="lg-dot" style="--c:${c}"></i>${t}</span>`).join("")}<span><i class="lg-ah"></i>活動</span><span class="redt">紅色日期＝放假日</span></div></div>
   <div class="panel cal"><div class="cal-w">${[..."日一二三四五六"].map((w,i)=>`<div class="${i===0||i===6?"we":""}">${w}</div>`).join("")}</div>
@@ -2343,6 +2345,20 @@ $("themeT").addEventListener("click", ()=>{ const n = themeNow()==="dark" ? "lig
   try { localStorage.setItem("bx-theme", n); } catch(e) {} themeLabel(); });
 matchMedia("(prefers-color-scheme: dark)").addEventListener?.("change", themeLabel);
 themeLabel();
+// 版本：網頁更新後，提醒還開著舊版的人重新載入（GitHub Pages 與瀏覽器會快取約 10 分鐘）
+const APP_VER = "3.11.1";
+document.querySelector(".brand h1 small").title = `中控台版本 v${APP_VER}`;
+document.body.insertAdjacentHTML("beforeend", `<div class="appver">v${APP_VER}</div>`);
+async function checkVer(){
+  try { const r = await fetch(`version.txt?t=${Date.now()}`, {cache:"no-store"}); if (!r.ok) return;
+    const v = (await r.text()).trim(); if (!v || v===APP_VER || document.querySelector(".newver")) return;
+    document.body.insertAdjacentHTML("afterbegin", `<button type="button" class="newver" data-newver="${esc(v)}">中控台已更新到 v${esc(v)}（目前 v${APP_VER}），按這裡載入新版</button>`);
+  } catch(e) {} }
+document.addEventListener("click", e=>{ const b = e.target.closest("[data-newver]"); if (!b) return;
+  if (pending().length) { toast("還有修改正在送出，請稍候再更新"); return; }
+  location.replace(`${location.pathname}?v=${encodeURIComponent(b.dataset.newver)}${location.hash}`); });
+document.addEventListener("visibilitychange", ()=>{ if (document.visibilityState==="visible") checkVer(); });
+setTimeout(checkVer, 1500); setInterval(checkVer, 15*60*1000);
 const topBtn = document.querySelector(".totop");
 window.addEventListener("scroll", ()=>{ topBtn.hidden = window.scrollY < 400; }, {passive:true});
 render();
