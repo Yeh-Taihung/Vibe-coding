@@ -590,8 +590,21 @@ button.ptag{font:inherit;cursor:pointer;width:100%}
 .cd.sel{box-shadow:inset 0 0 0 3px var(--blue)}
 .cd.today,.cd.today.off{background:color-mix(in srgb,var(--lime) 32%,var(--card))}
 .cd.today .cd-h::after{content:"今天";font-size:11px;font-weight:900;color:var(--fg);margin-left:auto}
-.asg-t{display:inline-flex;align-items:center;gap:6px;font-weight:800;font-size:13px;margin-left:8px;cursor:pointer}
-.asg-t input{width:auto;margin:0}
+.asg-t{margin-left:6px}
+.asg-t.on{background:var(--green);color:#fff}
+.at-by{display:flex;align-items:center;gap:10px;margin-top:16px}
+.at-dgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(440px,1fr));gap:14px;margin-top:12px}
+.at-d{padding:12px 14px}
+.at-dh{display:flex;align-items:baseline;justify-content:space-between;gap:10px;padding-bottom:8px;margin-bottom:6px;border-bottom:2px dashed color-mix(in srgb,var(--ink) 20%,transparent)}
+.at-dh h3{margin:0;font-size:18px;font-weight:900}
+.at-dr{display:grid;grid-template-columns:118px 1fr;gap:8px;align-items:start;padding:6px 0}
+.at-dr+.at-dr{border-top:1px solid color-mix(in srgb,var(--ink) 10%,transparent)}
+.at-dk{display:flex;align-items:center;gap:6px;font-weight:900;font-size:13.5px;padding-top:5px}
+.at-dk .dot{width:10px;height:10px;border-radius:50%;background:var(--c);border:2px solid var(--ink);flex:none}
+.at-dk b{margin-left:auto;font-family:var(--f-head);font-size:16px;padding-right:4px}
+.at-s{font-size:11.5px;color:var(--muted);margin-left:4px}
+.at-p .nm{display:inline-flex;gap:5px;align-items:baseline}
+@media (max-width:760px){ .at-dgrid{grid-template-columns:1fr} .at-dr{grid-template-columns:1fr} .at-dk b{margin-left:4px} }
 .appver{text-align:center;font-size:11px;color:var(--muted);padding:18px 0 28px;font-family:var(--f-mono)}
 .newver{position:sticky;top:0;z-index:30;display:block;width:100%;padding:10px 16px;border:0;border-bottom:var(--b) solid var(--ink);background:var(--lime);color:#17171B;font-weight:900;font-size:14px;cursor:pointer}
 .cd-h{display:flex;align-items:baseline;gap:6px;min-width:0}
@@ -2062,7 +2075,8 @@ const fullName = p => p.enName ? `<b>${esc((p.enName||"").split(/\s+/)[0])}</b> 
 const myName = () => BX.online ? String(BX.user.name||"").trim() : "";
 const canLeave = person => can("編輯") || (!!myName() && person===myName());
 
-const AT = { day: iso(TODAY), month: iso(new Date(TODAY.getFullYear(), TODAY.getMonth(), 1)), person:"", unit:"", type:"", q:"", showAsg:true };
+const AT = { day: iso(TODAY), month: iso(new Date(TODAY.getFullYear(), TODAY.getMonth(), 1)), person:"", unit:"", type:"", q:"", showAsg:true, by:"dept" };
+try { const v = localStorage.getItem("bx-at-by"); if (v==="dept" || v==="status") AT.by = v; } catch(e) {}
 const atOn = () => AT.person || AT.unit || AT.type || AT.q;
 const atStaff = () => DB.people.filter(p => isStaff(p) && !isPending(p)).sort(byRank);
 const atPeople = () => atStaff().filter(p => (!AT.person || p.name===AT.person)
@@ -2094,8 +2108,8 @@ function viewAttendance(){
   const D = P(AT.day), s = AT.day, M = P(AT.month);
   [D.getFullYear(), M.getFullYear()].forEach(ensureHolidays);
   const people = atPeople();
-  const groups = new Map();
-  const put = (k, label, color, cls, row) => { if (!groups.has(k)) groups.set(k, {label, color, cls, rows:[]}); groups.get(k).rows.push(row); };
+  const groups = new Map(), rowsAll = [];
+  const put = (k, label, color, cls, row) => { if (!groups.has(k)) groups.set(k, {label, color, cls, rows:[]}); groups.get(k).rows.push(row); rowsAll.push(Object.assign(row, {k, label, color, cls})); };
   people.forEach(p => { const st = statusOf(p, D); if (!typeOk(st)) return;
     if (st.kind==="ok") put("ok", "正常出勤", "var(--green)", "ok", {p});
     else if (st.kind==="off") put("off", holName(s) || "休假日", "var(--grey)", "off", {p});
@@ -2110,8 +2124,21 @@ function viewAttendance(){
   const wkLabel = `星期${WK[D.getDay()]}${s===iso(TODAY) ? "（今天）" : ""}`;
   const card = ([k, g]) => `<div class="card at-g at-${g.cls}" style="--c:${g.color}"><div class="at-gh"><h3><i class="dot"></i>${esc(g.label)}</h3><span class="count">${g.rows.length}<small>人</small></span></div>
     <div class="at-ppl">${g.rows.map(r => r.sub !== undefined
-      ? `<button type="button" class="at-p rich" ${r.lv?`data-lv="${r.lv}"`:`data-at-person="${esc(r.p.name)}"`}>${fullName(r.p)}<span class="sub">${esc(r.sub)}</span></button>`
+      ? `<button type="button" class="at-p rich" ${r.lv?`data-lv="${r.lv}"`:`data-at-person="${esc(r.p.name)}"`}><span class="nm">${fullName(r.p)}</span><span class="sub">${esc(r.sub)}</span></button>`
       : `<button type="button" class="at-p" data-at-person="${esc(r.p.name)}" title="只看這位同仁">${fullName(r.p)}</button>`).join("")}</div></div>`;
+  // 依部門：處級 → 各部（組織圖順序）→ 支援同仁 → 未列入組織圖
+  const deptKey = p => inOrg(p) ? (unitOf(p.unit)?.level==="處" ? p.unit : deptOf(p.unit) || p.unit) : isSupport(p) ? "支援同仁（非工程處）" : "未列入組織圖";
+  const dOrder = [...DB.units.filter(u=>u.level==="處").map(u=>u.name), ...DB.units.filter(u=>u.level==="部").map(u=>u.name), "支援同仁（非工程處）", "未列入組織圖"];
+  const stOrder = r => order([r.k]);
+  const chip = r => r.sub !== undefined
+    ? `<button type="button" class="at-p" ${r.lv?`data-lv="${r.lv}"`:`data-at-person="${esc(r.p.name)}"`} title="${esc(r.sub)}">${fullName(r.p)}<span class="at-s">${esc(r.sub.replace(/^.*?・(至|回程)/, "$1"))}</span></button>`
+    : `<button type="button" class="at-p" data-at-person="${esc(r.p.name)}" title="只看這位同仁">${fullName(r.p)}</button>`;
+  const deptCard = name => { const rs = rowsAll.filter(r=>deptKey(r.p)===name); if (!rs.length) return "";
+    const ks = [...new Set(rs.sort((a,b)=>stOrder(a)-stOrder(b) || byRank(a.p,b.p)).map(r=>r.k))];
+    const n = k => rs.filter(r=>r.k===k).length, away = rs.filter(r=>r.cls==="loc"||r.cls==="lv").length;
+    return `<div class="card at-d"><div class="at-dh"><h3>${esc(name)}</h3><span class="sub">${rs.length} 人${away?`・不在辦公室 ${away}`:""}</span></div>
+      ${ks.map(k=>{ const r0 = rs.find(r=>r.k===k); return `<div class="at-dr" style="--c:${r0.color}"><span class="at-dk"><i class="dot"></i>${esc(r0.label)}<b>${n(k)}</b></span><div class="at-ppl">${rs.filter(r=>r.k===k).map(chip).join("")}</div></div>`; }).join("")}</div>`; };
+  const byDept = [...dOrder.filter((v,i,a)=>a.indexOf(v)===i), ...[...new Set(rowsAll.map(r=>deptKey(r.p)))].filter(k=>!dOrder.includes(k))].map(deptCard).join("");
   const staffSel = atStaff();
   const fb = fbar(
     fsel("AT","person","同仁",[["","全部同仁"], ...staffSel.map(p=>[p.name, `${p.name}${p.enName?` ${p.enName}`:""}`])], AT.person) +
@@ -2132,7 +2159,9 @@ function viewAttendance(){
       </div>
     </div>
     ${ah.map(l=>{ const d = evDetail(l); return `<div class="at-ah"><button type="button" class="at-ah-t" data-lv="${l.id}" title="${can("編輯")?"按這裡修改活動":""}">📅 ${esc(l.note||"活動")}<span>${[lvRange(l), lvTime(l)].filter(Boolean).map(esc).join("・")}</span></button>${d?`<div class="at-ah-d">${d}</div>`:""}</div>`; }).join("")}
-    <div class="at-grid">${gs.length ? gs.map(card).join("") : `<div class="alert-empty" style="padding:14px">${atOn()?"這個篩選條件下沒有同仁。":"人員名單裡還沒有集團同仁。"}</div>`}</div>
+    <div class="at-by"><span class="pf-l">分區方式</span><div class="seg-t" role="group" aria-label="分區方式"><button type="button" class="${AT.by==="dept"?"on":""}" data-at-by="dept">依部門</button><button type="button" class="${AT.by!=="dept"?"on":""}" data-at-by="status">依狀態</button></div></div>
+    ${!gs.length ? `<div class="alert-empty" style="padding:14px">${atOn()?"這個篩選條件下沒有同仁。":"人員名單裡還沒有集團同仁。"}</div>`
+      : AT.by==="dept" ? `<div class="at-dgrid">${byDept}</div>` : `<div class="at-grid">${gs.map(card).join("")}</div>`}
   </section>
   <section>${secH(null, `出勤<mark>月曆</mark>`, "請假、外出、出差登記與處內活動；派遣人員見上方", `${can("編輯")?'<button class="btn sm ghost" data-new-ev>＋ 新增活動</button>':""}<button class="btn sm" data-new-lv>＋ 登記假勤</button>`)}
     ${fb}
@@ -2174,7 +2203,7 @@ function monthCal(M, people){
       <select id="atY" aria-label="年份">${ys.map(v=>optH(v, `${v} 年`, y)).join("")}</select><select id="atM" aria-label="月份">${[...Array(12)].map((_,i)=>optH(i, `${i+1} 月`, m)).join("")}</select>
       <button type="button" class="navb" data-at-m="1" aria-label="下個月">›</button>
       <button type="button" class="btn sm ${y===TODAY.getFullYear() && m===TODAY.getMonth() && AT.day===iso(TODAY) ? "ghost" : ""}" data-at-m="0">回到今天</button>
-      <label class="asg-t"><input type="checkbox" id="atAsg" ${AT.showAsg?"checked":""}> 顯示派遣地點</label></div>
+      <button type="button" class="btn sm asg-t ${AT.showAsg?"on":"ghost"}" data-at-asg aria-pressed="${AT.showAsg}">${AT.showAsg?"✓ 月曆顯示派遣人員":"月曆隱藏派遣人員"}</button></div>
     <div class="legend cal-lg">${legend.map(([t,c])=>`<span><i class="lg-dot" style="--c:${c}"></i>${t}</span>`).join("")}<span><i class="lg-ah"></i>活動</span><span class="redt">紅色日期＝放假日</span></div></div>
   <div class="panel cal"><div class="cal-w">${[..."日一二三四五六"].map((w,i)=>`<div class="${i===0||i===6?"we":""}">${w}</div>`).join("")}</div>
     <div class="cal-g">${cells.join("")}</div></div>`;
@@ -2253,10 +2282,12 @@ function openLeave(id, preset={}){
       toast(`已刪除：${l.person || l.note} ${l.type}・${lvRange(l)}`); render(); }); }
 }
 document.addEventListener("click", e=>{
-  const t = e.target.closest("[data-at-d],[data-at-m],[data-new-lv],[data-new-ev],[data-lv],[data-at-person],[data-at-day]"); if (!t || e.defaultPrevented) return;
+  const t = e.target.closest("[data-at-d],[data-at-m],[data-at-asg],[data-at-by],[data-new-lv],[data-new-ev],[data-lv],[data-at-person],[data-at-day]"); if (!t || e.defaultPrevented) return;
   const d = t.dataset;
   if (d.atD !== undefined) { AT.day = d.atD==="0" ? iso(TODAY) : iso(addD(P(AT.day), +d.atD)); const D = P(AT.day); AT.month = iso(new Date(D.getFullYear(), D.getMonth(), 1)); return render(); }
   if (d.atM !== undefined) { const M = P(AT.month); AT.month = d.atM==="0" ? iso(new Date(TODAY.getFullYear(), TODAY.getMonth(), 1)) : iso(new Date(M.getFullYear(), M.getMonth() + +d.atM, 1)); if (d.atM==="0") AT.day = iso(TODAY); return render(); }
+  if (t.hasAttribute("data-at-asg")) { AT.showAsg = !AT.showAsg; return render(); }
+  if (d.atBy) { AT.by = d.atBy; try { localStorage.setItem("bx-at-by", AT.by); } catch(e) {} return render(); }
   if (t.hasAttribute("data-new-lv")) return openLeave(null);
   if (t.hasAttribute("data-new-ev")) return openLeave(null, {type:ALL_HANDS, person:"", period:"指定時間", timeFrom:"18:00", timeTo:""});
   if (d.atPerson !== undefined) { AT.person = AT.person===d.atPerson ? "" : d.atPerson; return render(); }
@@ -2367,7 +2398,7 @@ $("themeT").addEventListener("click", ()=>{ const n = themeNow()==="dark" ? "lig
 matchMedia("(prefers-color-scheme: dark)").addEventListener?.("change", themeLabel);
 themeLabel();
 // 版本：網頁更新後，提醒還開著舊版的人重新載入（GitHub Pages 與瀏覽器會快取約 10 分鐘）
-const APP_VER = "3.12.0";
+const APP_VER = "3.13.0";
 document.querySelector(".brand h1 small").title = `中控台版本 v${APP_VER}`;
 document.body.insertAdjacentHTML("beforeend", `<div class="appver">v${APP_VER}</div>`);
 async function checkVer(){
